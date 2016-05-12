@@ -133,7 +133,7 @@ class ModelCheck(object):
                                            datepar='datestart')
             ok = ((tlm['date'] >= state0['tstart'] - 700) &
                   (tlm['date'] <= state0['tstart'] + 700))
-            state0.update({t_msid % self.short_msid: np.mean(tlm[self.msid][ok])})
+            state0.update({t_msid: np.mean(tlm[self.msid][ok])})
     
         # TEMPORARY HACK: core model doesn't actually support predictive
         # active heater yet.  Initial temperature determines active heater
@@ -329,7 +329,7 @@ class ModelCheck(object):
                                       color='y', linewidth=2.0)
             plots[msid]['ax'].axvline(load_start, linestyle=':', color='g',
                                       linewidth=1.0)
-            filename = self.MSIDs[self.msid].lower() + '.png'
+            filename = self.MSIDs[self.short_msid].lower() + '.png'
             outfile = os.path.join(opt.outdir, filename)
             self.logger.info('Writing plot file %s' % outfile)
             plots[msid]['fig'].savefig(outfile)
