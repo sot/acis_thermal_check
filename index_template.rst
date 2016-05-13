@@ -16,7 +16,7 @@ Summary
 ====================  =============================================
 Date start            {{proc.datestart}}
 Date stop             {{proc.datestop}}
-{{proc.msid}} status        {%if viols.default%}:red:`NOT OK`{% else %}OK{% endif%} (limit = {{proc.msid_limit|floatformat:1}} C)
+{{proc.msid}} status        {%if viols.default%}:red:`NOT OK`{% else %}OK{% endif%} (Planning Limit = {{proc.msid_limit|floatformat:1}} C)
 {% if opt.loaddir %}
 Load directory        {{opt.loaddir}}
 {% endif %}
