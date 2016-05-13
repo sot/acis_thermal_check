@@ -1,5 +1,5 @@
 =======================
-DEA temperatures check
+{{proc.short_msid}} temperatures check
 =======================
 .. role:: red
 
@@ -22,13 +22,13 @@ Run log               `<run.dat>`_
 ====================  =============================================
 
 =======================
-DEA Model Validation
+{{proc.short_msid}} Model Validation
 =======================
 
 MSID quantiles
 ---------------
 
-Note: DEA quantiles are calculated using only points where 1DEAMZT > 20 degC.
+Note: {{proc.short_msid}} quantiles are calculated using only points where {{proc.msid}} > 20 degC.
 
 .. csv-table:: 
    :header: "MSID", "1%", "5%", "16%", "50%", "84%", "95%", "99%"
@@ -62,7 +62,7 @@ No Validation Violations
 {{ plot.msid }}
 -----------------------
 
-Note: DEA residual histograms include only points where 1DEAMZT > 20 degC.
+Note: {{proc.short_msid}} residual histograms include only points where {{proc.msid}} > 20 degC.
 
 Red = telemetry, blue = model
 

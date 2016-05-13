@@ -1,5 +1,5 @@
 =======================
-DEA temperatures check
+{{proc.short_msid}} temperatures check
 =======================
 .. role:: red
 
@@ -16,7 +16,7 @@ Summary
 ====================  =============================================
 Date start            {{proc.datestart}}
 Date stop             {{proc.datestop}}
-1DEAMZT status        {%if viols.dea%}:red:`NOT OK`{% else %}OK{% endif%} (limit = {{proc.dea_limit|floatformat:1}} C)
+{{proc.msid}} status        {%if viols.dea%}:red:`NOT OK`{% else %}OK{% endif%} (limit = {{proc.msid_limit|floatformat:1}} C)
 {% if opt.loaddir %}
 Load directory        {{opt.loaddir}}
 {% endif %}
@@ -27,7 +27,7 @@ States                `<states.dat>`_
 ====================  =============================================
 
 {% if viols.dea  %}
-1DEAMZT Violations
+{{proc.msid}} Violations
 -------------------
 =====================  =====================  ==================
 Date start             Date stop              Max temperature
@@ -37,20 +37,20 @@ Date start             Date stop              Max temperature
 {% endfor %}
 =====================  =====================  ==================
 {% else %}
-No 1DEAMZT Violations
+No {{proc.msid}} Violations
 {% endif %}
 
 .. image:: {{plots.dea.filename}}
 .. image:: {{plots.pow_sim.filename}}
 
 =======================
-DEA Model Validation
+{{proc.short_msid}} Model Validation
 =======================
 
 MSID quantiles
 ---------------
 
-Note: DEA quantiles are calculated using only points where 1DEAMZT > 20 degC.
+Note: {{proc.short_msid}} quantiles are calculated using only points where {{proc.msid}} > 20 degC.
 
 .. csv-table:: 
    :header: "MSID", "1%", "5%", "16%", "50%", "84%", "95%", "99%"
@@ -83,7 +83,7 @@ No Validation Violations
 {{ plot.msid }}
 -----------------------
 
-Note: DEA residual histograms include only points where 1DEAMZT > 20 degC.
+Note: {{proc.short_msid}} residual histograms include only points where {{proc.msid}} > 20 degC.
 
 Red = telemetry, blue = model
 

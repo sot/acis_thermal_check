@@ -41,8 +41,9 @@ class ModelCheck(object):
         proc = dict(run_user=os.environ['USER'],
                     run_time=time.ctime(),
                     errors=[],
-                    )
-        proc["%s_limit" % self.short_msid] = self.yellow[self.short_msid] - self.margin[self.short_msid]
+                    msid=self.msid.upper(),
+                    short_msid=self.short_msid.upper())
+        proc["msid_limit"] = self.yellow[self.short_msid] - self.margin[self.short_msid]
         self.logger.info('##############################'
                     '#######################################')
         self.logger.info('# %s_check.py run at %s by %s'
