@@ -16,7 +16,7 @@ Summary
 ====================  =============================================
 Date start            {{proc.datestart}}
 Date stop             {{proc.datestop}}
-{{proc.msid}} status        {%if viols.dea%}:red:`NOT OK`{% else %}OK{% endif%} (limit = {{proc.msid_limit|floatformat:1}} C)
+{{proc.msid}} status        {%if viols.default%}:red:`NOT OK`{% else %}OK{% endif%} (limit = {{proc.msid_limit|floatformat:1}} C)
 {% if opt.loaddir %}
 Load directory        {{opt.loaddir}}
 {% endif %}
@@ -26,13 +26,13 @@ Temperatures          `<temperatures.dat>`_
 States                `<states.dat>`_
 ====================  =============================================
 
-{% if viols.dea  %}
+{% if viols.default  %}
 {{proc.msid}} Violations
 -------------------
 =====================  =====================  ==================
 Date start             Date stop              Max temperature
 =====================  =====================  ==================
-{% for viol in viols.dea %}
+{% for viol in viols.default %}
 {{viol.datestart}}  {{viol.datestop}}  {{viol.maxtemp|floatformat:2}}
 {% endfor %}
 =====================  =====================  ==================
@@ -40,7 +40,7 @@ Date start             Date stop              Max temperature
 No {{proc.msid}} Violations
 {% endif %}
 
-.. image:: {{plots.dea.filename}}
+.. image:: {{plots.default.filename}}
 .. image:: {{plots.pow_sim.filename}}
 
 =======================
