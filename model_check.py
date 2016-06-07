@@ -19,11 +19,14 @@ import logging
 
 TASK_DATA = os.path.dirname(__file__)
 
-def calc_off_nom_rolls(states):
+def calc_off_nom_rolls(states, times=None):
     off_nom_rolls = []
-    for state in states:
+    for i, state in enumerate(states):
         att = [state[x] for x in ['q1', 'q2', 'q3', 'q4']]
-        time = (state['tstart'] + state['tstop']) / 2
+        if times is None:
+            time = (state['tstart'] + state['tstop']) / 2
+        else:
+            time = times[i]
         off_nom_rolls.append(Ska.Sun.off_nominal_roll(att, time))
     return np.array(off_nom_rolls)
 
@@ -88,10 +91,13 @@ class ModelCheck(object):
             tstart = tnow
 
         # Get temperature telemetry for 3 weeks prior to min(tstart, NOW)
-        telem_msids = [self.msid, 'sim_z', 'aosares1', 'dp_dpa_power']
+        telem_msids = [self.msid, 'sim_z', 'aosares1', 'dp_dpa_power',
+                       'aoatupq1', 'aoatupq2', 'aoatupq3', 'aoatupq4']
         if self.other_telem is not None:
             telem_msids += self.other_telem
-        name_map = {'sim_z': 'tscpos', 'aosares1': 'pitch'}
+        name_map = {'sim_z': 'tscpos', 'aosares1': 'pitch',
+                    'aoatupq1': 'q1', 'aoatupq2': 'q2',
+                    'aoatupq3': 'q3', 'aoatupq4': 'q4'}
         if self.other_map is not None:
             name_map.update(self.other_map)
         tlm = self.get_telem_values(min(tstart, tnow),
@@ -430,9 +436,7 @@ class ModelCheck(object):
         idxs = Ska.Numpy.interpolate(np.arange(len(tlm)), tlm['date'], model.times,
                                      method='nearest')
         tlm = tlm[idxs]
-
-        print(tlm)
-
+        
         labels = {self.msid: 'Degrees (C)',
                   'pitch': 'Pitch (degrees)',
                   'tscpos': 'SIM-Z (steps/1000)',
@@ -467,7 +471,7 @@ class ModelCheck(object):
             if msid != 'roll':
                 plot_tlm = tlm[msid]
             else:
-                plot_tlm = calc_off_nom_rolls(tlm)
+                plot_tlm = calc_off_nom_rolls(tlm, times=model.times)
             ticklocs, fig, ax = plot_cxctime(model.times, plot_tlm / scale,
                                              fig=fig, fmt='-r')
             ticklocs, fig, ax = plot_cxctime(model.times, pred[msid] / scale,
