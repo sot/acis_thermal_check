@@ -12,11 +12,20 @@ import Chandra.cmd_states as cmd_states
 import matplotlib.pyplot as plt
 from Ska.Matplotlib import cxctime2plotdate, pointpair, plot_cxctime
 import Ska.engarchive.fetch_sci as fetch
+import Ska.Sun
 import shutil
 import glob
 import logging
 
 TASK_DATA = os.path.dirname(__file__)
+
+def calc_off_nom_rolls(states):
+    off_nom_rolls = []
+    for state in states:
+        att = [state[x] for x in ['q1', 'q2', 'q3', 'q4']]
+        time = (state['tstart'] + state['tstop']) / 2
+        off_nom_rolls.append(Ska.Sun.off_nominal_roll(att, time))
+    return np.array(off_nom_rolls)
 
 class ModelCheck(object):
     def __init__(self, msid, short_msid, MSIDs, yellow, margin,
