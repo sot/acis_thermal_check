@@ -194,7 +194,7 @@ class ModelCheck(object):
         # Create array of times at which to calculate temps, then do it.
         self.logger.info('Calculating %s thermal model' % self.short_msid.upper())
 
-        return self.run_model_make_plots(opt, states, state0)
+        return self.run_model_make_plots(opt, states, state0, tstart, tstop, t_msid)
 
     def set_initial_state(self, tlm, db, t_msid):
         state0 = cmd_states.get_state0(tlm['date'][-5], db,
