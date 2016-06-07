@@ -194,20 +194,10 @@ class ModelCheck(object):
         # Create array of times at which to calculate temps, then do it.
         self.logger.info('Calculating %s thermal model' % self.short_msid.upper())
 
-        return self.run_model_make_plots(opt, states, state0, tstart, tstop, t_msid)
+        model = self.calc_model_wrapper(opt, states, state0['tstart'], tstop, 
+                                        t_msid, state0=state0)
 
-    def set_initial_state(self, tlm, db, t_msid):
-        state0 = cmd_states.get_state0(tlm['date'][-5], db,
-                                           datepar='datestart')
-        ok = ((tlm['date'] >= state0['tstart'] - 700) &
-              (tlm['date'] <= state0['tstart'] + 700))
-        state0.update({t_msid: np.mean(tlm[self.msid][ok])})
-        return state0
-
-    def run_model_make_plots(self, opt, states, state0, tstart, tstop, t_msid):
-        model = self.calc_model(opt.model_spec, states, state0['tstart'], tstop,
-                                state0[t_msid])
-        # Make the limit check plots and data files
+        # Make the limit check plots and data files                                                                        
         plt.rc("axes", labelsize=10, titlesize=12)
         plt.rc("xtick", labelsize=10)
         plt.rc("ytick", labelsize=10)
@@ -219,6 +209,22 @@ class ModelCheck(object):
 
         return dict(opt=opt, states=states, times=model.times, temps=temps,
                     plots=plots, viols=viols)
+
+
+    def set_initial_state(self, tlm, db, t_msid):
+        state0 = cmd_states.get_state0(tlm['date'][-5], db,
+                                           datepar='datestart')
+        ok = ((tlm['date'] >= state0['tstart'] - 700) &
+              (tlm['date'] <= state0['tstart'] + 700))
+        state0.update({t_msid: np.mean(tlm[self.msid][ok])})
+        return state0
+
+    def calc_model_wrapper(self, opt, states, tstart, tstop, t_msid, state0=None):
+        if state0 is None:
+            start_msid = None
+        else:
+            start_msid = state0[t_msid]
+        return self.calc_model(opt.model_spec, states, tstart, tstop, start_msid)
 
     def make_validation_viols(self, plots_validation):
         """
@@ -410,29 +416,34 @@ class ModelCheck(object):
         # Create array of times at which to calculate temperatures, then do it
         self.logger.info('Calculating %s thermal model for validation' % self.short_msid.upper())
 
-        model = self.calc_model(opt.model_spec, states, start, stop)
+        t_msid = 'T_%s' % self.short_msid
+
+        model = self.calc_model_wrapper(opt, states, start, stop, t_msid)
 
         # Interpolate states onto the tlm.date grid
         # state_vals = cmd_states.interpolate_states(states, model.times)
         pred = {self.msid: model.comp[self.msid].mvals,
                 'pitch': model.comp['pitch'].mvals,
-                'tscpos': model.comp['sim_z'].mvals
-                }
+                'tscpos': model.comp['sim_z'].mvals,
+                'roll': model.comp['roll'].mvals}
 
         idxs = Ska.Numpy.interpolate(np.arange(len(tlm)), tlm['date'], model.times,
                                      method='nearest')
         tlm = tlm[idxs]
 
+        print(tlm)
+
         labels = {self.msid: 'Degrees (C)',
                   'pitch': 'Pitch (degrees)',
                   'tscpos': 'SIM-Z (steps/1000)',
-                  }
+                  'roll': 'Off-Nominal Roll (degrees)'}
 
         scales = {'tscpos': 1000.}
 
         fmts = {self.msid: '%.2f',
                 'pitch': '%.3f',
-                'tscpos': '%d'}
+                'tscpos': '%d',
+                'roll': '%.3f'}
 
         good_mask = np.ones(len(tlm), dtype='bool')
         if hasattr(model, "bad_times"):
@@ -453,7 +464,11 @@ class ModelCheck(object):
             fig = plt.figure(10 + fig_id, figsize=(7, 3.5))
             fig.clf()
             scale = scales.get(msid, 1.0)
-            ticklocs, fig, ax = plot_cxctime(model.times, tlm[msid] / scale,
+            if msid != 'roll':
+                plot_tlm = tlm[msid]
+            else:
+                plot_tlm = calc_off_nom_rolls(tlm)
+            ticklocs, fig, ax = plot_cxctime(model.times, plot_tlm / scale,
                                              fig=fig, fmt='-r')
             ticklocs, fig, ax = plot_cxctime(model.times, pred[msid] / scale,
                                              fig=fig, fmt='-b')
