@@ -490,16 +490,16 @@ class ModelCheck(object):
 
             # Make quantiles
             if msid == self.msid:
-                ok = ((tlm[msid] > self.hist_limit[0]) & good_mask)
+                ok = ((plot_tlm > self.hist_limit[0]) & good_mask)
             else:
-                ok = np.ones(len(tlm[msid]), dtype=bool)
-            diff = np.sort(tlm[msid][ok] - pred[msid][ok])
+                ok = np.ones(len(plot_tlm), dtype=bool)
+            diff = np.sort(plot_tlm[ok] - pred[msid][ok])
             if len(self.hist_limit) == 2:
                 if msid == self.msid:
-                    ok2 = ((tlm[msid] > 40.0) & good_mask)
+                    ok2 = ((plot_tlm > 40.0) & good_mask)
                 else:
-                    ok2 = np.ones(len(tlm[msid]), dtype=bool)
-                diff2 = np.sort(tlm[msid][ok2] - pred[msid][ok2])
+                    ok2 = np.ones(len(plot_tlm), dtype=bool)
+                diff2 = np.sort(plot_tlm[ok2] - pred[msid][ok2])
             quant_line = "%s" % msid
             for quant in quantiles:
                 quant_val = diff[(len(diff) * quant) // 100]
