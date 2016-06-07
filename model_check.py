@@ -29,16 +29,22 @@ def calc_off_nom_rolls(states):
 
 class ModelCheck(object):
     def __init__(self, msid, short_msid, MSIDs, yellow, margin,
-                 validation_limits, calc_model, version):
+                 validation_limits, hist_limit, calc_model,
+                 version, other_telem=None, other_map=None,
+                 other_opts=None):
         self.msid = msid
         self.short_msid = short_msid
         self.MSIDs = MSIDs
         self.yellow = yellow
         self.margin = margin
         self.validation_limits = validation_limits
+        self.hist_limit = hist_limit
         self.calc_model = calc_model
         self.logger = logging.getLogger('%s_check' % self.short_msid)
         self.version = version
+        self.other_telem = other_telem
+        self.other_map = other_map
+        self.other_opts = other_opts
 
     def driver(self, opt):
         if not os.path.exists(opt.outdir):
@@ -82,13 +88,16 @@ class ModelCheck(object):
             tstart = tnow
 
         # Get temperature telemetry for 3 weeks prior to min(tstart, NOW)
+        telem_msids = [self.msid, 'sim_z', 'aosares1', 'dp_dpa_power']
+        if self.other_telem is not None:
+            telem_msids += self.other_telem
+        name_map = {'sim_z': 'tscpos', 'aosares1': 'pitch'}
+        if self.other_map is not None:
+            name_map.update(self.other_map)
         tlm = self.get_telem_values(min(tstart, tnow),
-                                    [self.msid,
-                                     'sim_z', 'aosares1',
-                                     'dp_dpa_power'],
+                                    telem_msids,
                                     days=opt.days,
-                                    name_map={'sim_z': 'tscpos',
-                                              'aosares1': 'pitch'})
+                                    name_map=name_map)
         tlm['tscpos'] *= -397.7225924607
 
         # make predictions on oflsdir if defined
@@ -123,10 +132,11 @@ class ModelCheck(object):
     def make_week_predict(self, opt, tstart, tstop, bs_cmds, tlm, db):
         # Try to make initial state0 from cmd line options
         t_msid = 'T_%s' % self.short_msid
-        state0 = dict((x, getattr(opt, x))
-                      for x in ('pitch', 'simpos', 'ccd_count', 'fep_count',
-                                'vid_board', 'clocking', t_msid))
-        
+        opts = ['pitch', 'simpos', 'ccd_count', 'fep_count', 'vid_board', 'clocking', t_msid]
+        if self.other_opts is not None:
+            opts += self.other_opts
+        state0 = dict((x, getattr(opt, x)) for x in opts)
+
         state0.update({'tstart': tstart - 30,
                        'tstop': tstart,
                        'datestart': DateTime(tstart - 30).date,
@@ -139,12 +149,8 @@ class ModelCheck(object):
         # cmd_state that starts within available telemetry.  Update with the
         # mean temperatures at the start of state0.
         if None in state0.values():
-            state0 = cmd_states.get_state0(tlm['date'][-5], db,
-                                           datepar='datestart')
-            ok = ((tlm['date'] >= state0['tstart'] - 700) &
-                  (tlm['date'] <= state0['tstart'] + 700))
-            state0.update({t_msid: np.mean(tlm[self.msid][ok])})
-    
+            state0 = self.set_initial_state(tlm, db, t_msid)
+
         # TEMPORARY HACK: core model doesn't actually support predictive
         # active heater yet.  Initial temperature determines active heater
         # state for predictions now.
@@ -187,10 +193,20 @@ class ModelCheck(object):
     
         # Create array of times at which to calculate temps, then do it.
         self.logger.info('Calculating %s thermal model' % self.short_msid.upper())
-        
+
+        return self.run_model_make_plots(opt, states, state0)
+
+    def set_initial_state(self, tlm, db, t_msid):
+        state0 = cmd_states.get_state0(tlm['date'][-5], db,
+                                           datepar='datestart')
+        ok = ((tlm['date'] >= state0['tstart'] - 700) &
+              (tlm['date'] <= state0['tstart'] + 700))
+        state0.update({t_msid: np.mean(tlm[self.msid][ok])})
+        return state0
+
+    def run_model_make_plots(self, opt, states, state0, tstart, tstop, t_msid):
         model = self.calc_model(opt.model_spec, states, state0['tstart'], tstop,
                                 state0[t_msid])
-    
         # Make the limit check plots and data files
         plt.rc("axes", labelsize=10, titlesize=12)
         plt.rc("xtick", labelsize=10)
@@ -200,9 +216,9 @@ class ModelCheck(object):
         viols = self.make_viols(opt, states, model.times, temps)
         self.write_states(opt, states)
         self.write_temps(opt, model.times, temps)
-    
+
         return dict(opt=opt, states=states, times=model.times, temps=temps,
-                   plots=plots, viols=viols)
+                    plots=plots, viols=viols)
 
     def make_validation_viols(self, plots_validation):
         """
@@ -418,6 +434,13 @@ class ModelCheck(object):
                 'pitch': '%.3f',
                 'tscpos': '%d'}
 
+        good_mask = np.ones(len(tlm), dtype='bool')
+        if hasattr(model, "bad_times"):
+            for interval in model.bad_times:
+                bad = ((tlm['date'] >= DateTime(interval[0]).secs)
+                    & (tlm['date'] < DateTime(interval[1]).secs))
+                good_mask[bad] = False
+
         plots = []
         self.logger.info('Making %s model validation plots and quantile table' % self.short_msid.upper())
         quantiles = (1, 5, 16, 50, 84, 95, 99)
@@ -434,6 +457,9 @@ class ModelCheck(object):
                                              fig=fig, fmt='-r')
             ticklocs, fig, ax = plot_cxctime(model.times, pred[msid] / scale,
                                              fig=fig, fmt='-b')
+            if np.any(~good_mask):
+                ticklocs, fig, ax = plot_cxctime(model.times[~good_mask], tlm[msid][~good_mask] / scale,
+                                                 fig=fig, fmt='.c')
             ax.set_title(msid.upper() + ' validation')
             ax.set_ylabel(labels[msid])
             ax.grid()
@@ -445,10 +471,16 @@ class ModelCheck(object):
 
             # Make quantiles
             if msid == self.msid:
-                ok = tlm[msid] > 20.0
+                ok = ((tlm[msid] > self.hist_limit[0]) & good_mask)
             else:
                 ok = np.ones(len(tlm[msid]), dtype=bool)
             diff = np.sort(tlm[msid][ok] - pred[msid][ok])
+            if len(self.hist_limit) == 2:
+                if msid == self.msid:
+                    ok2 = ((tlm[msid] > 40.0) & good_mask)
+                else:
+                    ok2 = np.ones(len(tlm[msid]), dtype=bool)
+                diff2 = np.sort(tlm[msid][ok2] - pred[msid][ok2])
             quant_line = "%s" % msid
             for quant in quantiles:
                 quant_val = diff[(len(diff) * quant) // 100]
@@ -461,6 +493,9 @@ class ModelCheck(object):
                 fig.clf()
                 ax = fig.gca()
                 ax.hist(diff / scale, bins=50, log=(histscale == 'log'))
+                if msid == self.msid and len(self.hist_limit) == 2:
+                    ax.hist(diff2 / scale, bins=50, log=(histscale == 'log'),
+                            color = 'red')
                 ax.set_title(msid.upper() + ' residuals: data - model')
                 ax.set_xlabel(labels[msid])
                 fig.subplots_adjust(bottom=0.18)
