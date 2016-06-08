@@ -16,19 +16,14 @@ import Ska.Sun
 import shutil
 import glob
 import logging
-import Quaternion
 
 TASK_DATA = os.path.dirname(__file__)
 
-def calc_off_nom_rolls(states, times=None):
+def calc_off_nom_rolls(states):
     off_nom_rolls = []
     for i, state in enumerate(states):
         att = [state[x] for x in ['q1', 'q2', 'q3', 'q4']]
-        att = Quaternion.normalize(att)
-        if times is None:
-            time = (state['tstart'] + state['tstop']) / 2
-        else:
-            time = times[i]
+        time = (state['tstart'] + state['tstop']) / 2
         off_nom_rolls.append(Ska.Sun.off_nominal_roll(att, time))
     return np.array(off_nom_rolls)
 
@@ -94,13 +89,10 @@ class ModelCheck(object):
             tstart = tnow
 
         # Get temperature telemetry for 3 weeks prior to min(tstart, NOW)
-        telem_msids = [self.msid, 'sim_z', 'aosares1', 'dp_dpa_power',
-                       'aoattqt1', 'aoattqt2', 'aoattqt3', 'aoattqt4']
+        telem_msids = [self.msid, 'sim_z', 'aosares1', 'dp_dpa_power', 'roll']
         if self.other_telem is not None:
             telem_msids += self.other_telem
-        name_map = {'sim_z': 'tscpos', 'aosares1': 'pitch',
-                    'aoattqt1': 'q1', 'aoattqt2': 'q2',
-                    'aoattqt3': 'q3', 'aoattqt4': 'q4'}
+        name_map = {'sim_z': 'tscpos', 'aosares1': 'pitch'}
         if self.other_map is not None:
             name_map.update(self.other_map)
         tlm = self.get_telem_values(min(tstart, tnow),
@@ -471,11 +463,7 @@ class ModelCheck(object):
             fig = plt.figure(10 + fig_id, figsize=(7, 3.5))
             fig.clf()
             scale = scales.get(msid, 1.0)
-            if msid != 'roll':
-                plot_tlm = tlm[msid]
-            else:
-                plot_tlm = calc_off_nom_rolls(tlm, times=model.times)
-            ticklocs, fig, ax = plot_cxctime(model.times, plot_tlm / scale,
+            ticklocs, fig, ax = plot_cxctime(model.times, tlm[msid] / scale,
                                              fig=fig, fmt='-r')
             ticklocs, fig, ax = plot_cxctime(model.times, pred[msid] / scale,
                                              fig=fig, fmt='-b')
@@ -493,16 +481,16 @@ class ModelCheck(object):
 
             # Make quantiles
             if msid == self.msid:
-                ok = ((plot_tlm > self.hist_limit[0]) & good_mask)
+                ok = ((tlm[msid] > self.hist_limit[0]) & good_mask)
             else:
-                ok = np.ones(len(plot_tlm), dtype=bool)
-            diff = np.sort(plot_tlm[ok] - pred[msid][ok])
+                ok = np.ones(len(tlm[msid]), dtype=bool)
+            diff = np.sort(tlm[msid][ok] - pred[msid][ok])
             if len(self.hist_limit) == 2:
                 if msid == self.msid:
-                    ok2 = ((plot_tlm > self.hist_limit[1]) & good_mask)
+                    ok2 = ((tlm[msid] > self.hist_limit[1]) & good_mask)
                 else:
-                    ok2 = np.ones(len(plot_tlm), dtype=bool)
-                diff2 = np.sort(plot_tlm[ok2] - pred[msid][ok2])
+                    ok2 = np.ones(len(tlm[msid]), dtype=bool)
+                diff2 = np.sort(tlm[msid][ok2] - pred[msid][ok2])
             quant_line = "%s" % msid
             for quant in quantiles:
                 quant_val = diff[(len(diff) * quant) // 100]
