@@ -16,6 +16,7 @@ import Ska.Sun
 import shutil
 import glob
 import logging
+import Quaternion
 
 TASK_DATA = os.path.dirname(__file__)
 
@@ -23,6 +24,7 @@ def calc_off_nom_rolls(states, times=None):
     off_nom_rolls = []
     for i, state in enumerate(states):
         att = [state[x] for x in ['q1', 'q2', 'q3', 'q4']]
+        att = Quaternion.normalize(att)
         if times is None:
             time = (state['tstart'] + state['tstop']) / 2
         else:
@@ -60,7 +62,8 @@ class ModelCheck(object):
                     run_time=time.ctime(),
                     errors=[],
                     msid=self.msid.upper(),
-                    short_msid=self.short_msid.upper())
+                    short_msid=self.short_msid.upper(),
+                    hist_limit=self.hist_limit)
         proc["msid_limit"] = self.yellow[self.short_msid] - self.margin[self.short_msid]
         self.logger.info('##############################'
                     '#######################################')
@@ -92,12 +95,12 @@ class ModelCheck(object):
 
         # Get temperature telemetry for 3 weeks prior to min(tstart, NOW)
         telem_msids = [self.msid, 'sim_z', 'aosares1', 'dp_dpa_power',
-                       'aoatupq1', 'aoatupq2', 'aoatupq3', 'aoatupq4']
+                       'aoattqt1', 'aoattqt2', 'aoattqt3', 'aoattqt4']
         if self.other_telem is not None:
             telem_msids += self.other_telem
         name_map = {'sim_z': 'tscpos', 'aosares1': 'pitch',
-                    'aoatupq1': 'q1', 'aoatupq2': 'q2',
-                    'aoatupq3': 'q3', 'aoatupq4': 'q4'}
+                    'aoattqt1': 'q1', 'aoattqt2': 'q2',
+                    'aoattqt3': 'q3', 'aoattqt4': 'q4'}
         if self.other_map is not None:
             name_map.update(self.other_map)
         tlm = self.get_telem_values(min(tstart, tnow),
@@ -496,7 +499,7 @@ class ModelCheck(object):
             diff = np.sort(plot_tlm[ok] - pred[msid][ok])
             if len(self.hist_limit) == 2:
                 if msid == self.msid:
-                    ok2 = ((plot_tlm > 40.0) & good_mask)
+                    ok2 = ((plot_tlm > self.hist_limit[1]) & good_mask)
                 else:
                     ok2 = np.ones(len(plot_tlm), dtype=bool)
                 diff2 = np.sort(plot_tlm[ok2] - pred[msid][ok2])

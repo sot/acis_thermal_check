@@ -28,7 +28,7 @@ Run log               `<run.dat>`_
 MSID quantiles
 ---------------
 
-Note: {{proc.short_msid}} quantiles are calculated using only points where {{proc.msid}} > 20 degC.
+Note: {{proc.short_msid}} quantiles are calculated using only points where {{proc.msid}} > {{proc.hist_limit.0}} degC.
 
 .. csv-table:: 
    :header: "MSID", "1%", "5%", "16%", "50%", "84%", "95%", "99%"
@@ -62,7 +62,11 @@ No Validation Violations
 {{ plot.msid }}
 -----------------------
 
-Note: {{proc.short_msid}} residual histograms include only points where {{proc.msid}} > 20 degC.
+{% ifequal proc.hist_limit|length 2 %}
+Note: {{proc.short_msid}} residual histograms include points where {{proc.msid}} > {{proc.hist_limit.0}} degC in blue and points where {{proc.msid}} > {{proc.hist_limit.1}} degC in red.
+{% else %}
+Note: {{proc.short_msid}} residual histograms include only points where {{proc.msid}} > {{proc.hist_limit.0}} degC.
+{% endifequal %}
 
 Red = telemetry, blue = model
 
