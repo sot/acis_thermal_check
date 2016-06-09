@@ -1,0 +1,7 @@
+MANIFEST  
+VERSION       
+index_template.rst           
+model_check.css
+html4css1.css
+index_template_val_only.rst
+model_check.py
