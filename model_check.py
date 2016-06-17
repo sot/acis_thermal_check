@@ -89,10 +89,10 @@ class ModelCheck(object):
             tstart = tnow
 
         # Get temperature telemetry for 3 weeks prior to min(tstart, NOW)
-        telem_msids = [self.msid, 'sim_z', 'aosares1', 'dp_dpa_power', 'roll']
+        telem_msids = [self.msid, 'sim_z', 'dp_pitch', 'dp_dpa_power', 'roll']
         if self.other_telem is not None:
             telem_msids += self.other_telem
-        name_map = {'sim_z': 'tscpos', 'aosares1': 'pitch'}
+        name_map = {'sim_z': 'tscpos', 'dp_pitch': 'pitch'}
         if self.other_map is not None:
             name_map.update(self.other_map)
         tlm = self.get_telem_values(min(tstart, tnow),
