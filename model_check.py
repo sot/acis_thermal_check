@@ -109,17 +109,10 @@ class ModelCheck(object):
                         temps=None)
 
         # Validation
-        URL = "http://cxc.harvard.edu/mta/ASPECT/%s_daily_check" % self.short_msid
         plots_validation = self.make_validation_plots(opt, tlm, db)
         valid_viols = self.make_validation_viols(plots_validation)
         if len(valid_viols) > 0:
-            # generate daily plot url if outdir in expected year/day format
-            daymatch = re.match('.*(\d{4})/(\d{3})', opt.outdir)
-            if opt.oflsdir is None and daymatch:
-                url = os.path.join(URL, daymatch.group(1), daymatch.group(2))
-                self.logger.info('validation warning(s) at %s' % url)
-            else:
-                self.logger.info('validation warning(s) in output at %s' % opt.outdir)
+            self.logger.info('validation warning(s) in output at %s' % opt.outdir)
 
         self.write_index_rst(opt, proc, plots_validation, valid_viols=valid_viols,
                         plots=pred['plots'], viols=pred['viols'])
