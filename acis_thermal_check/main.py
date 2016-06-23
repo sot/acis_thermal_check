@@ -10,27 +10,19 @@ import Ska.Numpy
 from Chandra.Time import DateTime
 import Chandra.cmd_states as cmd_states
 import matplotlib.pyplot as plt
-from Ska.Matplotlib import cxctime2plotdate, pointpair, plot_cxctime
+from Ska.Matplotlib import cxctime2plotdate, \
+    pointpair, plot_cxctime
 import Ska.engarchive.fetch_sci as fetch
-import Ska.Sun
 import shutil
-import glob
 import logging
+import acis_thermal_check.__version__ as version
+from acis_thermal_check.utils import globfile, \
+    config_logging, TASK_DATA
 
-TASK_DATA = os.path.dirname(__file__)
-
-def calc_off_nom_rolls(states):
-    off_nom_rolls = []
-    for i, state in enumerate(states):
-        att = [state[x] for x in ['q1', 'q2', 'q3', 'q4']]
-        time = (state['tstart'] + state['tstop']) / 2
-        off_nom_rolls.append(Ska.Sun.off_nominal_roll(att, time))
-    return np.array(off_nom_rolls)
-
-class ModelCheck(object):
+class ACISThermalCheck(object):
     def __init__(self, msid, short_msid, MSIDs, yellow, margin,
                  validation_limits, hist_limit, calc_model,
-                 version, other_telem=None, other_map=None,
+                 other_telem=None, other_map=None,
                  other_opts=None):
         self.msid = msid
         self.short_msid = short_msid
@@ -41,7 +33,6 @@ class ModelCheck(object):
         self.hist_limit = hist_limit
         self.calc_model = calc_model
         self.logger = logging.getLogger('%s_check' % self.short_msid)
-        self.version = version
         self.other_telem = other_telem
         self.other_map = other_map
         self.other_opts = other_opts
@@ -64,7 +55,7 @@ class ModelCheck(object):
                     '#######################################')
         self.logger.info('# %s_check.py run at %s by %s'
                     % (self.short_msid, proc['run_time'], proc['run_user']))
-        self.logger.info('# %s_check version = %s' % (self.short_msid, self.version))
+        self.logger.info('# acis_thermal_check version = %s' % version)
         self.logger.info('# model_spec file = %s' % os.path.abspath(opt.model_spec))
         self.logger.info('###############################'
                     '######################################\n')
@@ -537,14 +528,14 @@ class ModelCheck(object):
         dirname = os.path.dirname(docutils.writers.html4css1.__file__)
         shutil.copy2(os.path.join(dirname, 'html4css1.css'), opt.outdir)
 
-        shutil.copy2(os.path.join(TASK_DATA, 'model_check.css'), opt.outdir)
+        shutil.copy2(os.path.join(TASK_DATA, 'templates', 'acis_thermal_check.css'), opt.outdir)
 
         spawn = Ska.Shell.Spawn(stdout=None)
         infile = os.path.join(opt.outdir, 'index.rst')
         outfile = os.path.join(opt.outdir, 'index.html')
         status = spawn.run(['rst2html.py',
                             '--stylesheet-path={}'
-                            .format(os.path.join(opt.outdir, 'model_check.css')),
+                            .format(os.path.join(opt.outdir, 'acis_thermal_check.css')),
                             infile, outfile])
         if status != 0:
             proc['errors'].append('rst2html.py failed with status {}: see run log'
@@ -584,7 +575,7 @@ class ModelCheck(object):
         index_template_file = ('index_template.rst'
                                if opt.oflsdir else
                                'index_template_val_only.rst')
-        index_template = open(os.path.join(TASK_DATA, index_template_file)).read()
+        index_template = open(os.path.join(TASK_DATA, 'templates', index_template_file)).read()
         index_template = re.sub(r' %}\n', ' %}', index_template)
         template = django.template.Template(index_template)
         open(outfile, 'w').write(template.render(django_context))
@@ -665,87 +656,3 @@ class ModelCheck(object):
         out = Ska.Numpy.structured_array(vals, colnames=outnames)
 
         return out
-
-
-def globfile(pathglob):
-    """Return the one file name matching ``pathglob``.  Zero or multiple
-    matches raises an IOError exception."""
-
-    files = glob.glob(pathglob)
-    if len(files) == 0:
-        raise IOError('No files matching %s' % pathglob)
-    elif len(files) > 1:
-        raise IOError('Multiple files matching %s' % pathglob)
-    else:
-        return files[0]
-
-def config_logging(outdir, verbose, short_msid):
-    """Set up file and console logger.
-    See http://docs.python.org/library/logging.html
-              #logging-to-multiple-destinations
-    """
-    # Disable auto-configuration of root logger by adding a null handler.
-    # This prevents other modules (e.g. Chandra.cmd_states) from generating
-    # a streamhandler by just calling logging.info(..).
-    class NullHandler(logging.Handler):
-        def emit(self, record):
-            pass
-    rootlogger = logging.getLogger()
-    rootlogger.addHandler(NullHandler())
-
-    loglevel = {0: logging.CRITICAL,
-                1: logging.INFO,
-                2: logging.DEBUG}.get(verbose, logging.INFO)
-
-    logger = logging.getLogger('%s_check' % short_msid)
-    logger.setLevel(loglevel)
-
-    formatter = logging.Formatter('%(message)s')
-
-    console = logging.StreamHandler()
-    console.setFormatter(formatter)
-    logger.addHandler(console)
-
-    filehandler = logging.FileHandler(
-        filename=os.path.join(outdir, 'run.dat'), mode='w')
-    filehandler.setFormatter(formatter)
-    logger.addHandler(filehandler)
-
-def plot_two(fig_id, x, y, x2, y2,
-             linestyle='-', linestyle2='-',
-             color='blue', color2='magenta',
-             ylim=None, ylim2=None,
-             xlabel='', ylabel='', ylabel2='', title='',
-             figsize=(7, 3.5),
-             ):
-    """Plot two quantities with a date x-axis"""
-    xt = cxctime2plotdate(x)
-    fig = plt.figure(fig_id, figsize=figsize)
-    fig.clf()
-    ax = fig.add_subplot(1, 1, 1)
-    ax.plot_date(xt, y, fmt='-', linestyle=linestyle, color=color)
-    ax.set_xlim(min(xt), max(xt))
-    if ylim:
-        ax.set_ylim(*ylim)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    ax.set_title(title)
-    ax.grid()
-
-    ax2 = ax.twinx()
-
-    xt2 = cxctime2plotdate(x2)
-    ax2.plot_date(xt2, y2, fmt='-', linestyle=linestyle2, color=color2)
-    ax2.set_xlim(min(xt), max(xt))
-    if ylim2:
-        ax2.set_ylim(*ylim2)
-    ax2.set_ylabel(ylabel2, color=color2)
-    ax2.xaxis.set_visible(False)
-
-    Ska.Matplotlib.set_time_ticks(ax)
-    [label.set_rotation(30) for label in ax.xaxis.get_ticklabels()]
-    [label.set_color(color2) for label in ax2.yaxis.get_ticklabels()]
-
-    fig.subplots_adjust(bottom=0.22)
-
-    return {'fig': fig, 'ax': ax, 'ax2': ax2}
