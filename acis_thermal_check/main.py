@@ -15,7 +15,8 @@ from Ska.Matplotlib import cxctime2plotdate, \
 import Ska.engarchive.fetch_sci as fetch
 import shutil
 import logging
-import acis_thermal_check.__version__ as version
+import acis_thermal_check
+version = acis_thermal_check.__version__
 from acis_thermal_check.utils import globfile, \
     config_logging, TASK_DATA
 
