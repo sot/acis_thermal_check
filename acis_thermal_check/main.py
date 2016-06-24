@@ -18,7 +18,7 @@ import logging
 import acis_thermal_check
 version = acis_thermal_check.__version__
 from acis_thermal_check.utils import globfile, \
-    config_logging, TASK_DATA
+    config_logging, TASK_DATA, plot_two
 
 class ACISThermalCheck(object):
     def __init__(self, msid, short_msid, MSIDs, yellow, margin,

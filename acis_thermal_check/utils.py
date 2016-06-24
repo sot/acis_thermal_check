@@ -6,7 +6,7 @@ import os
 import matplotlib.pyplot as plt
 from Ska.Matplotlib import cxctime2plotdate
 
-TASK_DATA = os.path.dirname(__file__)
+TASK_DATA = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 def calc_off_nom_rolls(states):
     off_nom_rolls = []
@@ -109,7 +109,8 @@ def get_options(msid, short_msid, opts=None):
     parser.add_option("--oflsdir",
                       help="Load products OFLS directory")
     parser.add_option("--model-spec",
-                      default=os.path.join(TASK_DATA, '%s_model_spec.json' % short_msid),
+                      default=os.path.join(TASK_DATA, 'model_spec',
+                                           '%s_model_spec.json' % short_msid),
                       help="Model specification file")
     parser.add_option("--days",
                       type='float',
