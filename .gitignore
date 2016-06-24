@@ -1,1 +1,4 @@
+build
+dist
 *.pyc
+acis_thermal_check.egg-info
