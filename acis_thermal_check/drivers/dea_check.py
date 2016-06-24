@@ -1,28 +1,9 @@
-#!/usr/bin/env python
-
-"""
-========================
-dea_check
-========================
-
-This code generates backstop load review outputs for checking the ACIS
-DEA temperature 1DEAMZT.  It also generates DEA model validation
-plots comparing predicted values to telemetry for the previous three weeks.
-"""
-
-import sys
 import numpy as np
-# Matplotlib setup
-# Use Agg backend for command-line (non-interactive) operation
-import matplotlib
-if __name__ == '__main__':
-    matplotlib.use('Agg')
 import xija
-from acis_thermal_check import ACISThermalCheck, \
-    calc_off_nom_rolls, get_options
+from acis_thermal_check.main import ACISThermalCheck
+from acis_thermal_check.utils import calc_off_nom_rolls
 
 MSID = dict(dea='1DEAMZT')
-
 # 10/02/14 - Changed YELLOW from 35.0 to 37.5
 #            Changed MARGIN from 2.5 to 2.0
 #            Modified corresponding VALIDATION_LIMITS:
@@ -43,7 +24,6 @@ HIST_LIMIT = [20.]
 def calc_model(model_spec, states, start, stop, T_dea=None, T_dea_times=None):
     model = xija.ThermalModel('dea', start=start, stop=stop,
                               model_spec=model_spec)
-
     times = np.array([states['tstart'], states['tstop']])
     model.comp['sim_z'].set_data(states['simpos'], times)
     model.comp['eclipse'].set_data(False)
@@ -51,21 +31,10 @@ def calc_model(model_spec, states, start, stop, T_dea=None, T_dea_times=None):
     model.comp['roll'].set_data(calc_off_nom_rolls(states), times)
     for name in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
         model.comp[name].set_data(states[name], times)
-
     model.make()
     model.calc()
     return model
 
-if __name__ == '__main__':
-    opt, args = get_options("1DEAMZT", "dea")
-    try:
-        dea_check = ACISThermalCheck("1deamzt", "dea", MSID,
-                                     YELLOW, MARGIN, VALIDATION_LIMITS,
-                                     HIST_LIMIT, calc_model)
-        dea_check.driver(opt)
-    except Exception, msg:
-        if opt.traceback:
-            raise
-        else:
-            print "ERROR:", msg
-            sys.exit(1)
+dea_check = ACISThermalCheck("1deamzt", "dea", MSID,
+                             YELLOW, MARGIN, VALIDATION_LIMITS,
+                             HIST_LIMIT, calc_model)

@@ -1,29 +1,11 @@
-#!/usr/bin/env python
-
-"""
-========================
-psmc_check
-========================
-
-This code generates backstop load review outputs for checking the ACIS
-PSMC temperature 1PDEAAT.  It also generates 1PDEAAT model validation
-plots comparing predicted values to telemetry for the previous three weeks.
-"""
-
 import logging
 import Chandra.cmd_states as cmd_states
 import Ska.Table
 import Chandra.Time
-import sys
 import numpy as np
-# Matplotlib setup
-# Use Agg backend for command-line (non-interactive) operation
-import matplotlib
-if __name__ == '__main__':
-    matplotlib.use('Agg')
 import xija
-from acis_thermal_check import ACISThermalCheck, \
-    calc_off_nom_rolls, get_options
+from acis_thermal_check.main import ACISThermalCheck
+from acis_thermal_check.utils import calc_off_nom_rolls
 
 MSID = dict(psmc='1PDEAAT')
 YELLOW = dict(psmc=55.0)
@@ -44,11 +26,6 @@ def calc_model(model_spec, states, start, stop, T_psmc=None, T_psmc_times=None,
                T_pin1at=None,T_pin1at_times=None,
                dh_heater=None,dh_heater_times=None):
     model = xija.XijaModel('psmc', start=start, stop=stop, model_spec=model_spec)
-
-    #set fetch to quiet if and only if verbose == 0
-    if opt.verbose == 0:
-        xija.logger.setLevel(100);
-
     times = np.array([states['tstart'], states['tstop']])
     model.comp['sim_z'].set_data(states['simpos'], times)
     #model.comp['eclipse'].set_data(False)
@@ -56,13 +33,9 @@ def calc_model(model_spec, states, start, stop, T_psmc=None, T_psmc_times=None,
     model.comp['pin1at'].set_data(T_pin1at,T_pin1at_times)
     model.comp['roll'].set_data(calc_off_nom_rolls(states), times)
     model.comp['eclipse'].set_data(False)
-
-    # for name in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch', 'dh_heater'):
     for name in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
         model.comp[name].set_data(states[name], times)
-
     model.comp['dh_heater'].set_data(dh_heater,dh_heater_times)
-
     model.make()
     model.calc()
     return model
@@ -97,21 +70,9 @@ class PSMCModelCheck(ACISThermalCheck):
                                T_psmc_times=None, T_pin1at=start_pin, T_pin1at_times=None,
                                dh_heater=dh_heater, dh_heater_times=dh_heater_times)
 
-if __name__ == '__main__':
-    dhh_opt = {"type": "int", "default":0,
-               "help": "Starting Detector Housing Heater state"}
-    opt, args = get_options("1PDEAAT", "psmc", [("dh_heater", dhh_opt)])
-    try:
-        psmc_check = PSMCModelCheck("1pdeaat", "psmc", MSID,
-                                    YELLOW, MARGIN, VALIDATION_LIMITS,
-                                    HIST_LIMIT, calc_model,
-                                    other_telem=['1dahtbon'],
-                                    other_map={'1dahtbon': 'dh_heater'},
-                                    other_opts=['T_pin1at','dh_heater'])
-        psmc_check.driver(opt)
-    except Exception, msg:
-        if opt.traceback:
-            raise
-        else:
-            print "ERROR:", msg
-            sys.exit(1)
+psmc_check = PSMCModelCheck("1pdeaat", "psmc", MSID,
+                            YELLOW, MARGIN, VALIDATION_LIMITS,
+                            HIST_LIMIT, calc_model,
+                            other_telem=['1dahtbon'],
+                            other_map={'1dahtbon': 'dh_heater'},
+                            other_opts=['dh_heater'])
