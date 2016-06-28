@@ -12,11 +12,6 @@ weeks.
 """
 
 import sys
-# Matplotlib setup
-# Use Agg backend for command-line (non-interactive) operation
-import matplotlib
-if __name__ == '__main__':
-    matplotlib.use('Agg')
 from acis_thermal_check import dea_check, get_options
 
 if __name__ == '__main__':
