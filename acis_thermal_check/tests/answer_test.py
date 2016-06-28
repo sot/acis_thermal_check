@@ -17,10 +17,17 @@ def compare_results(short_msid, out_dir):
     new_pred = new_results["pred"]
     old_pred = old_results["pred"]
     for k in new_pred:
-        assert_array_equal(new_pred[k], old_pred[k])
-    assert_array_equal(new_results["tlm"], old_results["tlm"])
+        yield assert_array_equal, new_pred[k], old_pred[k]
+    new_tlm = new_results['tlm']
+    old_tlm = old_results['tlm']
+    for k in new_tlm.dtype.names:
+        yield assert_array_equal, new_tlm[k], old_tlm[k]
 
-@requires_file("dea_results.pkl")
+def copy_new_answer(short_msid, out_dir):
+    fromfile = os.path.join(out_dir, 'validation_data.pkl')
+    tofile = os.path.join('/data/acis/thermal_model_tests', short_msid+'_results.pkl')
+    shutil.copyfile(fromfile, tofile)
+
 def test_dea_check(generate_answers):
     tmpdir = tempfile.mkdtemp()
     curdir = os.getcwd()
@@ -31,10 +38,11 @@ def test_dea_check(generate_answers):
     dea_check.driver(opt)
     if not generate_answers:
         compare_results(short_msid, out_dir)
+    else:
+        copy_new_answer(short_msid, os.path.join(tmpdir, out_dir))
     os.chdir(curdir)
     shutil.rmtree(tmpdir)
 
-@requires_file("dpa_results.pkl")
 def test_dpa_check(generate_answers):
     tmpdir = tempfile.mkdtemp()
     curdir = os.getcwd()
@@ -45,10 +53,11 @@ def test_dpa_check(generate_answers):
     dpa_check.driver(opt)
     if not generate_answers:
         compare_results(short_msid, out_dir)
+    else:
+        copy_new_answer(short_msid, os.path.join(tmpdir, out_dir))
     os.chdir(curdir)
     shutil.rmtree(tmpdir)
 
-@requires_file("psmc_results.pkl")
 def test_psmc_check(generate_answers):
     tmpdir = tempfile.mkdtemp()
     curdir = os.getcwd()
@@ -59,6 +68,8 @@ def test_psmc_check(generate_answers):
     psmc_check.driver(opt)
     if not generate_answers:
         compare_results(short_msid, out_dir)
+    else:
+        copy_new_answer(short_msid, os.path.join(tmpdir, out_dir))
     os.chdir(curdir)
     shutil.rmtree(tmpdir)
 
