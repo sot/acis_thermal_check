@@ -11,8 +11,8 @@ import shutil
 def compare_results(short_msid, out_dir):
     new_answer_file = os.path.join(out_dir, "validation_data.pkl")
     new_results = pickle.load(open(new_answer_file, "rb"))
-    old_answer_file = os.path.join(test_data_dir, 
-                                   short_msid+"_results.pkl")
+    old_answer_file = os.path.join(test_data_dir, short_msid, 
+                                   "validation_data.pkl")
     old_results = pickle.load(open(old_answer_file, "rb"))
     new_pred = new_results["pred"]
     old_pred = old_results["pred"]
@@ -25,7 +25,8 @@ def compare_results(short_msid, out_dir):
 
 def copy_new_answer(short_msid, out_dir):
     fromfile = os.path.join(out_dir, 'validation_data.pkl')
-    tofile = os.path.join('/data/acis/thermal_model_tests', short_msid+'_results.pkl')
+    tofile = os.path.join('/data/acis/thermal_model_tests', short_msid, 
+                          'validation_data.pkl')
     shutil.copyfile(fromfile, tofile)
 
 def test_dea_check(generate_answers):
