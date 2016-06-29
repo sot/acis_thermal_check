@@ -1,11 +1,13 @@
 import logging
 import Chandra.cmd_states as cmd_states
 import Ska.Table
+import Ska.Numpy
 import Chandra.Time
 import numpy as np
 import xija
 from acis_thermal_check.main import ACISThermalCheck
 from acis_thermal_check.utils import calc_off_nom_rolls
+import os
 
 MSID = dict(psmc='1PDEAAT')
 YELLOW = dict(psmc=55.0)
@@ -69,6 +71,23 @@ class PSMCModelCheck(ACISThermalCheck):
         return self.calc_model(opt.model_spec, states, tstart, tstop, T_psmc=start_msid,
                                T_psmc_times=None, T_pin1at=start_pin, T_pin1at_times=None,
                                dh_heater=dh_heater, dh_heater_times=dh_heater_times)
+
+    def write_states(self, opt, states):
+        """Write states recarray to file states.dat"""
+        outfile = os.path.join(opt.outdir, 'states.dat')
+        self.logger.info('Writing states to %s' % outfile)
+        out = open(outfile, 'w')
+        fmt = {'power': '%.1f',
+                      'pitch': '%.2f',
+               'tstart': '%.2f',
+                      'tstop': '%.2f',
+               }
+        newcols = list(states.dtype.names)
+        newcols.remove('T_%s' % self.short_msid)
+        newcols.remove('T_pin1at')
+        newstates = np.rec.fromarrays([states[x] for x in newcols], names=newcols)
+        Ska.Numpy.pprint(newstates, fmt, out)
+        out.close()
 
 psmc_check = PSMCModelCheck("1pdeaat", "psmc", MSID,
                             YELLOW, MARGIN, VALIDATION_LIMITS,
