@@ -91,7 +91,7 @@ Option                    Description                          Default
 Usage
 -----
 
-The usual way to use the load review tool is via the script launcher
+The usual way to use the load review tool is via the script launchers, e.g.
 ``/proj/sot/ska/bin/dea_check``.  This script sets up the Ska runtime
 environment to ensure access to the correct python libraries.  This must be run
 on a 64-bit linux machine.
@@ -101,9 +101,9 @@ on a 64-bit linux machine.
   /proj/sot/ska/bin/dea_check --oflsdir=/data/acis/LoadReviews/2009/MAY1809/oflsb \
                               --outdir=out 
   
-  /proj/sot/ska/bin/dea_check --oflsdir=/data/acis/LoadReviews/2009/MAY1809/oflsb \
-                              --simpos=-99616 --pitch=130.0 --T-dea=22.2 \
+  /proj/sot/ska/bin/dpa_check --oflsdir=/data/acis/LoadReviews/2009/MAY1809/oflsb \
+                              --simpos=-99616 --pitch=130.0 --T-dpa=22.2 \
                               --ccd-count=1 --fep-count=1
 
-  /proj/sot/ska/bin/dea_check --outdir=regress2010 --run-start=2010:365 --days=360
+  /proj/sot/ska/bin/psmc_check --outdir=regress2010 --run-start=2010:365 --days=360
  
