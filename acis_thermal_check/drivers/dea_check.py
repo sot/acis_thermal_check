@@ -1,7 +1,8 @@
 import numpy as np
 import xija
+import sys
 from acis_thermal_check.main import ACISThermalCheck
-from acis_thermal_check.utils import calc_off_nom_rolls
+from acis_thermal_check.utils import calc_off_nom_rolls, get_options
 
 MSID = dict(dea='1DEAMZT')
 # 10/02/14 - Changed YELLOW from 35.0 to 37.5
@@ -38,3 +39,14 @@ def calc_model(model_spec, states, start, stop, T_dea=None, T_dea_times=None):
 dea_check = ACISThermalCheck("1deamzt", "dea", MSID,
                              YELLOW, MARGIN, VALIDATION_LIMITS,
                              HIST_LIMIT, calc_model)
+
+if __name__ == '__main__':
+    opt, args = get_options("1DEAMZT", "dea")
+    try:
+        dea_check.driver(opt)
+    except Exception, msg:
+        if opt.traceback:
+            raise
+        else:
+            print "ERROR:", msg
+            sys.exit(1)

@@ -1,28 +1,6 @@
-#!/usr/bin/env python
+#!/bin/sh
 
-"""
-========================
-psmc_check
-========================
+eval `/proj/sot/ska/bin/flt_envs -shell sh`
+exec /proj/sot/ska/share/psmc/psmc_check.py "$@"
 
-This code generates backstop load review outputs for checking the ACIS
-PSMC temperature 1PDEAAT.  It also generates PSMC model validation
-plots comparing predicted values to telemetry for the previous three
-weeks.
-"""
-
-import sys
-from acis_thermal_check import psmc_check, get_options
-
-if __name__ == '__main__':
-    dhh_opt = {"type": "int", "default":0,
-               "help": "Starting Detector Housing Heater state"}
-    opt, args = get_options("1PDEAAT", "psmc", [("dh_heater", dhh_opt)])
-    try:
-        psmc_check.driver(opt)
-    except Exception, msg:
-        if opt.traceback:
-            raise
-        else:
-            print "ERROR:", msg
-            sys.exit(1)
+exit 1
