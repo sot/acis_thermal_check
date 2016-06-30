@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from setuptools import setup
+from setuptools import setup, find_packages
 import glob
 
 scripts = glob.glob("scripts/*")
@@ -7,7 +7,7 @@ templates = glob.glob("templates/*")
 model_spec = glob.glob("model_spec/*")
 
 setup(name='acis_thermal_check',
-      packages=['acis_thermal_check'],
+      packages=find_packages(),
       version='1.0.0',
       description='ACIS Thermal Model Validation Library',
       author='John ZuHone',
