@@ -106,4 +106,20 @@ on a 64-bit linux machine.
                               --ccd-count=1 --fep-count=1
 
   /proj/sot/ska/bin/psmc_check --outdir=regress2010 --run-start=2010:365 --days=360
- 
+
+Running Regression Tests
+------------------------
+
+``acis_thermal_check`` comes with a regression test suite which uses py.test. To determine
+if code changes pass these tests, within a cloned copy of ``acis_thermal_check`` in the
+``acis_thermal_check/acis_thermal_check/tests`` subdirectory run:
+
+::
+
+    py.test
+
+If you have changed the model specification file or made another change that will change the answers, to update the answers run:
+
+::
+
+    py.test --generate_answers
