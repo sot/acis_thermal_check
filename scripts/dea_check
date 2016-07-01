@@ -1,6 +1,26 @@
-#!/bin/sh
+#!/usr/bin/env python
 
-eval `/proj/sot/ska/bin/flt_envs -shell sh`
-exec /proj/sot/ska/share/dea/dea_check.py "$@"
+"""
+========================
+dea_check
+========================
 
-exit 1
+This code generates backstop load review outputs for checking the ACIS
+DEA temperature 1DEAMZT.  It also generates DEA model validation
+plots comparing predicted values to telemetry for the previous three
+weeks.
+"""
+
+import sys
+from acis_thermal_check import dea_check, get_options
+
+if __name__ == '__main__':
+    opt, args = get_options("1DEAMZT", "dea")
+    try:
+        dea_check.driver(opt)
+    except Exception, msg:
+        if opt.traceback:
+            raise
+        else:
+            print "ERROR:", msg
+            sys.exit(1)

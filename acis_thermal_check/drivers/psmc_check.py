@@ -5,9 +5,8 @@ import Ska.Numpy
 import Chandra.Time
 import numpy as np
 import xija
-import sys
 from acis_thermal_check.main import ACISThermalCheck
-from acis_thermal_check.utils import calc_off_nom_rolls, get_options
+from acis_thermal_check.utils import calc_off_nom_rolls
 import os
 
 MSID = dict(psmc='1PDEAAT')
@@ -96,16 +95,3 @@ psmc_check = PSMCModelCheck("1pdeaat", "psmc", MSID,
                             other_telem=['1dahtbon'],
                             other_map={'1dahtbon': 'dh_heater'},
                             other_opts=['dh_heater'])
-
-if __name__ == '__main__':
-    dhh_opt = {"type": "int", "default": 0,
-               "help": "Starting Detector Housing Heater state"}
-    opt, args = get_options("1PDEAAT", "psmc", [("dh_heater", dhh_opt)])
-    try:
-        psmc_check.driver(opt)
-    except Exception, msg:
-        if opt.traceback:
-            raise
-        else:
-            print "ERROR:", msg
-            sys.exit(1)
