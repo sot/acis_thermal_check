@@ -1,7 +1,21 @@
+#!/usr/bin/env python
+
+"""
+========================
+dpa_check
+========================
+
+This code generates backstop load review outputs for checking the ACIS
+DPA temperature 1DPAMZT.  It also generates DPA model validation
+plots comparing predicted values to telemetry for the previous three
+weeks.
+"""
+
 import numpy as np
 import xija
+import sys
 from acis_thermal_check.main import ACISThermalCheck
-from acis_thermal_check.utils import calc_off_nom_rolls
+from acis_thermal_check.utils import calc_off_nom_rolls, get_options
 
 MSID = dict(dpa='1DPAMZT')
 # This is the Yellow High IPCL limit.
@@ -50,3 +64,14 @@ def calc_model(model_spec, states, start, stop, T_dpa=None, T_dpa_times=None):
 dpa_check = ACISThermalCheck("1dpamzt", "dpa", MSID,
                              YELLOW, MARGIN, VALIDATION_LIMITS,
                              HIST_LIMIT, calc_model)
+
+if __name__ == '__main__':
+    opt, args = get_options("1DPAMZT", "dpa")
+    try:
+        dpa_check.driver(opt)
+    except Exception, msg:
+        if opt.traceback:
+            raise
+        else:
+            print "ERROR:", msg
+            sys.exit(1)

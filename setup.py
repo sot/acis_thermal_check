@@ -2,14 +2,19 @@
 from setuptools import setup, find_packages
 import glob
 
-scripts = glob.glob("scripts/*")
+scripts = glob.glob("acis_thermal_check/*_check/*_check.py")
 templates = glob.glob("templates/*")
-model_spec = glob.glob("model_spec/*")
+model_spec = glob.glob("acis_thermal_check/*_check/*.json")
+
+print find_packages()
+print templates
+print model_spec
+print scripts
 
 setup(name='acis_thermal_check',
       packages=find_packages(),
       version='1.0.0',
-      description='ACIS Thermal Model Validation Library',
+      description='ACIS Thermal Model Library',
       author='John ZuHone',
       author_email='jzuhone@gmail.com',
       url='http://github.com/acisops/acis_thermal_check',
