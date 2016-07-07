@@ -29,7 +29,8 @@ class TestOpts(object):
         self.dh_heater = dh_heater
         self.traceback = True
         self.verbose = 1
-        self.model_spec = os.path.join(TASK_DATA, 'model_spec',
+        self.model_spec = os.path.join(TASK_DATA, 'acis_thermal_check', 
+                                       '%s_check' % short_msid,
                                        '%s_model_spec.json' % short_msid)
         self.version = None
 
