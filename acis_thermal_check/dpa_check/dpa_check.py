@@ -10,6 +10,10 @@ DPA temperature 1DPAMZT.  It also generates DPA model validation
 plots comparing predicted values to telemetry for the previous three
 weeks.
 """
+# Matplotlib setup                                                                                                                                              
+# Use Agg backend for command-line (non-interactive) operation                                                                                                   
+import matplotlib
+matplotlib.use('Agg')
 
 import numpy as np
 import xija

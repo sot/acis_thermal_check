@@ -11,6 +11,11 @@ plots comparing predicted values to telemetry for the previous three
 weeks.
 """
 
+# Matplotlib setup                                                                                                                                              
+# Use Agg backend for command-line (non-interactive) operation                                                                                                   
+import matplotlib
+matplotlib.use('Agg')
+
 import logging
 import Chandra.cmd_states as cmd_states
 import Ska.Table

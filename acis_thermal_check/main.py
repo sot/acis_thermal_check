@@ -1,8 +1,9 @@
-import os
-# Matplotlib setup
-# Use Agg backend for command-line (non-interactive) operation
+# Matplotlib setup                                                                                                                                             
+# Use Agg backend for command-line (non-interactive) operation                                                                                                 
 import matplotlib
 matplotlib.use('Agg')
+
+import os
 from pprint import pformat
 import re
 import time
