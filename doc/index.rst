@@ -28,6 +28,14 @@ This code generates backstop load review outputs for checking the ACIS temperatu
 1DEAMZT, 1DPAMZT, and 1PDEAAT. It also generates model validation plots for these
 temperatures comparing predicted values to telemetry for the previous three weeks.
 
+Installation
+------------
+
+To install into your own Python/Ska environment, simply run ``python setup.py install``
+from the top-level directory of the package. This will install the three scripts
+``dea_check``, ``dpa_check``, and ``psmc_check`` into your path, and install
+``acis_thermal_check`` as a Python package. 
+
 Command line options
 --------------------
 
@@ -91,35 +99,46 @@ Option                    Description                          Default
 Usage
 -----
 
-The usual way to use the load review tool is via the script launchers, e.g.
-``/proj/sot/ska/bin/dea_check``.  This script sets up the Ska runtime
-environment to ensure access to the correct python libraries.  This must be run
-on a 64-bit linux machine.
+The usual way to use the load review tool is via the script launchers, e.g. ``dea_check``:
 
 ::
 
-  /proj/sot/ska/bin/dea_check --oflsdir=/data/acis/LoadReviews/2009/MAY1809/oflsb \
-                              --outdir=out 
+  dea_check --oflsdir=/data/acis/LoadReviews/2009/MAY1809/oflsb --outdir=out 
   
-  /proj/sot/ska/bin/dpa_check --oflsdir=/data/acis/LoadReviews/2009/MAY1809/oflsb \
-                              --simpos=-99616 --pitch=130.0 --T-dpa=22.2 \
-                              --ccd-count=1 --fep-count=1
+  dpa_check --oflsdir=/data/acis/LoadReviews/2009/MAY1809/oflsb --simpos=-99616 \
+            --pitch=130.0 --T-dpa=22.2 --ccd-count=1 --fep-count=1
 
-  /proj/sot/ska/bin/psmc_check --outdir=regress2010 --run-start=2010:365 --days=360
+  psmc_check --outdir=regress2010 --run-start=2010:365 --days=360
+  
+The scripts may also be run as Python scripts using ``skare`` or the appropriate 
+``python`` executable, e.g.:
+
+:: 
+
+  /proj/sot/ska/bin/skare psmc_check.py --outdir=regress2010 --run-start=2010:365 --days=360
+
+
+This latter way sets up the Ska runtime environment to ensure access to the correct python 
+libraries. This must be run on a 64-bit Linux machine.
 
 Running Regression Tests
 ------------------------
 
-``acis_thermal_check`` comes with a regression test suite which uses py.test. To determine
-if code changes pass these tests, within a cloned copy of ``acis_thermal_check`` in the
-``acis_thermal_check/acis_thermal_check/tests`` subdirectory run:
+``acis_thermal_check`` comes with a regression test suite which uses `py.test <http://pytest.org/>`_ 
+to run the tests. To determine if code changes pass these tests, within a cloned copy of 
+``acis_thermal_check`` in the ``acis_thermal_check/acis_thermal_check/tests`` subdirectory run:
 
 ::
 
-    py.test
+    py.test -s
+
+The ``-s`` flag outputs the ``stdout`` and ``stderr`` to screen so you can see what's going on.
+If you'd rather not see that, just remove the flag. 
 
 If you have changed the model specification file or made another change that will change the answers, to update the answers run:
 
 ::
 
-    py.test --generate_answers
+    py.test -s --generate_answers
+    
+Answers should be generated using the ``py.test`` that is part of the flight Ska environment.
