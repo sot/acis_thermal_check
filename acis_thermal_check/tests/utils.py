@@ -88,18 +88,21 @@ def compare_results(short_msid, out_dir):
     for prefix in ("temperatures", "states"):
         compare_data_files(prefix, short_msid, out_dir)
 
-def copy_new_results(short_msid, out_dir):
+def copy_new_results(short_msid, out_dir, answer_dir):
     for fn in ('validation_data.pkl', 'states.dat', 'temperatures.dat'):
         fromfile = os.path.join(out_dir, fn)
-        tofile = os.path.join('/data/acis/thermal_model_tests', short_msid, fn)
+        adir = os.path.join(answer_dir, short_msid)
+        if not os.path.exists(adir):
+            os.mkdir(adir)
+        tofile = os.path.join(adir, fn)
         shutil.copyfile(fromfile, tofile)
 
-def run_answer_test(short_msid, out_dir, generate_answers): 
+def run_answer_test(short_msid, out_dir, answer_dir):
     out_dir = os.path.abspath(out_dir)
-    if not generate_answers:
+    if not answer_dir:
         compare_results(short_msid, out_dir)
     else:
-        copy_new_results(short_msid, out_dir)
+        copy_new_results(short_msid, out_dir, answer_dir)
 
 def build_image_list(msid):
     images = ["%s.png" % msid, "pow_sim.png"]
@@ -116,17 +119,19 @@ def compare_images(msid, short_msid, out_dir):
         old_image = misc.imread(os.path.join(test_data_dir, short_msid, image))
         assert_array_equal(new_image, old_image)
 
-def copy_new_images(msid, short_msid, out_dir):
+def copy_new_images(msid, short_msid, out_dir, answer_dir):
     images = build_image_list(msid)
     for image in images:
         fromfile = os.path.join(out_dir, image)
-        tofile = os.path.join('/data/acis/thermal_model_tests', short_msid, 
-                              image)
+        adir = os.path.join(answer_dir, short_msid)
+        if not os.path.exists(adir):
+            os.mkdir(adir)
+        tofile = os.path.join(adir, image)
         shutil.copyfile(fromfile, tofile)
 
-def run_image_test(msid, short_msid, out_dir, generate_answers):
+def run_image_test(msid, short_msid, out_dir, answer_dir):
     out_dir = os.path.abspath(out_dir)
-    if not generate_answers:
+    if not answer_dir:
         compare_images(msid, short_msid, out_dir)
     else:
-        copy_new_images(msid, short_msid, out_dir)
+        copy_new_images(msid, short_msid, out_dir, answer_dir)

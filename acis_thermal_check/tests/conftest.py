@@ -1,8 +1,8 @@
 import pytest
 
 def pytest_addoption(parser):
-    parser.addoption("--generate_answers", action="store_true",
-        help="Generate new answers; don't test")
+    parser.addoption("--generate_answers", type="str",
+        help="Generate new answers, but don't test. Argument is the directory to store the answers to.")
 
 @pytest.fixture()
 def generate_answers(request):

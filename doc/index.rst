@@ -151,8 +151,9 @@ Running Regression Tests
 ------------------------
 
 ``acis_thermal_check`` comes with a regression test suite which uses `py.test <http://pytest.org/>`_ 
-to run the tests. To determine if code changes pass these tests, within a cloned copy of 
-``acis_thermal_check`` in the ``acis_thermal_check/acis_thermal_check/tests`` subdirectory run:
+to run the tests by comparing the answers given by the code to a "gold standard" set of answers.
+To determine if code changes pass these tests, within a cloned copy of ``acis_thermal_check`` in
+the ``acis_thermal_check/acis_thermal_check/tests`` subdirectory run:
 
 ::
 
@@ -161,10 +162,15 @@ to run the tests. To determine if code changes pass these tests, within a cloned
 The ``-s`` flag outputs the ``stdout`` and ``stderr`` to screen so you can see what's going on.
 If you'd rather not see that, just remove the flag. 
 
-If you have changed the model specification file or made another change that will change the answers, to update the answers run:
+If you have changed the model specification file or made another change that will change the answers,
+to generate new answers run:
 
 ::
 
-    py.test -s --generate_answers
-    
+    py.test -s --generate_answers answer_dir
+
+where ``answer_dir`` is a directory to output the new answers. The new answers should be reviewed
+with the ACIS operations team before copying to the default location for the "gold standard"
+answers.
+
 Answers should be generated using the ``py.test`` that is part of the flight Ska environment.
