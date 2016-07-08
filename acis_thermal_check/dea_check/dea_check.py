@@ -57,7 +57,7 @@ dea_check = ACISThermalCheck("1deamzt", "dea", MSID,
                              YELLOW, MARGIN, VALIDATION_LIMITS,
                              HIST_LIMIT, calc_model)
 
-if __name__ == '__main__':
+def main():
     opt, args = get_options("1DEAMZT", "dea")
     try:
         dea_check.driver(opt)
@@ -67,3 +67,6 @@ if __name__ == '__main__':
         else:
             print "ERROR:", msg
             sys.exit(1)
+
+if __name__ == '__main__':
+    main()

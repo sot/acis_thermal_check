@@ -69,7 +69,7 @@ dpa_check = ACISThermalCheck("1dpamzt", "dpa", MSID,
                              YELLOW, MARGIN, VALIDATION_LIMITS,
                              HIST_LIMIT, calc_model)
 
-if __name__ == '__main__':
+def main():
     opt, args = get_options("1DPAMZT", "dpa")
     try:
         dpa_check.driver(opt)
@@ -79,3 +79,6 @@ if __name__ == '__main__':
         else:
             print "ERROR:", msg
             sys.exit(1)
+
+if __name__ == '__main__':
+    main()

@@ -115,7 +115,7 @@ psmc_check = PSMCModelCheck("1pdeaat", "psmc", MSID,
                             other_map={'1dahtbon': 'dh_heater'},
                             other_opts=['dh_heater'])
 
-if __name__ == '__main__':
+def main():
     dhh_opt = {"type": "int", "default":0,
                "help": "Starting Detector Housing Heater state"}
     opt, args = get_options("1PDEAAT", "psmc", [("dh_heater", dhh_opt)])
@@ -127,3 +127,6 @@ if __name__ == '__main__':
         else:
             print "ERROR:", msg
             sys.exit(1)
+
+if __name__ == '__main__':
+    main()
