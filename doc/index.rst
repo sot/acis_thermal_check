@@ -146,16 +146,6 @@ The usual way to use the load review tool is via the script launchers, e.g. ``de
 
   psmc_check --outdir=regress2010 --run-start=2010:365 --days=360
   
-The scripts may also be run as Python scripts using ``skare`` or the appropriate 
-``python`` executable, e.g.:
-
-:: 
-
-  /proj/sot/ska/bin/skare psmc_check.py --outdir=regress2010 --run-start=2010:365 --days=360
-
-
-This latter way sets up the Ska runtime environment to ensure access to the correct python 
-libraries. This must be run on a 64-bit Linux machine.
 
 Running Regression Tests
 ------------------------
