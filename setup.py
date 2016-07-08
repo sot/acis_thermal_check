@@ -5,10 +5,6 @@ import glob
 templates = glob.glob("templates/*")
 model_spec = glob.glob("acis_thermal_check/*_check/*.json")
 
-print find_packages()
-print templates
-print model_spec
-
 entry_points = {}
 entry_points['console_scripts'] = [
     'dea_check = acis_thermal_check.dea_check.dea_check:main',
