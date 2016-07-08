@@ -6,7 +6,6 @@ from acis_thermal_check import dea_check
 from acis_thermal_check.tests.utils import \
     run_answer_test, run_image_test, run_model
 
-
 def test_dea(generate_answers):
     tmpdir = tempfile.mkdtemp()
     curdir = os.getcwd()
