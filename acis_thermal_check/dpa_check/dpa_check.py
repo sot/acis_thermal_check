@@ -20,6 +20,9 @@ import xija
 import sys
 from acis_thermal_check.main import ACISThermalCheck
 from acis_thermal_check.utils import calc_off_nom_rolls, get_options
+import os
+
+script_path = os.path.abspath(os.path.dirname(__file__))
 
 MSID = dict(dpa='1DPAMZT')
 # This is the Yellow High IPCL limit.
@@ -70,7 +73,7 @@ dpa_check = ACISThermalCheck("1dpamzt", "dpa", MSID,
                              HIST_LIMIT, calc_model)
 
 def main():
-    opt, args = get_options("1DPAMZT", "dpa")
+    opt, args = get_options("1DPAMZT", "dpa", script_path)
     try:
         dpa_check.driver(opt)
     except Exception, msg:

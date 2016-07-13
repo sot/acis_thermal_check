@@ -28,6 +28,9 @@ from acis_thermal_check.utils import calc_off_nom_rolls, get_options
 import os
 import sys
 
+script_path = os.path.abspath(os.path.dirname(__file__))
+
+
 MSID = dict(psmc='1PDEAAT')
 YELLOW = dict(psmc=55.0)
 MARGIN = dict(psmc=2.5)
@@ -118,7 +121,8 @@ psmc_check = PSMCModelCheck("1pdeaat", "psmc", MSID,
 def main():
     dhh_opt = {"type": "int", "default":0,
                "help": "Starting Detector Housing Heater state"}
-    opt, args = get_options("1PDEAAT", "psmc", [("dh_heater", dhh_opt)])
+    opt, args = get_options("1PDEAAT", "psmc", script_path, 
+                            [("dh_heater", dhh_opt)])
     try:
         psmc_check.driver(opt)
     except Exception, msg:
