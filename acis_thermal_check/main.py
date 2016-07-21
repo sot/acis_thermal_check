@@ -141,12 +141,6 @@ class ACISThermalCheck(object):
         # mean temperatures at the start of state0.
         if None in state0.values():
             state0 = self.set_initial_state(tlm, db, t_msid)
-
-        # TEMPORARY HACK: core model doesn't actually support predictive
-        # active heater yet.  Initial temperature determines active heater
-        # state for predictions now.
-        if state0[t_msid] < 15:
-            state0[t_msid] = 15.0
     
         self.logger.debug('state0 at %s is\n%s' % (DateTime(state0['tstart']).date,
                                                    pformat(state0)))
