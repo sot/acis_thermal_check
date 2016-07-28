@@ -84,12 +84,12 @@ class PSMCModelCheck(ACISThermalCheck):
         else:
             start_msid = state0[t_msid]
             start_pin = state0['T_pin1at']
-            # htrbfn='/home/edgar/acis/thermal_models/dhheater_history/dahtbon_history.rdb'                     
-            htrbfn='dahtbon_history.rdb'
+            # htrbfn = '/home/edgar/acis/thermal_models/dhheater_history/dahtbon_history.rdb'                     
+            htrbfn = 'dahtbon_history.rdb'
             logger.info('Reading file of dahtrb commands from file %s' % htrbfn)
-            htrb=Ska.Table.read_ascii_table(htrbfn,headerrow=2,headertype='rdb')
-            dh_heater_times=Chandra.Time.date2secs(htrb['time'])
-            dh_heater=htrb['dahtbon'].astype(bool)
+            htrb = Ska.Table.read_ascii_table(htrbfn,headerrow=2,headertype='rdb')
+            dh_heater_times = Chandra.Time.date2secs(htrb['time'])
+            dh_heater = htrb['dahtbon'].astype(bool)
         return self.calc_model(opt.model_spec, states, tstart, tstop, T_psmc=start_msid,
                                T_psmc_times=None, T_pin1at=start_pin, T_pin1at_times=None,
                                dh_heater=dh_heater, dh_heater_times=dh_heater_times)
