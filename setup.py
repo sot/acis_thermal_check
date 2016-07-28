@@ -4,7 +4,6 @@ import glob
 from acis_thermal_check import __version__
 
 templates = glob.glob("templates/*")
-model_spec = glob.glob("acis_thermal_check/*_check/*.json")
 
 entry_points = {}
 entry_points['console_scripts'] = [
