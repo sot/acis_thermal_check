@@ -279,7 +279,7 @@ class ACISThermalCheck(object):
 
         return viols
 
-    def write_states(self, opt, states):
+    def write_states(self, opt, states, remove_cols=None):
         """Write states recarray to file states.dat"""
         outfile = os.path.join(opt.outdir, 'states.dat')
         self.logger.info('Writing states to %s' % outfile)
@@ -291,6 +291,9 @@ class ACISThermalCheck(object):
                }
         newcols = list(states.dtype.names)
         newcols.remove('T_%s' % self.short_msid)
+        if remove_cols is not None:
+            for col in remove_cols:
+                newcols.remove(col)
         newstates = np.rec.fromarrays([states[x] for x in newcols], names=newcols)
         Ska.Numpy.pprint(newstates, fmt, out)
         out.close()

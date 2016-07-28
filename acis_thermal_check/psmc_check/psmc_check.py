@@ -95,21 +95,7 @@ class PSMCModelCheck(ACISThermalCheck):
                                dh_heater=dh_heater, dh_heater_times=dh_heater_times)
 
     def write_states(self, opt, states):
-        """Write states recarray to file states.dat"""
-        outfile = os.path.join(opt.outdir, 'states.dat')
-        self.logger.info('Writing states to %s' % outfile)
-        out = open(outfile, 'w')
-        fmt = {'power': '%.1f',
-                      'pitch': '%.2f',
-               'tstart': '%.2f',
-                      'tstop': '%.2f',
-               }
-        newcols = list(states.dtype.names)
-        newcols.remove('T_%s' % self.short_msid)
-        newcols.remove('T_pin1at')
-        newstates = np.rec.fromarrays([states[x] for x in newcols], names=newcols)
-        Ska.Numpy.pprint(newstates, fmt, out)
-        out.close()
+        super(PSMCModelCheck, self).write_states(opt, states, remove_cols=['T_pin1at'])
 
 psmc_check = PSMCModelCheck("1pdeaat", "psmc", MSID,
                             YELLOW, MARGIN, VALIDATION_LIMITS,
