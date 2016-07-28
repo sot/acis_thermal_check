@@ -1,5 +1,5 @@
-# Matplotlib setup                                                                                                                                             
-# Use Agg backend for command-line (non-interactive) operation                                                                                                 
+# Matplotlib setup                                                             
+# Use Agg backend for command-line (non-interactive) operation                                                
 import matplotlib
 matplotlib.use('Agg')
 
@@ -531,7 +531,8 @@ class ACISThermalCheck(object):
         dirname = os.path.dirname(docutils.writers.html4css1.__file__)
         shutil.copy2(os.path.join(dirname, 'html4css1.css'), opt.outdir)
 
-        shutil.copy2(os.path.join(TASK_DATA, 'templates', 'acis_thermal_check.css'), opt.outdir)
+        shutil.copy2(os.path.join(TASK_DATA, 'acis_thermal_check', 'templates', 
+                                  'acis_thermal_check.css'), opt.outdir)
 
         spawn = Ska.Shell.Spawn(stdout=None)
         infile = os.path.join(opt.outdir, 'index.rst')
@@ -578,7 +579,8 @@ class ACISThermalCheck(object):
         index_template_file = ('index_template.rst'
                                if opt.oflsdir else
                                'index_template_val_only.rst')
-        index_template = open(os.path.join(TASK_DATA, 'templates', index_template_file)).read()
+        index_template = open(os.path.join(TASK_DATA, 'acis_thermal_check', 
+                                           'templates', index_template_file)).read()
         index_template = re.sub(r' %}\n', ' %}', index_template)
         template = django.template.Template(index_template)
         open(outfile, 'w').write(template.render(django_context))
