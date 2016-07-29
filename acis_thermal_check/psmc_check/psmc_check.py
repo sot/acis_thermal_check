@@ -84,32 +84,18 @@ class PSMCModelCheck(ACISThermalCheck):
         else:
             start_msid = state0[t_msid]
             start_pin = state0['T_pin1at']
-            # htrbfn='/home/edgar/acis/thermal_models/dhheater_history/dahtbon_history.rdb'                     
-            htrbfn='dahtbon_history.rdb'
+            # htrbfn = '/home/edgar/acis/thermal_models/dhheater_history/dahtbon_history.rdb'                     
+            htrbfn = 'dahtbon_history.rdb'
             logger.info('Reading file of dahtrb commands from file %s' % htrbfn)
-            htrb=Ska.Table.read_ascii_table(htrbfn,headerrow=2,headertype='rdb')
-            dh_heater_times=Chandra.Time.date2secs(htrb['time'])
-            dh_heater=htrb['dahtbon'].astype(bool)
+            htrb = Ska.Table.read_ascii_table(htrbfn,headerrow=2,headertype='rdb')
+            dh_heater_times = Chandra.Time.date2secs(htrb['time'])
+            dh_heater = htrb['dahtbon'].astype(bool)
         return self.calc_model(opt.model_spec, states, tstart, tstop, T_psmc=start_msid,
                                T_psmc_times=None, T_pin1at=start_pin, T_pin1at_times=None,
                                dh_heater=dh_heater, dh_heater_times=dh_heater_times)
 
     def write_states(self, opt, states):
-        """Write states recarray to file states.dat"""
-        outfile = os.path.join(opt.outdir, 'states.dat')
-        self.logger.info('Writing states to %s' % outfile)
-        out = open(outfile, 'w')
-        fmt = {'power': '%.1f',
-                      'pitch': '%.2f',
-               'tstart': '%.2f',
-                      'tstop': '%.2f',
-               }
-        newcols = list(states.dtype.names)
-        newcols.remove('T_%s' % self.short_msid)
-        newcols.remove('T_pin1at')
-        newstates = np.rec.fromarrays([states[x] for x in newcols], names=newcols)
-        Ska.Numpy.pprint(newstates, fmt, out)
-        out.close()
+        super(PSMCModelCheck, self).write_states(opt, states, remove_cols=['T_pin1at'])
 
 psmc_check = PSMCModelCheck("1pdeaat", "psmc", MSID,
                             YELLOW, MARGIN, VALIDATION_LIMITS,

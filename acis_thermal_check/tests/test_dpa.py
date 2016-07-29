@@ -2,9 +2,9 @@ import os
 import shutil
 import tempfile
 
-from acis_thermal_check import dpa_check
-from acis_thermal_check.tests.utils import \
-    run_answer_test, run_image_test, run_model
+from .. import dpa_check
+from .utils import run_answer_test, \
+    run_image_test, run_model
 
 def test_dpa(generate_answers):
     tmpdir = tempfile.mkdtemp()

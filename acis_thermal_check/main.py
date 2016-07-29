@@ -1,5 +1,5 @@
-# Matplotlib setup                                                                                                                                             
-# Use Agg backend for command-line (non-interactive) operation                                                                                                 
+# Matplotlib setup                                                             
+# Use Agg backend for command-line (non-interactive) operation                                                
 import matplotlib
 matplotlib.use('Agg')
 
@@ -279,7 +279,7 @@ class ACISThermalCheck(object):
 
         return viols
 
-    def write_states(self, opt, states):
+    def write_states(self, opt, states, remove_cols=None):
         """Write states recarray to file states.dat"""
         outfile = os.path.join(opt.outdir, 'states.dat')
         self.logger.info('Writing states to %s' % outfile)
@@ -291,6 +291,9 @@ class ACISThermalCheck(object):
                }
         newcols = list(states.dtype.names)
         newcols.remove('T_%s' % self.short_msid)
+        if remove_cols is not None:
+            for col in remove_cols:
+                newcols.remove(col)
         newstates = np.rec.fromarrays([states[x] for x in newcols], names=newcols)
         Ska.Numpy.pprint(newstates, fmt, out)
         out.close()
@@ -528,7 +531,8 @@ class ACISThermalCheck(object):
         dirname = os.path.dirname(docutils.writers.html4css1.__file__)
         shutil.copy2(os.path.join(dirname, 'html4css1.css'), opt.outdir)
 
-        shutil.copy2(os.path.join(TASK_DATA, 'templates', 'acis_thermal_check.css'), opt.outdir)
+        shutil.copy2(os.path.join(TASK_DATA, 'acis_thermal_check', 'templates', 
+                                  'acis_thermal_check.css'), opt.outdir)
 
         spawn = Ska.Shell.Spawn(stdout=None)
         infile = os.path.join(opt.outdir, 'index.rst')
@@ -575,7 +579,8 @@ class ACISThermalCheck(object):
         index_template_file = ('index_template.rst'
                                if opt.oflsdir else
                                'index_template_val_only.rst')
-        index_template = open(os.path.join(TASK_DATA, 'templates', index_template_file)).read()
+        index_template = open(os.path.join(TASK_DATA, 'acis_thermal_check', 
+                                           'templates', index_template_file)).read()
         index_template = re.sub(r' %}\n', ' %}', index_template)
         template = django.template.Template(index_template)
         open(outfile, 'w').write(template.render(django_context))

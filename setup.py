@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages
 import glob
+from acis_thermal_check import __version__
 
 templates = glob.glob("templates/*")
-model_spec = glob.glob("acis_thermal_check/*_check/*.json")
 
 entry_points = {}
 entry_points['console_scripts'] = [
@@ -15,7 +15,7 @@ entry_points['console_scripts'] = [
 
 setup(name='acis_thermal_check',
       packages=find_packages(),
-      version='1.0.0',
+      version=__version__,
       description='ACIS Thermal Model Library',
       author='John ZuHone',
       author_email='jzuhone@gmail.com',
