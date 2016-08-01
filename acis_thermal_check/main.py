@@ -576,7 +576,7 @@ class ACISThermalCheck(object):
             plots[msid]['ax'].axhline(self.yellow[msid] - self.margin[msid], linestyle='--',
                                       color='y', linewidth=2.0)
             # Add a vertical line to mark the start of the load
-            plots[msid]['ax'].axvline(load_start, linestyle=':', color='g',
+            plots[msid]['ax'].axvline(load_start, linestyle='-', color='g',
                                       linewidth=2.0)
             filename = self.MSIDs[self.name].lower() + '.png'
             outfile = os.path.join(outdir, filename)
@@ -599,7 +599,7 @@ class ACISThermalCheck(object):
             ylim2=(-105000, 105000),
             figsize=(7.5, 3.5))
         # Add a vertical line to mark the start time of the load
-        plots['pow_sim']['ax'].axvline(load_start, linestyle=':', color='g',
+        plots['pow_sim']['ax'].axvline(load_start, linestyle='-', color='g',
                                        linewidth=2.0)
         # The next several lines ensure that the width of the axes
         # of all the weekly prediction plots are the same.
