@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 # Matplotlib setup                                                             
 # Use Agg backend for command-line (non-interactive) operation                                                
 import matplotlib
@@ -10,7 +12,6 @@ import time
 import pickle
 import numpy as np
 import Ska.DBI
-import Ska.Table
 import Ska.Numpy
 from Chandra.Time import DateTime
 import Chandra.cmd_states as cmd_states
@@ -565,8 +566,8 @@ class ACISThermalCheck(object):
         import django.conf
         try:
             django.conf.settings.configure()
-        except RuntimeError, msg:
-            print msg
+        except RuntimeError as msg:
+            print(msg)
 
         outfile = os.path.join(opt.outdir, 'index.rst')
         self.logger.info('Writing report file %s' % outfile)

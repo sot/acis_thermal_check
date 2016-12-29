@@ -10,6 +10,7 @@ PSMC temperature 1PDEAAT.  It also generates PSMC model validation
 plots comparing predicted values to telemetry for the previous three
 weeks.
 """
+from __future__ import print_function
 
 # Matplotlib setup                                                                                                                                              
 # Use Agg backend for command-line (non-interactive) operation                                                                                                   
@@ -111,11 +112,11 @@ def main():
                             [("dh_heater", dhh_opt)])
     try:
         psmc_check.driver(opt)
-    except Exception, msg:
+    except Exception as msg:
         if opt.traceback:
             raise
         else:
-            print "ERROR:", msg
+            print("ERROR:", msg)
             sys.exit(1)
 
 if __name__ == '__main__':
