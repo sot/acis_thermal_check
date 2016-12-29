@@ -68,9 +68,11 @@ class ACISThermalCheck(object):
 
         self.logger.info('Command line options:\n%s\n' % pformat(opt.__dict__))
 
-        # Connect to database (NEED TO USE aca_read)
-        self.logger.info('Connecting to database to get cmd_states')
-        db = Ska.DBI.DBI(dbi='sybase', server='sybase', user='aca_read',
+        # Connect to database (NEED TO USE aca_read for sybase; user is ignored for sqlite)
+        server = ('sybase' if opt.cmd_states_db == 'sybase' else
+                  os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3'))
+        self.logger.info('Connecting to {} to get cmd_states'.format(server))
+        db = Ska.DBI.DBI(dbi=opt.cmd_states_db, server=server, user='aca_read',
                          database='aca')
 
         tnow = DateTime(opt.run_start).secs
