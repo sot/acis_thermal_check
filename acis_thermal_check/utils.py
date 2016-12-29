@@ -154,7 +154,7 @@ def get_options(msid, short_msid, script_path, opts=None):
                       help="Starting %s temperature (degC)" % msid)
     parser.add_option("--cmd-states-db",
                       default="sqlite",
-                      help="Commanded states database server (sybase|sqlite)" % msid)
+                      help="Commanded states database server (sybase|sqlite)")
     parser.add_option("--version",
                       action='store_true',
                       help="Print version")
