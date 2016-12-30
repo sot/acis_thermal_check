@@ -19,7 +19,7 @@ matplotlib.use('Agg')
 
 import logging
 import Chandra.cmd_states as cmd_states
-import Ska.Table
+from astropy.io import ascii
 import Ska.Numpy
 import Chandra.Time
 import numpy as np
@@ -88,7 +88,7 @@ class PSMCModelCheck(ACISThermalCheck):
             # htrbfn = '/home/edgar/acis/thermal_models/dhheater_history/dahtbon_history.rdb'                     
             htrbfn = 'dahtbon_history.rdb'
             logger.info('Reading file of dahtrb commands from file %s' % htrbfn)
-            htrb = Ska.Table.read_ascii_table(htrbfn,headerrow=2,headertype='rdb')
+            htrb = ascii.read(htrbfn, format='rdb')
             dh_heater_times = Chandra.Time.date2secs(htrb['time'])
             dh_heater = htrb['dahtbon'].astype(bool)
         return self.calc_model(opt.model_spec, states, tstart, tstop, T_psmc=start_msid,
