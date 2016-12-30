@@ -200,7 +200,7 @@ class ACISThermalCheck(object):
 
 
     def set_initial_state(self, tlm, db, t_msid):
-        state0 = cmd_states.get_state0(tlm['date'][-5], db,
+        state0 = cmd_states.get_state0(DateTime(tlm['date'][-5]).date, db,
                                            datepar='datestart')
         ok = ((tlm['date'] >= state0['tstart'] - 700) &
               (tlm['date'] <= state0['tstart'] + 700))
