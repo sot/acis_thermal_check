@@ -536,7 +536,7 @@ class ACISThermalCheck(object):
         if opt.run_start:
             filename = os.path.join(outdir, 'validation_data.pkl')
             self.logger.info('Writing validation data %s' % filename)
-            f = open(filename, 'w')
+            f = open(filename, 'wb')
             pickle.dump({'pred': pred, 'tlm': tlm}, f, protocol=-1)
             f.close()
 
