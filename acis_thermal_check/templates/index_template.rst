@@ -16,7 +16,7 @@ Summary
 ====================  =============================================
 Date start            {{proc.datestart}}
 Date stop             {{proc.datestop}}
-{{proc.msid}} status        {%if viols.default%}:red:`NOT OK`{% else %}OK{% endif%} (Planning Limit = {{proc.msid_limit|floatformat:1}} C)
+{{proc.msid}} status        {%if viols.default%}:red:`NOT OK`{% else %}OK{% endif%} (Planning Limit = {{"%.1f"|format(proc.msid_limit)}} C)
 {% if opt.loaddir %}
 Load directory        {{opt.loaddir}}
 {% endif %}
@@ -33,7 +33,7 @@ States                `<states.dat>`_
 Date start             Date stop              Max temperature
 =====================  =====================  ==================
 {% for viol in viols.default %}
-{{viol.datestart}}  {{viol.datestop}}  {{viol.maxtemp|floatformat:2}}
+{{viol.datestart}}  {{viol.datestop}}  {{"%.2f"|format(viol.maxtemp)}}
 {% endfor %}
 =====================  =====================  ==================
 {% else %}
@@ -71,7 +71,7 @@ Validation Violations
    :widths: 15, 10, 10, 10
 
 {% for viol in valid_viols %}
-   {{viol.msid}},{{viol.quant}},{{viol.value}},{{viol.limit|floatformat:2}}
+   {{viol.msid}},{{viol.quant}},{{viol.value}},{{"%.2f"|format(viol.limit)}}
 {% endfor%}
 
 {% else %}
@@ -83,11 +83,11 @@ No Validation Violations
 {{ plot.msid }}
 -----------------------
 
-{% ifequal proc.hist_limit|length 2 %}
+{% if proc.hist_limit|length == 2 %}
 Note: {{proc.short_msid}} residual histograms include points where {{proc.msid}} > {{proc.hist_limit.0}} degC in blue and points where {{proc.msid}} > {{proc.hist_limit.1}} degC in red.
 {% else %}
 Note: {{proc.short_msid}} residual histograms include only points where {{proc.msid}} > {{proc.hist_limit.0}} degC.
-{% endifequal %}
+{% endif %}
 
 Red = telemetry, blue = model
 

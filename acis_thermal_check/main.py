@@ -578,32 +578,26 @@ class ACISThermalCheck(object):
         """
         Make output text (in ReST format) in opt.outdir.
         """
-        # Django setup (used for template rendering)
-        import django.template
-        import django.conf
-        try:
-            django.conf.settings.configure()
-        except RuntimeError as msg:
-            print(msg)
+        import jinja2
 
         outfile = os.path.join(opt.outdir, 'index.rst')
         self.logger.info('Writing report file %s' % outfile)
-        django_context = django.template.Context(
-            {'opt': opt,
+        context = {
+             'opt': opt,
              'plots': plots,
              'viols': viols,
              'valid_viols': valid_viols,
              'proc': proc,
              'plots_validation': plots_validation,
-             })
+             }
         index_template_file = ('index_template.rst'
                                if opt.oflsdir else
                                'index_template_val_only.rst')
         index_template = open(os.path.join(TASK_DATA, 'acis_thermal_check', 
                                            'templates', index_template_file)).read()
         index_template = re.sub(r' %}\n', ' %}', index_template)
-        template = django.template.Template(index_template)
-        open(outfile, 'w').write(template.render(django_context))
+        template = jinja2.Template(index_template)
+        open(outfile, 'w').write(template.render(**context))
 
     def get_states(self, datestart, datestop, db):
         """Get states exactly covering date range

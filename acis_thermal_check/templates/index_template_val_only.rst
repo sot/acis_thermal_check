@@ -50,7 +50,7 @@ Validation Violations
    :widths: 15, 10, 10, 10
 
 {% for viol in valid_viols %}
-   {{viol.msid}},{{viol.quant}},{{viol.value}},{{viol.limit|floatformat:2}}
+   {{viol.msid}},{{viol.quant}},{{viol.value}},{{"%.2f"|format(viol.limit)}}
 {% endfor%}
 
 {% else %}
@@ -62,11 +62,11 @@ No Validation Violations
 {{ plot.msid }}
 -----------------------
 
-{% ifequal proc.hist_limit|length 2 %}
+{% if proc.hist_limit|length == 2 %}
 Note: {{proc.short_msid}} residual histograms include points where {{proc.msid}} > {{proc.hist_limit.0}} degC in blue and points where {{proc.msid}} > {{proc.hist_limit.1}} degC in red.
 {% else %}
 Note: {{proc.short_msid}} residual histograms include only points where {{proc.msid}} > {{proc.hist_limit.0}} degC.
-{% endifequal %}
+{% endif %}
 
 Red = telemetry, blue = model
 
