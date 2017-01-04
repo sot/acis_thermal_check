@@ -200,11 +200,28 @@ class ACISThermalCheck(object):
 
 
     def set_initial_state(self, tlm, db, t_msid):
+        """
+        Get the initial state corresponding to the end of available telemetry (minus a
+        bit).
+
+        The original logic in get_state0() is to return a state that is absolutely,
+        positively reliable by insisting that the returned state is at least
+        ``date_margin`` days old, where the default is 10 days.  That is too conservative
+        (given the way commanded states are actually managed) and not what is desired
+        here, which is a recent state from which to start thermal propagation.
+
+        Instead we supply ``date_margin=-100`` so that get_state0 will find the newest
+        state consistent with the ``date`` criterion and pcad_mode == 'NPNT'.
+
+        When Chandra.cmd_states >= 3.10 is available, then ``date_margin=None`` should
+        be used.
+        """
         state0 = cmd_states.get_state0(DateTime(tlm['date'][-5]).date, db,
-                                           datepar='datestart')
+                                       datepar='datestart', date_margin=-100)
         ok = ((tlm['date'] >= state0['tstart'] - 700) &
               (tlm['date'] <= state0['tstart'] + 700))
         state0.update({t_msid: np.mean(tlm[self.msid][ok])})
+
         return state0
 
     def calc_model_wrapper(self, opt, states, tstart, tstop, t_msid, state0=None):
