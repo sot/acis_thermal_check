@@ -1,1 +1,1 @@
-from dea_check import dea_check
+from .dea_check import dea_check

@@ -1,1 +1,1 @@
-from dpa_check import dpa_check
+from .dpa_check import dpa_check

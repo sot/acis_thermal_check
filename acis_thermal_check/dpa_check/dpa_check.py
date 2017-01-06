@@ -10,6 +10,8 @@ DPA temperature 1DPAMZT.  It also generates DPA model validation
 plots comparing predicted values to telemetry for the previous three
 weeks.
 """
+from __future__ import print_function
+
 # Matplotlib setup                                                                                                                                              
 # Use Agg backend for command-line (non-interactive) operation                                                                                                   
 import matplotlib
@@ -76,11 +78,11 @@ def main():
     opt, args = get_options("1DPAMZT", "dpa", script_path)
     try:
         dpa_check.driver(opt)
-    except Exception, msg:
+    except Exception as msg:
         if opt.traceback:
             raise
         else:
-            print "ERROR:", msg
+            print("ERROR:", msg)
             sys.exit(1)
 
 if __name__ == '__main__':

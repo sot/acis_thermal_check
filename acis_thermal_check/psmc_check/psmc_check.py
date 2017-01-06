@@ -10,6 +10,7 @@ PSMC temperature 1PDEAAT.  It also generates PSMC model validation
 plots comparing predicted values to telemetry for the previous three
 weeks.
 """
+from __future__ import print_function
 
 # Matplotlib setup                                                                                                                                              
 # Use Agg backend for command-line (non-interactive) operation                                                                                                   
@@ -18,7 +19,7 @@ matplotlib.use('Agg')
 
 import logging
 import Chandra.cmd_states as cmd_states
-import Ska.Table
+from astropy.io import ascii
 import Ska.Numpy
 import Chandra.Time
 import numpy as np
@@ -87,7 +88,7 @@ class PSMCModelCheck(ACISThermalCheck):
             # htrbfn = '/home/edgar/acis/thermal_models/dhheater_history/dahtbon_history.rdb'                     
             htrbfn = 'dahtbon_history.rdb'
             logger.info('Reading file of dahtrb commands from file %s' % htrbfn)
-            htrb = Ska.Table.read_ascii_table(htrbfn,headerrow=2,headertype='rdb')
+            htrb = ascii.read(htrbfn, format='rdb')
             dh_heater_times = Chandra.Time.date2secs(htrb['time'])
             dh_heater = htrb['dahtbon'].astype(bool)
         return self.calc_model(opt.model_spec, states, tstart, tstop, T_psmc=start_msid,
@@ -111,11 +112,11 @@ def main():
                             [("dh_heater", dhh_opt)])
     try:
         psmc_check.driver(opt)
-    except Exception, msg:
+    except Exception as msg:
         if opt.traceback:
             raise
         else:
-            print "ERROR:", msg
+            print("ERROR:", msg)
             sys.exit(1)
 
 if __name__ == '__main__':

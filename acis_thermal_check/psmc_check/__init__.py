@@ -1,1 +1,1 @@
-from psmc_check import psmc_check
+from .psmc_check import psmc_check

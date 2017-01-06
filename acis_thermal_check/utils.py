@@ -152,6 +152,9 @@ def get_options(msid, short_msid, script_path, opts=None):
     parser.add_option("--T-%s" % short_msid,
                       type='float',
                       help="Starting %s temperature (degC)" % msid)
+    parser.add_option("--cmd-states-db",
+                      default="sybase",
+                      help="Commanded states database server (sybase|sqlite)")
     parser.add_option("--version",
                       action='store_true',
                       help="Print version")
@@ -160,5 +163,8 @@ def get_options(msid, short_msid, script_path, opts=None):
             parser.add_option("--%s" % opt_name, **opt)
 
     opt, args = parser.parse_args()
-    return opt, args
 
+    if opt.cmd_states_db not in ('sybase', 'sqlite'):
+        raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
+
+    return opt, args

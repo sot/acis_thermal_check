@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 # Matplotlib setup                                                             
 # Use Agg backend for command-line (non-interactive) operation                                                
 import matplotlib
@@ -10,7 +12,6 @@ import time
 import pickle
 import numpy as np
 import Ska.DBI
-import Ska.Table
 import Ska.Numpy
 from Chandra.Time import DateTime
 import Chandra.cmd_states as cmd_states
@@ -68,9 +69,11 @@ class ACISThermalCheck(object):
 
         self.logger.info('Command line options:\n%s\n' % pformat(opt.__dict__))
 
-        # Connect to database (NEED TO USE aca_read)
-        self.logger.info('Connecting to database to get cmd_states')
-        db = Ska.DBI.DBI(dbi='sybase', server='sybase', user='aca_read',
+        # Connect to database (NEED TO USE aca_read for sybase; user is ignored for sqlite)
+        server = ('sybase' if opt.cmd_states_db == 'sybase' else
+                  os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3'))
+        self.logger.info('Connecting to {} to get cmd_states'.format(server))
+        db = Ska.DBI.DBI(dbi=opt.cmd_states_db, server=server, user='aca_read',
                          database='aca')
 
         tnow = DateTime(opt.run_start).secs
@@ -197,11 +200,28 @@ class ACISThermalCheck(object):
 
 
     def set_initial_state(self, tlm, db, t_msid):
-        state0 = cmd_states.get_state0(tlm['date'][-5], db,
-                                           datepar='datestart')
+        """
+        Get the initial state corresponding to the end of available telemetry (minus a
+        bit).
+
+        The original logic in get_state0() is to return a state that is absolutely,
+        positively reliable by insisting that the returned state is at least
+        ``date_margin`` days old, where the default is 10 days.  That is too conservative
+        (given the way commanded states are actually managed) and not what is desired
+        here, which is a recent state from which to start thermal propagation.
+
+        Instead we supply ``date_margin=-100`` so that get_state0 will find the newest
+        state consistent with the ``date`` criterion and pcad_mode == 'NPNT'.
+
+        When Chandra.cmd_states >= 3.10 is available, then ``date_margin=None`` should
+        be used.
+        """
+        state0 = cmd_states.get_state0(DateTime(tlm['date'][-5]).date, db,
+                                       datepar='datestart', date_margin=-100)
         ok = ((tlm['date'] >= state0['tstart'] - 700) &
               (tlm['date'] <= state0['tstart'] + 700))
         state0.update({t_msid: np.mean(tlm[self.msid][ok])})
+
         return state0
 
     def calc_model_wrapper(self, opt, states, tstart, tstop, t_msid, state0=None):
@@ -516,7 +536,7 @@ class ACISThermalCheck(object):
         if opt.run_start:
             filename = os.path.join(outdir, 'validation_data.pkl')
             self.logger.info('Writing validation data %s' % filename)
-            f = open(filename, 'w')
+            f = open(filename, 'wb')
             pickle.dump({'pred': pred, 'tlm': tlm}, f, protocol=-1)
             f.close()
 
@@ -558,32 +578,26 @@ class ACISThermalCheck(object):
         """
         Make output text (in ReST format) in opt.outdir.
         """
-        # Django setup (used for template rendering)
-        import django.template
-        import django.conf
-        try:
-            django.conf.settings.configure()
-        except RuntimeError, msg:
-            print msg
+        import jinja2
 
         outfile = os.path.join(opt.outdir, 'index.rst')
         self.logger.info('Writing report file %s' % outfile)
-        django_context = django.template.Context(
-            {'opt': opt,
+        context = {
+             'opt': opt,
              'plots': plots,
              'viols': viols,
              'valid_viols': valid_viols,
              'proc': proc,
              'plots_validation': plots_validation,
-             })
+             }
         index_template_file = ('index_template.rst'
                                if opt.oflsdir else
                                'index_template_val_only.rst')
         index_template = open(os.path.join(TASK_DATA, 'acis_thermal_check', 
                                            'templates', index_template_file)).read()
         index_template = re.sub(r' %}\n', ' %}', index_template)
-        template = django.template.Template(index_template)
-        open(outfile, 'w').write(template.render(django_context))
+        template = jinja2.Template(index_template)
+        open(outfile, 'w').write(template.render(**context))
 
     def get_states(self, datestart, datestop, db):
         """Get states exactly covering date range
