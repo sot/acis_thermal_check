@@ -13,7 +13,7 @@ class TestOpts(object):
     def __init__(self, short_msid, run_start, outdir, oflsdir=None, 
                  days=21.0, ccd_count=6, fep_count=6, vid_board=1,
                  clocking=1, simpos=75616.0, pitch=150.0, T_init=None,
-                 dh_heater=0):
+                 dh_heater=0, cmd_states_db='sybase'):
         self.run_start = run_start
         self.outdir = outdir
         self.oflsdir = oflsdir
@@ -24,6 +24,7 @@ class TestOpts(object):
         self.clocking = clocking
         self.simpos = simpos
         self.pitch = pitch
+        self.cmd_states_db = cmd_states_db
         setattr(self, "T_%s" % short_msid, T_init)
         self.dh_heater = dh_heater
         self.traceback = True
