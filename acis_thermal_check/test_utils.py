@@ -36,7 +36,7 @@ oflsdir = "/data/acis/LoadReviews/2016/MAY3016/ofls"
 
 def run_model(short_msid, msid_check, model_spec, cmd_states_db):
     out_dir = short_msid+"_test"
-    msid_opts = TestOpts(short_msid, run_start, out_dir, model_spec,
+    msid_opts = TestOpts(short_msid, run_start, out_dir, model_spec=model_spec,
                          oflsdir=oflsdir, cmd_states_db=cmd_states_db)
     msid_check.driver(msid_opts)
     return out_dir
