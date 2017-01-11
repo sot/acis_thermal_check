@@ -1,4 +1,4 @@
-from ..utils import TASK_DATA
+from .utils import TASK_DATA
 import pickle
 import os
 from numpy.testing import assert_array_equal, \
