@@ -1,4 +1,1 @@
-include acis_thermal_check/dea_check/*
-include acis_thermal_check/dpa_check/*
-include acis_thermal_check/psmc_check/*
 include acis_thermal_check/templates/*

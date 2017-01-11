@@ -99,7 +99,7 @@ def plot_two(fig_id, x, y, x2, y2,
 
     return {'fig': fig, 'ax': ax, 'ax2': ax2}
 
-def get_options(msid, short_msid, script_path, opts=None):
+def get_options(msid, short_msid, model_path, opts=None):
     from optparse import OptionParser
     parser = OptionParser()
     parser.set_defaults()
@@ -109,7 +109,7 @@ def get_options(msid, short_msid, script_path, opts=None):
     parser.add_option("--oflsdir",
                       help="Load products OFLS directory")
     parser.add_option("--model-spec",
-                      default=os.path.join(script_path, '%s_model_spec.json' % short_msid),
+                      default=os.path.join(model_path, '%s_model_spec.json' % short_msid),
                       help="Model specification file")
     parser.add_option("--days",
                       type='float',
