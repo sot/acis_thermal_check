@@ -1,4 +1,3 @@
-from .utils import TASK_DATA
 import pickle
 import os
 from numpy.testing import assert_array_equal, \
@@ -10,10 +9,10 @@ from scipy import misc
 test_data_dir = "/data/acis/thermal_model_tests"
 
 class TestOpts(object):
-    def __init__(self, short_msid, run_start, outdir, oflsdir=None, 
-                 days=21.0, ccd_count=6, fep_count=6, vid_board=1,
-                 clocking=1, simpos=75616.0, pitch=150.0, T_init=None,
-                 dh_heater=0, cmd_states_db='sybase'):
+    def __init__(self, short_msid, run_start, outdir, model_spec=None,
+                 oflsdir=None, days=21.0, ccd_count=6, fep_count=6,
+                 vid_board=1, clocking=1, simpos=75616.0, pitch=150.0,
+                 T_init=None, dh_heater=0, cmd_states_db='sybase'):
         self.run_start = run_start
         self.outdir = outdir
         self.oflsdir = oflsdir
@@ -29,17 +28,16 @@ class TestOpts(object):
         self.dh_heater = dh_heater
         self.traceback = True
         self.verbose = 1
-        self.model_spec = os.path.join(TASK_DATA, 'acis_thermal_check', 
-                                       '%s_check' % short_msid,
-                                       '%s_model_spec.json' % short_msid)
+        self.model_spec = model_spec
         self.version = None
 
 run_start = "2016:122:12:00:00.000"
 oflsdir = "/data/acis/LoadReviews/2016/MAY3016/ofls"
 
-def run_model(short_msid, msid_check):
+def run_model(short_msid, msid_check, model_spec, cmd_states_db):
     out_dir = short_msid+"_test"
-    msid_opts = TestOpts(short_msid, run_start, out_dir, oflsdir=oflsdir)
+    msid_opts = TestOpts(short_msid, run_start, out_dir, model_spec,
+                         oflsdir=oflsdir, cmd_states_db=cmd_states_db)
     msid_check.driver(msid_opts)
     return out_dir
 
