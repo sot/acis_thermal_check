@@ -3,6 +3,9 @@
 ACIS Thermal Model Tools (``acis_thermal_check``)
 =================================================
 
+Overview
+--------
+
 .. |Chandra_cmd_states| replace:: ``Chandra.cmd_states``
 .. _Chandra_cmd_states: http://cxc.harvard.edu/mta/ASPECT/tool_doc/cmd_states/
 
@@ -12,14 +15,11 @@ ACIS Thermal Model Tools (``acis_thermal_check``)
 ``acis_thermal_check`` is a library which provides the tools to use and maintain
 the Chandra ACIS thermal models. These tools depend on the commanded states database
 which is accessed primarily via the |Chandra_cmd_states|_ module, and the engineering
-archive which is accessed via the |Ska_engarchive|_ module.
-
-Overview
---------
-
-This code generates backstop load review outputs for checking ACIS temperatures such
-as 1DEAMZT, 1DPAMZT, and 1PDEAAT. It also generates model validation plots for these
-temperatures comparing predicted values to telemetry for the previous three weeks.
+archive which is accessed via the |Ska_engarchive|_ module. More specifically,
+``acis_thermal_check`` generates backstop load review outputs for checking ACIS
+temperatures such as 1DEAMZT, 1DPAMZT, and 1PDEAAT. It also generates model validation
+plots for these temperatures comparing predicted values to telemetry for the previous
+three weeks.
 
 Installation and Development
 ----------------------------
@@ -49,10 +49,8 @@ is slightly modified:
 which will install the package under a path given by the ``site.USER_BASE`` variable
 in Python, which on Linux is ``~/.local``. This path can be modified by setting the
 environment variable ``PYTHONUSERBASE`` to the desired path before running the above
-command. You will need to add ``${PYTHONUSERBASE}/bin`` to your ``PATH`` environment
-variable in order to run thermal model scripts from there, but you will be able to
-``import acis_thermal_check`` from any Python script so long as you use the same
-``python`` executable.
+command. Then you will be able to ``import acis_thermal_check`` from any Python script
+so long as you use the same ``python`` executable.
 
 If you are doing frequent development and would like to be able to change the code
 on the fly and re-run without having to reinstall the code every time, you can use the
