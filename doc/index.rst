@@ -1,7 +1,7 @@
 .. acis_thermal_check documentation master file
 
-ACIS Thermal Model Tools
-========================
+ACIS Thermal Model Tools (``acis_thermal_check``)
+=================================================
 
 .. |Chandra_cmd_states| replace:: ``Chandra.cmd_states``
 .. _Chandra_cmd_states: http://cxc.harvard.edu/mta/ASPECT/tool_doc/cmd_states/
@@ -13,9 +13,6 @@ ACIS Thermal Model Tools
 the Chandra ACIS thermal models. These tools depend on the commanded states database
 which is accessed primarily via the |Chandra_cmd_states|_ module, and the engineering
 archive which is accessed via the |Ska_engarchive|_ module.
-
-``acis_thermal_check``
-======================
 
 Overview
 --------
