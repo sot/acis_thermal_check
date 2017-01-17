@@ -69,7 +69,7 @@ def compare_data_files(prefix, short_msid, oflsdir, out_dir):
 def compare_results(short_msid, oflsdir, out_dir):
     new_answer_file = os.path.join(out_dir, "validation_data.pkl")
     new_results = pickle.load(open(new_answer_file, "rb"))
-    old_answer_file = os.path.join(test_data_dir, short_msid,
+    old_answer_file = os.path.join(test_data_dir, short_msid, oflsdir, 
                                    "validation_data.pkl")
     old_results = pickle.load(open(old_answer_file, "rb"))
     new_pred = new_results["pred"]
