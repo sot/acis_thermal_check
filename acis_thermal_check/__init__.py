@@ -1,4 +1,4 @@
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 from acis_thermal_check.main import \
     ACISThermalCheck
