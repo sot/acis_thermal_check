@@ -54,10 +54,10 @@ data_dtype = {'temperatures': {'names': ('time', 'date', 'temperature'),
                         }
              }
 
-def compare_data_files(prefix, short_msid, out_dir):
+def compare_data_files(prefix, short_msid, oflsdir, out_dir):
     fn = prefix+".dat"
     new_fn = os.path.join(out_dir, fn)
-    old_fn = os.path.join(test_data_dir, short_msid, fn)
+    old_fn = os.path.join(test_data_dir, short_msid, oflsdir, fn)
     new_data = np.loadtxt(new_fn, skiprows=1, dtype=data_dtype[prefix])
     old_data = np.loadtxt(old_fn, skiprows=1, dtype=data_dtype[prefix])
     for k, dt in new_data.dtype.descr:
@@ -66,7 +66,7 @@ def compare_data_files(prefix, short_msid, out_dir):
         else:
             assert_array_equal(new_data[k], old_data[k])
 
-def compare_results(short_msid, out_dir):
+def compare_results(short_msid, oflsdir, out_dir):
     new_answer_file = os.path.join(out_dir, "validation_data.pkl")
     new_results = pickle.load(open(new_answer_file, "rb"))
     old_answer_file = os.path.join(test_data_dir, short_msid,
@@ -81,7 +81,7 @@ def compare_results(short_msid, out_dir):
     for k in new_tlm.dtype.names:
         assert_array_equal(new_tlm[k], old_tlm[k])
     for prefix in ("temperatures", "states"):
-        compare_data_files(prefix, short_msid, out_dir)
+        compare_data_files(prefix, short_msid, oflsdir, out_dir)
 
 def copy_new_results(short_msid, out_dir, answer_dir):
     for fn in ('validation_data.pkl', 'states.dat', 'temperatures.dat'):
@@ -92,10 +92,10 @@ def copy_new_results(short_msid, out_dir, answer_dir):
         tofile = os.path.join(adir, fn)
         shutil.copyfile(fromfile, tofile)
 
-def run_answer_test(short_msid, out_dir, answer_dir):
+def run_answer_test(short_msid, oflsdir, out_dir, answer_dir):
     out_dir = os.path.abspath(out_dir)
     if not answer_dir:
-        compare_results(short_msid, out_dir)
+        compare_results(short_msid, oflsdir, out_dir)
     else:
         copy_new_results(short_msid, out_dir, answer_dir)
 
@@ -107,11 +107,11 @@ def build_image_list(msid):
                    "%s_valid_hist_log.png" % prefix]
     return images
 
-def compare_images(msid, short_msid, out_dir):
+def compare_images(msid, short_msid, oflsdir, out_dir):
     images = build_image_list(msid)
     for image in images:
         new_image = misc.imread(os.path.join(out_dir, image))
-        old_image = misc.imread(os.path.join(test_data_dir, short_msid, image))
+        old_image = misc.imread(os.path.join(test_data_dir, short_msid, oflsdir, image))
         assert_array_equal(new_image, old_image)
 
 def copy_new_images(msid, short_msid, out_dir, answer_dir):
@@ -124,9 +124,9 @@ def copy_new_images(msid, short_msid, out_dir, answer_dir):
         tofile = os.path.join(adir, image)
         shutil.copyfile(fromfile, tofile)
 
-def run_image_test(msid, short_msid, out_dir, answer_dir):
+def run_image_test(msid, short_msid, oflsdir, out_dir, answer_dir):
     out_dir = os.path.abspath(out_dir)
     if not answer_dir:
-        compare_images(msid, short_msid, out_dir)
+        compare_images(msid, short_msid, oflsdir, out_dir)
     else:
         copy_new_images(msid, short_msid, out_dir, answer_dir)
