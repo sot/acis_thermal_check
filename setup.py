@@ -5,6 +5,8 @@ from acis_thermal_check import __version__
 
 templates = glob.glob("templates/*")
 
+url = 'https://github.com/acisops/acis_thermal_check/tarball/{}'.format(__version__)
+
 setup(name='acis_thermal_check',
       packages=["acis_thermal_check"],
       version=__version__,
@@ -12,7 +14,7 @@ setup(name='acis_thermal_check',
       author='John ZuHone',
       author_email='jzuhone@gmail.com',
       url='http://github.com/acisops/acis_thermal_check',
-      download_url='https://github.com/acisops/acis_thermal_check/tarball/1.2.0',
+      download_url=url,
       data_files=[('templates', templates)],
       include_package_data=True,
       classifiers=[
