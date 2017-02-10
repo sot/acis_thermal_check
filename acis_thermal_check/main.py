@@ -7,6 +7,7 @@ matplotlib.use('Agg')
 
 import os
 from pprint import pformat
+from collections import OrderedDict
 import re
 import time
 import pickle
@@ -430,10 +431,13 @@ class ACISThermalCheck(object):
 
         # Interpolate states onto the tlm.date grid
         # state_vals = cmd_states.interpolate_states(states, model.times)
-        pred = {self.msid: model.comp[self.msid].mvals,
-                'pitch': model.comp['pitch'].mvals,
-                'tscpos': model.comp['sim_z'].mvals,
-                'roll': model.comp['roll'].mvals}
+
+        # Use an OrderedDict here because we want the plots on the validation
+        # page to appear in this order
+        pred = OrderedDict([(self.msid, model.comp[self.msid].mvals),
+                            ('pitch', model.comp['pitch'].mvals),
+                            ('tscpos', model.comp['sim_z'].mvals),
+                            ('roll', model.comp['roll'].mvals)])
 
         idxs = Ska.Numpy.interpolate(np.arange(len(tlm)), tlm['date'], model.times,
                                      method='nearest')
@@ -465,7 +469,7 @@ class ACISThermalCheck(object):
         quant_table = ''
         quant_head = ",".join(['MSID'] + ["quant%d" % x for x in quantiles])
         quant_table += quant_head + "\n"
-        for fig_id, msid in enumerate(sorted(pred)):
+        for fig_id, msid in enumerate(pred.keys()):
             plot = dict(msid=msid.upper())
             fig = plt.figure(10 + fig_id, figsize=(7, 3.5))
             fig.clf()
