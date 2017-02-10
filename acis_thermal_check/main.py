@@ -429,9 +429,6 @@ class ACISThermalCheck(object):
 
         model = self.calc_model_wrapper(opt, states, start, stop, t_msid)
 
-        # Interpolate states onto the tlm.date grid
-        # state_vals = cmd_states.interpolate_states(states, model.times)
-
         # Use an OrderedDict here because we want the plots on the validation
         # page to appear in this order
         pred = OrderedDict([(self.msid, model.comp[self.msid].mvals),
