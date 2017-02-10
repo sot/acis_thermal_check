@@ -27,19 +27,19 @@ from acis_thermal_check.utils import globfile, \
     config_logging, TASK_DATA, plot_two
 
 class ACISThermalCheck(object):
-    def __init__(self, msid, short_msid, MSIDs, yellow, margin,
+    def __init__(self, msid, name, MSIDs, yellow, margin,
                  validation_limits, hist_limit, calc_model,
                  other_telem=None, other_map=None,
                  other_opts=None):
         self.msid = msid
-        self.short_msid = short_msid
+        self.name = name
         self.MSIDs = MSIDs
         self.yellow = yellow
         self.margin = margin
         self.validation_limits = validation_limits
         self.hist_limit = hist_limit
         self.calc_model = calc_model
-        self.logger = logging.getLogger('%s_check' % self.short_msid)
+        self.logger = logging.getLogger('%s_check' % self.name)
         self.other_telem = other_telem
         self.other_map = other_map
         self.other_opts = other_opts
@@ -48,20 +48,20 @@ class ACISThermalCheck(object):
         if not os.path.exists(opt.outdir):
             os.mkdir(opt.outdir)
 
-        config_logging(opt.outdir, opt.verbose, self.short_msid)
+        config_logging(opt.outdir, opt.verbose, self.name)
 
         # Store info relevant to processing for use in outputs
         proc = dict(run_user=os.environ['USER'],
                     run_time=time.ctime(),
                     errors=[],
                     msid=self.msid.upper(),
-                    short_msid=self.short_msid.upper(),
+                    name=self.name.upper(),
                     hist_limit=self.hist_limit)
-        proc["msid_limit"] = self.yellow[self.short_msid] - self.margin[self.short_msid]
+        proc["msid_limit"] = self.yellow[self.name] - self.margin[self.name]
         self.logger.info('##############################'
                     '#######################################')
         self.logger.info('# %s_check.py run at %s by %s'
-                    % (self.short_msid, proc['run_time'], proc['run_user']))
+                    % (self.name, proc['run_time'], proc['run_user']))
         self.logger.info('# acis_thermal_check version = %s' % version)
         self.logger.info('# model_spec file = %s' % os.path.abspath(opt.model_spec))
         self.logger.info('###############################'
@@ -125,7 +125,7 @@ class ACISThermalCheck(object):
 
     def make_week_predict(self, opt, tstart, tstop, bs_cmds, tlm, db):
         # Try to make initial state0 from cmd line options
-        t_msid = 'T_%s' % self.short_msid
+        t_msid = 'T_%s' % self.name
         opts = ['pitch', 'simpos', 'ccd_count', 'fep_count', 'vid_board', 'clocking', t_msid]
         if self.other_opts is not None:
             opts += self.other_opts
@@ -180,7 +180,7 @@ class ACISThermalCheck(object):
                          (len(states), states[0]['datestart'], states[-1]['datestop']))
     
         # Create array of times at which to calculate temps, then do it.
-        self.logger.info('Calculating %s thermal model' % self.short_msid.upper())
+        self.logger.info('Calculating %s thermal model' % self.name.upper())
 
         model = self.calc_model_wrapper(opt, states, state0['tstart'], tstop, 
                                         t_msid, state0=state0)
@@ -189,7 +189,7 @@ class ACISThermalCheck(object):
         plt.rc("axes", labelsize=10, titlesize=12)
         plt.rc("xtick", labelsize=10)
         plt.rc("ytick", labelsize=10)
-        temps = {self.short_msid: model.comp[self.msid].mvals}
+        temps = {self.name: model.comp[self.msid].mvals}
         plots = self.make_check_plots(opt, states, model.times, temps, tstart)
         viols = self.make_viols(opt, states, model.times, temps)
         self.write_states(opt, states)
@@ -295,7 +295,7 @@ class ACISThermalCheck(object):
                                     viol['datestop']))
                 viols[msid].append(viol)
 
-        viols["default"] = viols[self.short_msid]
+        viols["default"] = viols[self.name]
 
         return viols
 
@@ -310,7 +310,7 @@ class ACISThermalCheck(object):
                'tstop': '%.2f',
                }
         newcols = list(states.dtype.names)
-        newcols.remove('T_%s' % self.short_msid)
+        newcols.remove('T_%s' % self.name)
         if remove_cols is not None:
             for col in remove_cols:
                 newcols.remove(col)
@@ -322,7 +322,7 @@ class ACISThermalCheck(object):
         """Write temperature predictions to file temperatures.dat"""
         outfile = os.path.join(opt.outdir, 'temperatures.dat')
         self.logger.info('Writing temperatures to %s' % outfile)
-        T = temps[self.short_msid]
+        T = temps[self.name]
         temp_recs = [(times[i], DateTime(times[i]).date, T[i])
                      for i in range(len(times))]
         temp_array = np.rec.fromrecords(
@@ -351,7 +351,7 @@ class ACISThermalCheck(object):
         load_start = cxctime2plotdate([tstart])[0]
 
         self.logger.info('Making temperature check plots')
-        for fig_id, msid in enumerate((self.short_msid,)):
+        for fig_id, msid in enumerate((self.name,)):
             plots[msid] = plot_two(fig_id=fig_id + 1,
                                    x=times,
                                    y=temps[msid],
@@ -369,7 +369,7 @@ class ACISThermalCheck(object):
                                       color='y', linewidth=2.0)
             plots[msid]['ax'].axvline(load_start, linestyle=':', color='g',
                                       linewidth=1.0)
-            filename = self.MSIDs[self.short_msid].lower() + '.png'
+            filename = self.MSIDs[self.name].lower() + '.png'
             outfile = os.path.join(opt.outdir, filename)
             self.logger.info('Writing plot file %s' % outfile)
             plots[msid]['fig'].savefig(outfile)
@@ -393,10 +393,10 @@ class ACISThermalCheck(object):
                                        linewidth=1.0)
         # The next several lines ensure that the width of the axes
         # of all the weekly prediction plots are the same.
-        w1, h1 = plots[self.short_msid]['fig'].get_size_inches()
+        w1, h1 = plots[self.name]['fig'].get_size_inches()
         w2, h2 = plots['pow_sim']['fig'].get_size_inches()
-        lm = plots[self.short_msid]['fig'].subplotpars.left*w1/w2
-        rm = plots[self.short_msid]['fig'].subplotpars.right*w1/w2
+        lm = plots[self.name]['fig'].subplotpars.left*w1/w2
+        rm = plots[self.name]['fig'].subplotpars.right*w1/w2
         plots['pow_sim']['fig'].subplots_adjust(left=lm, right=rm)
         filename = 'pow_sim.png'
         outfile = os.path.join(opt.outdir, filename)
@@ -404,7 +404,7 @@ class ACISThermalCheck(object):
         plots['pow_sim']['fig'].savefig(outfile)
         plots['pow_sim']['filename'] = filename
 
-        plots['default'] = plots[self.short_msid]
+        plots['default'] = plots[self.name]
 
         return plots
 
@@ -422,9 +422,9 @@ class ACISThermalCheck(object):
         states = self.get_states(start, stop, db)
 
         # Create array of times at which to calculate temperatures, then do it
-        self.logger.info('Calculating %s thermal model for validation' % self.short_msid.upper())
+        self.logger.info('Calculating %s thermal model for validation' % self.name.upper())
 
-        t_msid = 'T_%s' % self.short_msid
+        t_msid = 'T_%s' % self.name
 
         model = self.calc_model_wrapper(opt, states, start, stop, t_msid)
 
@@ -459,7 +459,7 @@ class ACISThermalCheck(object):
                 good_mask[bad] = False
 
         plots = []
-        self.logger.info('Making %s model validation plots and quantile table' % self.short_msid.upper())
+        self.logger.info('Making %s model validation plots and quantile table' % self.name.upper())
         quantiles = (1, 5, 16, 50, 84, 95, 99)
         # store lines of quantile table in a string and write out later
         quant_table = ''

@@ -28,7 +28,7 @@ def globfile(pathglob):
     else:
         return files[0]
 
-def config_logging(outdir, verbose, short_msid):
+def config_logging(outdir, verbose, name):
     """Set up file and console logger.
     See http://docs.python.org/library/logging.html
               #logging-to-multiple-destinations
@@ -46,7 +46,7 @@ def config_logging(outdir, verbose, short_msid):
                 1: logging.INFO,
                 2: logging.DEBUG}.get(verbose, logging.INFO)
 
-    logger = logging.getLogger('%s_check' % short_msid)
+    logger = logging.getLogger('%s_check' % name)
     logger.setLevel(loglevel)
 
     formatter = logging.Formatter('%(message)s')
@@ -99,7 +99,7 @@ def plot_two(fig_id, x, y, x2, y2,
 
     return {'fig': fig, 'ax': ax, 'ax2': ax2}
 
-def get_options(msid, short_msid, model_path, opts=None):
+def get_options(msid, name, model_path, opts=None):
     from optparse import OptionParser
     parser = OptionParser()
     parser.set_defaults()
@@ -109,7 +109,7 @@ def get_options(msid, short_msid, model_path, opts=None):
     parser.add_option("--oflsdir",
                       help="Load products OFLS directory")
     parser.add_option("--model-spec",
-                      default=os.path.join(model_path, '%s_model_spec.json' % short_msid),
+                      default=os.path.join(model_path, '%s_model_spec.json' % name),
                       help="Model specification file")
     parser.add_option("--days",
                       type='float',
@@ -149,7 +149,7 @@ def get_options(msid, short_msid, model_path, opts=None):
                       default=150.0,
                       type='float',
                       help="Starting pitch (deg)")
-    parser.add_option("--T-%s" % short_msid,
+    parser.add_option("--T-%s" % name,
                       type='float',
                       help="Starting %s temperature (degC)" % msid)
     parser.add_option("--cmd-states-db",

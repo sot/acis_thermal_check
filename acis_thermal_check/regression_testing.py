@@ -9,7 +9,7 @@ from scipy import misc
 test_data_dir = "/data/acis/thermal_model_tests"
 
 class TestOpts(object):
-    def __init__(self, short_msid, run_start, outdir, model_spec=None,
+    def __init__(self, name, run_start, outdir, model_spec=None,
                  load_week=None, days=21.0, ccd_count=6, fep_count=6,
                  vid_board=1, clocking=1, simpos=75616.0, pitch=150.0,
                  T_init=None, dh_heater=0, cmd_states_db='sybase'):
@@ -29,16 +29,16 @@ class TestOpts(object):
         self.simpos = simpos
         self.pitch = pitch
         self.cmd_states_db = cmd_states_db
-        setattr(self, "T_%s" % short_msid, T_init)
+        setattr(self, "T_%s" % name, T_init)
         self.dh_heater = dh_heater
         self.traceback = True
         self.verbose = 1
         self.model_spec = model_spec
         self.version = None
 
-def run_model(short_msid, msid_check, model_spec, run_start, load_week, cmd_states_db):
-    out_dir = short_msid+"_test"
-    msid_opts = TestOpts(short_msid, run_start, out_dir, model_spec=model_spec,
+def run_model(name, msid_check, model_spec, run_start, load_week, cmd_states_db):
+    out_dir = name+"_test"
+    msid_opts = TestOpts(name, run_start, out_dir, model_spec=model_spec,
                          load_week=load_week, cmd_states_db=cmd_states_db)
     msid_check.driver(msid_opts)
     return out_dir
@@ -59,10 +59,10 @@ data_dtype = {'temperatures': {'names': ('time', 'date', 'temperature'),
                         }
              }
 
-def compare_data_files(prefix, short_msid, load_week, out_dir):
+def compare_data_files(prefix, name, load_week, out_dir):
     fn = prefix+".dat"
     new_fn = os.path.join(out_dir, fn)
-    old_fn = os.path.join(test_data_dir, short_msid, load_week, fn)
+    old_fn = os.path.join(test_data_dir, name, load_week, fn)
     new_data = np.loadtxt(new_fn, skiprows=1, dtype=data_dtype[prefix])
     old_data = np.loadtxt(old_fn, skiprows=1, dtype=data_dtype[prefix])
     for k, dt in new_data.dtype.descr:
@@ -71,10 +71,10 @@ def compare_data_files(prefix, short_msid, load_week, out_dir):
         else:
             assert_array_equal(new_data[k], old_data[k])
 
-def compare_results(short_msid, load_week, out_dir):
+def compare_results(name, load_week, out_dir):
     new_answer_file = os.path.join(out_dir, "validation_data.pkl")
     new_results = pickle.load(open(new_answer_file, "rb"))
-    old_answer_file = os.path.join(test_data_dir, short_msid, load_week, 
+    old_answer_file = os.path.join(test_data_dir, name, load_week,
                                    "validation_data.pkl")
     old_results = pickle.load(open(old_answer_file, "rb"))
     new_pred = new_results["pred"]
@@ -86,23 +86,23 @@ def compare_results(short_msid, load_week, out_dir):
     for k in new_tlm.dtype.names:
         assert_array_equal(new_tlm[k], old_tlm[k])
     for prefix in ("temperatures", "states"):
-        compare_data_files(prefix, short_msid, load_week, out_dir)
+        compare_data_files(prefix, name, load_week, out_dir)
 
-def copy_new_results(short_msid, out_dir, answer_dir):
+def copy_new_results(name, out_dir, answer_dir):
     for fn in ('validation_data.pkl', 'states.dat', 'temperatures.dat'):
         fromfile = os.path.join(out_dir, fn)
-        adir = os.path.join(answer_dir, short_msid)
+        adir = os.path.join(answer_dir, name)
         if not os.path.exists(adir):
             os.mkdir(adir)
         tofile = os.path.join(adir, fn)
         shutil.copyfile(fromfile, tofile)
 
-def run_answer_test(short_msid, load_week, out_dir, answer_dir):
+def run_answer_test(name, load_week, out_dir, answer_dir):
     out_dir = os.path.abspath(out_dir)
     if not answer_dir:
-        compare_results(short_msid, load_week, out_dir)
+        compare_results(name, load_week, out_dir)
     else:
-        copy_new_results(short_msid, out_dir, answer_dir)
+        copy_new_results(name, out_dir, answer_dir)
 
 def build_image_list(msid):
     images = ["%s.png" % msid, "pow_sim.png"]
@@ -112,26 +112,26 @@ def build_image_list(msid):
                    "%s_valid_hist_log.png" % prefix]
     return images
 
-def compare_images(msid, short_msid, load_week, out_dir):
+def compare_images(msid, name, load_week, out_dir):
     images = build_image_list(msid)
     for image in images:
         new_image = misc.imread(os.path.join(out_dir, image))
-        old_image = misc.imread(os.path.join(test_data_dir, short_msid, load_week, image))
+        old_image = misc.imread(os.path.join(test_data_dir, name, load_week, image))
         assert_array_equal(new_image, old_image)
 
-def copy_new_images(msid, short_msid, out_dir, answer_dir):
+def copy_new_images(msid, name, out_dir, answer_dir):
     images = build_image_list(msid)
     for image in images:
         fromfile = os.path.join(out_dir, image)
-        adir = os.path.join(answer_dir, short_msid)
+        adir = os.path.join(answer_dir, name)
         if not os.path.exists(adir):
             os.mkdir(adir)
         tofile = os.path.join(adir, image)
         shutil.copyfile(fromfile, tofile)
 
-def run_image_test(msid, short_msid, load_week, out_dir, answer_dir):
+def run_image_test(msid, name, load_week, out_dir, answer_dir):
     out_dir = os.path.abspath(out_dir)
     if not answer_dir:
-        compare_images(msid, short_msid, load_week, out_dir)
+        compare_images(msid, name, load_week, out_dir)
     else:
-        copy_new_images(msid, short_msid, out_dir, answer_dir)
+        copy_new_images(msid, name, out_dir, answer_dir)
