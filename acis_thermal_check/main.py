@@ -272,7 +272,7 @@ class ACISThermalCheck(object):
     
         return viols
 
-    def make_viols(self, opt, states, times, temps):
+    def make_viols(self, times, temps):
         """
         Find limit violations where predicted temperature is above the
         yellow limit minus margin.
