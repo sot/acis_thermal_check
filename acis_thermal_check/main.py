@@ -28,6 +28,74 @@ from acis_thermal_check.utils import globfile, \
     config_logging, TASK_DATA, plot_two
 
 class ACISThermalCheck(object):
+    r"""
+    ACISThermalCheck class for making thermal model predictions
+    and validating past model data against telemetry
+
+    ACISThermalCheck takes inputs to model a specific ACIS
+    component temperature and evolves a Xija thermal model
+    forward in time to predict temperatures for a given period,
+    typically a load which is under review. This information is
+    outputted onto a web page in the form of plots and statistical
+    information about the model run. ACISThermalCheck also
+    runs the thermal model for a period previous to the current
+    time for validation of the model against telemetry, and outputs
+    plots to the same web page.
+
+    Parameters
+    ----------
+    msid : string
+        The MSID mnemomic for the temperature to be modeled.
+    name : string
+        The name of the ACIS component whose temperature is
+        being modeled.
+    MSIDs : dictionary of string values
+        A dictionary mapping between names (e.g., "dea") and
+        MSIDs (e.g., "1DEAMZT") for components that will be
+        modeled or used in the model.
+    yellow : dictionary of float values
+        A dictionary mapping between names (e.g., "dea") and
+        the yellow limits for the corresponding components.
+    margin : dictionary of float values
+        A dictionary mapping between names (e.g., "dea") and
+        the margin between the yellow limit and the planning
+        limit for the corresponding components.
+    validation_limits : dictionary of lists of tuples
+        A dictionary mapping between names (e.g., "dea") and
+        the validation limits for each component in the form
+        of a list of tuples, where each tuple corresponds to
+        (percentile, model-data), e.g.: [(1, 2.0), (50, 1.0),
+        (99, 2.0)]
+    hist_limit : list of floats
+        A list of floating-point values corresponding to the
+        temperatures which will be included in the validation
+        histogram. The number of colored histograms on the plot
+        will correspond to the number of values in this list.
+    calc_model : function
+        A function which is used to drive Xija and run the
+        thermal model. It must have the following signature:
+        def calc_model(model_spec, states, start, stop,
+                       T_comp=None, T_comp_times=None)
+        "model_spec": The model specifiation which is used to
+        run the model.
+        "states": commanded states structured NumPy array.
+        "start": The start time of the model run
+        "stop": The stop time of the model run
+        "T_comp": The initial temperature values of the components
+        "T_comp_times": The times at which the components of the
+        temperature are defined
+    other_telem : list of strings, optional
+        A list of other MSIDs that may need to be obtained from
+        the engineering archive for validation purposes. The
+        calling program determines this.
+    other_map : dictionary, optional
+        A dictionary which maps names to MSIDs, e.g.:
+        {'sim_z': 'tscpos', 'dp_pitch': 'pitch'}. Used to map
+        names understood by Xija to MSIDs.
+    other_opts : dictionary, optional
+        Other command-line options that may need to be processed
+        by the thermal model go into this dictionary.
+    """
     def __init__(self, msid, name, MSIDs, yellow, margin,
                  validation_limits, hist_limit, calc_model,
                  other_telem=None, other_map=None,
@@ -46,9 +114,22 @@ class ACISThermalCheck(object):
         self.other_opts = other_opts
 
     def driver(self, opt):
+        """
+        The main interface to all of ACISThermalCheck's functions.
+        This method must be called by the particular thermal model
+        implementation to actually run the code and make the webpage.
+
+        Parameters
+        ----------
+        opt : OptionParser arguments
+            The command-line options object, which has the options
+            attached to it as attributes
+        """
         if not os.path.exists(opt.outdir):
             os.mkdir(opt.outdir)
 
+        # Configure the logger so that it knows which model
+        # we are using and how verbose it is supposed to be
         config_logging(opt.outdir, opt.verbose, self.name)
 
         # Store info relevant to processing for use in outputs
@@ -79,7 +160,9 @@ class ACISThermalCheck(object):
 
         tnow = DateTime(opt.run_start).secs
         if opt.oflsdir is not None:
-            # Get tstart, tstop, commands from backstop file in opt.oflsdir
+            # If we are running a model for a particular load,
+            # get tstart, tstop, commands from backstop file
+            # in opt.oflsdir
             bs_cmds = self.get_bs_cmds(opt.oflsdir)
             tstart = bs_cmds[0]['time']
             tstop = bs_cmds[-1]['time']
@@ -87,19 +170,26 @@ class ACISThermalCheck(object):
             proc.update(dict(datestart=DateTime(tstart).date,
                              datestop=DateTime(tstop).date))
         else:
+            # Otherwise, the start time for the run is whatever is in
+            # opt.run_start
             tstart = tnow
 
-        # Get temperature telemetry for 3 weeks prior to min(tstart, NOW)
+        # Get temperature and other telemetry for 3 weeks prior to min(tstart, NOW)
         telem_msids = [self.msid, 'sim_z', 'dp_pitch', 'dp_dpa_power', 'roll']
+        # If the calling program has other MSIDs it wishes us to check, add them
+        # to the list which is supposed to be grabbed from the engineering archive
         if self.other_telem is not None:
             telem_msids += self.other_telem
+        # This is a map of MSIDs
         name_map = {'sim_z': 'tscpos', 'dp_pitch': 'pitch'}
         if self.other_map is not None:
             name_map.update(self.other_map)
+        # Get the telemetry values which will be used for prediction and validation
         tlm = self.get_telem_values(min(tstart, tnow),
                                     telem_msids,
                                     days=opt.days,
                                     name_map=name_map)
+        # tscpos needs to be converted to the correct units as used on the R/T pages
         tlm['tscpos'] *= -397.7225924607
 
         # make predictions on oflsdir if defined
@@ -110,11 +200,14 @@ class ACISThermalCheck(object):
                         temps=None)
 
         # Validation
+        # Make the validation plots
         plots_validation = self.make_validation_plots(opt, tlm, db)
+        # Determine violations of temperature validation
         valid_viols = self.make_validation_viols(plots_validation)
         if len(valid_viols) > 0:
             self.logger.info('validation warning(s) in output at %s' % opt.outdir)
 
+        # Write everything to the web page
         self.write_index_rst(opt, proc, plots_validation, valid_viols=valid_viols,
                         plots=pred['plots'], viols=pred['viols'])
         self.rst_to_html(opt, proc)
@@ -125,6 +218,27 @@ class ACISThermalCheck(object):
                     plots_validation=plots_validation)
 
     def make_week_predict(self, opt, tstart, tstop, bs_cmds, tlm, db):
+        """
+        Parameters
+        ----------
+        opt : OptionParser arguments
+            The command-line options object, which has the options
+            attached to it as attributes
+        tstart : float
+            The start time of the model run in seconds from the beginning
+            of the mission.
+        tstop : float
+            The stop time of the model run in seconds from the beginning
+            of the mission.
+        bs_cmds : list of dictionaries
+            The commands determined from the backstop file that will be
+            converted into commanded states
+        tlm : NumPy structured array
+            Telemetry which will be used to construct the initial temperature
+        db : SQL database
+            The SQL database from which commands will be drawn if they are not
+            in the backstop file.
+        """
         # Try to make initial state0 from cmd line options
         t_msid = 'T_%s' % self.name
         opts = ['pitch', 'simpos', 'ccd_count', 'fep_count', 'vid_board', 'clocking', t_msid]
