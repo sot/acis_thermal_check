@@ -243,9 +243,9 @@ class ACISThermalCheck(object):
             converted into commanded states
         tlm : NumPy structured array
             Telemetry which will be used to construct the initial temperature
-        db : SQL database
-            The SQL database from which commands will be drawn if they are not
-            in the backstop file.
+        db : SQL database handle
+            The SQL database handle from which commands will be drawn if 
+            they are not in the backstop file.
         """
         # Try to make initial state0 from cmd line options
         opts = ['pitch', 'simpos', 'ccd_count', 'fep_count', 
@@ -255,16 +255,14 @@ class ACISThermalCheck(object):
             opts += self.other_opts
 
         # Create the initial state in state0, attempting to use the values from the
-        # command line. We set this up with an initial quaternion corresponding to
-        # degrees pitch and degrees roll, and a 30-second state duration.
+        # command line. We set this up with an initial dummy quaternion and a
+        # 30-second state duration.
         state0 = dict((x, getattr(opt, x)) for x in opts)
         state0.update({'tstart': tstart - 30,
                        'tstop': tstart,
                        'datestart': DateTime(tstart - 30).date,
                        'datestop': DateTime(tstart).date,
-                       'q1': 0.0, 'q2': 0.0, 'q3': 0.0, 'q4': 1.0,
-                       }
-                      )
+                       'q1': 0.0, 'q2': 0.0, 'q3': 0.0, 'q4': 1.0})
 
         # If command-line option were not fully specified then get state0 as last
         # cmd_state that starts within available telemetry. We also add to this
@@ -436,6 +434,13 @@ class ACISThermalCheck(object):
         """
         Find limit violations where predicted temperature is above the
         yellow limit minus margin.
+
+        Parameters
+        ----------
+        times : NumPy array
+            Times from the start of the mission in seconds.
+        temps : dict of NumPy arrays
+            NumPy arrays corresponding to the modeled temperatures
         """
         self.logger.info('Checking for limit violations')
 
@@ -443,13 +448,15 @@ class ACISThermalCheck(object):
         for msid in self.MSIDs:
             temp = temps[msid]
             plan_limit = self.yellow[msid] - self.margin[msid]
+            # The next two lines have some black magic that's going on,
+            # but the end result is that the violations of the planning
+            # limit are determined
             bad = np.concatenate(([False], temp >= plan_limit, [False]))
             changes = np.flatnonzero(bad[1:] != bad[:-1]).reshape(-1, 2)
             for change in changes:
                 viol = {'datestart': DateTime(times[change[0]]).date,
                         'datestop': DateTime(times[change[1] - 1]).date,
-                        'maxtemp': temp[change[0]:change[1]].max()
-                        }
+                        'maxtemp': temp[change[0]:change[1]].max()}
                 self.logger.info('WARNING: %s exceeds planning limit of %.2f '
                                  'degC from %s to %s'
                                  % (self.MSIDs[msid], plan_limit, viol['datestart'],
@@ -608,20 +615,30 @@ class ACISThermalCheck(object):
 
     def make_validation_plots(self, opt, tlm, db):
         """
-        Make validation output plots.
+        Make validation output plots by running the thermal model from a
+        time in the past forward to the present and compare it to real
+        telemetry
 
-        :param tlm: telemetry
-        :param db: database handle
-        :returns: list of plot info including plot file names
+        Parameters
+        ----------
+        opt : OptionParser options
+            The command-line options
+        tlm : NumPy record array
+            NumPy record array of telemetry
+        db : SQL database handle
+            The SQL database handle from which commands will be drawn if 
+            they are not in the backstop file. JAZ: likely to be refactored
         """
         outdir = opt.outdir
         start = tlm['date'][0]
         stop = tlm['date'][-1]
+        # JAZ: This next line is likely to be refactored
         states = self.get_states(start, stop, db)
 
-        # Create array of times at which to calculate temperatures, then do it
         self.logger.info('Calculating %s thermal model for validation' % self.name.upper())
 
+        # Run the thermal model from the beginning of obtained telemetry
+        # to the end, so we can compare its outputs to the real values
         model = self.calc_model_wrapper(opt.model_spec, states, start, stop)
 
         # Use an OrderedDict here because we want the plots on the validation
@@ -631,10 +648,12 @@ class ACISThermalCheck(object):
                             ('tscpos', model.comp['sim_z'].mvals),
                             ('roll', model.comp['roll'].mvals)])
 
+        # Interpolate the model and data to a consistent set of times
         idxs = Ska.Numpy.interpolate(np.arange(len(tlm)), tlm['date'], model.times,
                                      method='nearest')
         tlm = tlm[idxs]
 
+        # Set up labels for validation plots
         labels = {self.msid: 'Degrees (C)',
                   'pitch': 'Pitch (degrees)',
                   'tscpos': 'SIM-Z (steps/1000)',
@@ -647,6 +666,10 @@ class ACISThermalCheck(object):
                 'tscpos': '%d',
                 'roll': '%.3f'}
 
+        # Set up a mask of "good times" for which the validation is 
+        # "valid", e.g., not during situations where we expect in 
+        # advance that telemetry and model data will not match. This
+        # is so we do not flag violations during these times
         good_mask = np.ones(len(tlm), dtype='bool')
         if hasattr(model, "bad_times"):
             for interval in model.bad_times:
@@ -682,12 +705,15 @@ class ACISThermalCheck(object):
             fig.savefig(outfile)
             plot['lines'] = filename
 
-            # Make quantiles
+            # Make quantiles. Use the histogram limits to decide 
+            # what temperature range will be included in the quantiles
+            # (we don't care about violations at low temperatures)
             if msid == self.msid:
                 ok = ((tlm[msid] > self.hist_limit[0]) & good_mask)
             else:
                 ok = np.ones(len(tlm[msid]), dtype=bool)
             diff = np.sort(tlm[msid][ok] - pred[msid][ok])
+            # The PSMC model has a second histogram limit
             if len(self.hist_limit) == 2:
                 if msid == self.msid:
                     ok2 = ((tlm[msid] > self.hist_limit[1]) & good_mask)
@@ -701,6 +727,8 @@ class ACISThermalCheck(object):
                 quant_line += (',' + fmts[msid] % quant_val)
             quant_table += quant_line + "\n"
 
+            # We make two histogram plots for each validation,
+            # one with linear and another with log scaling.
             for histscale in ('log', 'lin'):
                 fig = plt.figure(20 + fig_id, figsize=(4, 3))
                 fig.clf()
@@ -720,6 +748,7 @@ class ACISThermalCheck(object):
 
             plots.append(plot)
 
+        # Write quantile tables to a CSV file
         filename = os.path.join(outdir, 'validation_quant.csv')
         self.logger.info('Writing quantile table %s' % filename)
         f = open(filename, 'w')
@@ -739,8 +768,16 @@ class ACISThermalCheck(object):
         return plots
 
     def rst_to_html(self, outdir, proc):
-        """Run rst2html.py to render index.rst as HTML"""
+        """Run rst2html.py to render index.rst as HTML]
 
+        Parameters
+        ----------
+        outdir : string
+            The path to the directory to which the outputs will be 
+            written to.
+        proc : dict
+            A dictionary of general information used in the output
+        """
         # First copy CSS files to outdir
         import Ska.Shell
         import docutils.writers.html4css1
@@ -750,6 +787,7 @@ class ACISThermalCheck(object):
         shutil.copy2(os.path.join(TASK_DATA, 'acis_thermal_check', 'templates', 
                                   'acis_thermal_check.css'), outdir)
 
+        # Spawn a shell and call rst2html to generate HTML from the reST.
         spawn = Ska.Shell.Spawn(stdout=None)
         infile = os.path.join(outdir, 'index.rst')
         outfile = os.path.join(outdir, 'index.html')
@@ -769,21 +807,44 @@ class ACISThermalCheck(object):
         outtext = del_colgroup.sub('', open(outfile).read())
         open(outfile, 'w').write(outtext)
 
-    def write_index_rst(self, oflsdir, outdir, proc, plots_validation, valid_viols=None,
-                        plots=None, viols=None):
+    def write_index_rst(self, oflsdir, outdir, proc, plots_validation, 
+                        valid_viols=None, plots=None, viols=None):
         """
-        Make output text (in ReST format) in opt.outdir.
+        Make output text (in reST format) in opt.outdir, using jinja2
+        to fill out the template. 
+        
+        Parameters
+        ----------
+        oflsdir : string
+            Path to the ofls directory that was used when running the model.
+            May be None if that was not the case.
+        outdir : string
+            Path to the location where the outputs will be written.
+        proc : dict
+            A dictionary of general information used in the output
+        plots_validation : dict
+            A dictionary of validation plots and their associated info
+        valid_viols : dict, optional
+            A dictionary of validation violations (if there were any)
+        plots : dict, optional
+            A dictionary of prediction plots and their associated info
+            (if there were any) 
+        viols : dict, optional
+            A dictionary of violations for the predicted temperatures
+            (if there were any)
         """
         import jinja2
 
         outfile = os.path.join(outdir, 'index.rst')
         self.logger.info('Writing report file %s' % outfile)
+        # Set up the context for the reST file
         context = {'oflsdir': oflsdir,
                    'plots': plots,
                    'viols': viols,
                    'valid_viols': valid_viols,
                    'proc': proc,
                    'plots_validation': plots_validation}
+        # Open up the reST template and send the context to it using jinja2
         index_template_file = ('index_template.rst'
                                if oflsdir else
                                'index_template_val_only.rst')
@@ -791,6 +852,7 @@ class ACISThermalCheck(object):
                                            'templates', index_template_file)).read()
         index_template = re.sub(r' %}\n', ' %}', index_template)
         template = jinja2.Template(index_template)
+        # Render the template and write it to a file
         open(outfile, 'w').write(template.render(**context))
 
     def get_states(self, datestart, datestop, db):
