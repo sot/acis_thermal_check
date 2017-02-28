@@ -151,6 +151,7 @@ class ACISThermalCheck(object):
 
         self.logger.info('Command line options:\n%s\n' % pformat(opt.__dict__))
 
+        # JAZ: The database code is likely to be refactored or removed
         # Connect to database (NEED TO USE aca_read for sybase; user is ignored for sqlite)
         server = ('sybase' if opt.cmd_states_db == 'sybase' else
                   os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3'))
@@ -207,10 +208,13 @@ class ACISThermalCheck(object):
         if len(valid_viols) > 0:
             self.logger.info('validation warning(s) in output at %s' % opt.outdir)
 
-        # Write everything to the web page
-        self.write_index_rst(opt, proc, plots_validation, valid_viols=valid_viols,
-                        plots=pred['plots'], viols=pred['viols'])
-        self.rst_to_html(opt, proc)
+        # Write everything to the web page.
+        # First, write the reStructuredText file.
+        self.write_index_rst(opt.oflsdir, opt.outdir, proc, plots_validation, 
+                             valid_viols=valid_viols, plots=pred['plots'], 
+                             viols=pred['viols'])
+        # Second, convert reST to HTML
+        self.rst_to_html(opt.outdir, proc)
 
         return dict(opt=opt, states=pred['states'], times=pred['times'],
                     temps=pred['temps'], plots=pred['plots'],
@@ -695,24 +699,24 @@ class ACISThermalCheck(object):
 
         return plots
 
-    def rst_to_html(self, opt, proc):
+    def rst_to_html(self, outdir, proc):
         """Run rst2html.py to render index.rst as HTML"""
 
         # First copy CSS files to outdir
         import Ska.Shell
         import docutils.writers.html4css1
         dirname = os.path.dirname(docutils.writers.html4css1.__file__)
-        shutil.copy2(os.path.join(dirname, 'html4css1.css'), opt.outdir)
+        shutil.copy2(os.path.join(dirname, 'html4css1.css'), outdir)
 
         shutil.copy2(os.path.join(TASK_DATA, 'acis_thermal_check', 'templates', 
-                                  'acis_thermal_check.css'), opt.outdir)
+                                  'acis_thermal_check.css'), outdir)
 
         spawn = Ska.Shell.Spawn(stdout=None)
-        infile = os.path.join(opt.outdir, 'index.rst')
-        outfile = os.path.join(opt.outdir, 'index.html')
+        infile = os.path.join(outdir, 'index.rst')
+        outfile = os.path.join(outdir, 'index.html')
         status = spawn.run(['rst2html.py',
                             '--stylesheet-path={}'
-                            .format(os.path.join(opt.outdir, 'acis_thermal_check.css')),
+                            .format(os.path.join(outdir, 'acis_thermal_check.css')),
                             infile, outfile])
         if status != 0:
             proc['errors'].append('rst2html.py failed with status {}: see run log'
@@ -726,17 +730,17 @@ class ACISThermalCheck(object):
         outtext = del_colgroup.sub('', open(outfile).read())
         open(outfile, 'w').write(outtext)
 
-    def write_index_rst(self, opt, proc, plots_validation, valid_viols=None,
+    def write_index_rst(self, oflsdir, outdir, proc, plots_validation, valid_viols=None,
                         plots=None, viols=None):
         """
         Make output text (in ReST format) in opt.outdir.
         """
         import jinja2
 
-        outfile = os.path.join(opt.outdir, 'index.rst')
+        outfile = os.path.join(outdir, 'index.rst')
         self.logger.info('Writing report file %s' % outfile)
         context = {
-             'opt': opt,
+             'oflsdir': oflsdir,
              'plots': plots,
              'viols': viols,
              'valid_viols': valid_viols,
@@ -744,7 +748,7 @@ class ACISThermalCheck(object):
              'plots_validation': plots_validation,
              }
         index_template_file = ('index_template.rst'
-                               if opt.oflsdir else
+                               if oflsdir else
                                'index_template_val_only.rst')
         index_template = open(os.path.join(TASK_DATA, 'acis_thermal_check', 
                                            'templates', index_template_file)).read()

@@ -14,8 +14,8 @@ Summary
 .. class:: borderless
 
 ====================  =============================================
-{% if opt.loaddir %}
-Load directory        {{opt.loaddir}}
+{% if oflsdir %}
+Load directory        {{oflsdir}}
 {% endif %}
 Run time              {{proc.run_time}} by {{proc.run_user}}
 Run log               `<run.dat>`_
