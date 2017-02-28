@@ -242,10 +242,14 @@ class ACISThermalCheck(object):
         # Try to make initial state0 from cmd line options
         t_msid = 'T_%s' % self.name
         opts = ['pitch', 'simpos', 'ccd_count', 'fep_count', 'vid_board', 'clocking', t_msid]
+        # self.other_opts will be filled from specific model tools
         if self.other_opts is not None:
             opts += self.other_opts
-        state0 = dict((x, getattr(opt, x)) for x in opts)
 
+        # Create the initial state in state0, attempting to use the values from the
+        # command line. We set this up with an initial quaternion corresponding to
+        # degrees pitch and degrees roll, and a 30-second state duration.
+        state0 = dict((x, getattr(opt, x)) for x in opts)
         state0.update({'tstart': tstart - 30,
                        'tstop': tstart,
                        'datestart': DateTime(tstart - 30).date,
@@ -254,15 +258,17 @@ class ACISThermalCheck(object):
                        }
                       )
         
-        # If cmd lines options were not fully specified then get state0 as last
-        # cmd_state that starts within available telemetry.  Update with the
-        # mean temperatures at the start of state0.
+        # If command-line option were not fully specified then get state0 as last
+        # cmd_state that starts within available telemetry. We also add to this
+        # dict the mean temperature at the start of state0.
         if None in state0.values():
             state0 = self.set_initial_state(tlm, db, t_msid)
     
         self.logger.debug('state0 at %s is\n%s' % (DateTime(state0['tstart']).date,
                                                    pformat(state0)))
-    
+
+        # JAZ: BEGIN SECTION TO BE REFACTORED
+
         # Get commands after end of state0 through first backstop command time
         cmds_datestart = state0['datestop']
         cmds_datestop = bs_cmds[0]['date']
@@ -286,7 +292,9 @@ class ACISThermalCheck(object):
     
         self.logger.info('Got %d cmds from database between %s and %s' %
                          (len(db_cmds), cmds_datestart, cmds_datestop))
-    
+
+        # JAZ: END SECTION TO BE REFACTORED
+
         # Get the commanded states from state0 through the end of backstop commands
         states = cmd_states.get_states(state0, db_cmds + bs_cmds)
         states[-1].datestop = bs_cmds[-1]['date']
@@ -294,9 +302,10 @@ class ACISThermalCheck(object):
         self.logger.info('Found %d commanded states from %s to %s' %
                          (len(states), states[0]['datestart'], states[-1]['datestop']))
     
-        # Create array of times at which to calculate temps, then do it.
         self.logger.info('Calculating %s thermal model' % self.name.upper())
 
+        # calc_model_wrapper actually does the model calculation by running
+        # model-specific code.
         model = self.calc_model_wrapper(opt, states, state0['tstart'], tstop, 
                                         t_msid, state0=state0)
 
@@ -305,10 +314,14 @@ class ACISThermalCheck(object):
         plt.rc("xtick", labelsize=10)
         plt.rc("ytick", labelsize=10)
         temps = {self.name: model.comp[self.msid].mvals}
+        # make_check_plots runs the validation of the model against previous telemetry
         plots = self.make_check_plots(opt, states, model.times, temps, tstart)
+        # make_viols determines the violations and prints them out
         viols = self.make_viols(opt, states, model.times, temps)
-        self.write_states(opt, states)
-        self.write_temps(opt, model.times, temps)
+        # write_states writes the commanded states to states.dat
+        self.write_states(opt.outdir, states)
+        # write_temps writes the temperatures to temperatures.dat
+        self.write_temps(opt.outdir, model.times, temps)
 
         return dict(opt=opt, states=states, times=model.times, temps=temps,
                     plots=plots, viols=viols)
@@ -316,6 +329,8 @@ class ACISThermalCheck(object):
 
     def set_initial_state(self, tlm, db, t_msid):
         """
+        JAZ: This function will be refactored
+
         Get the initial state corresponding to the end of available telemetry (minus a
         bit).
 
@@ -414,9 +429,21 @@ class ACISThermalCheck(object):
 
         return viols
 
-    def write_states(self, opt, states, remove_cols=None):
-        """Write states recarray to file states.dat"""
-        outfile = os.path.join(opt.outdir, 'states.dat')
+    def write_states(self, outdir, states, remove_cols=None):
+        """
+        Write the states record array to the file "states.dat".
+
+        Parameters
+        ----------
+        outdir : string
+            The directory the file will be written to.
+        states : NumPy record array
+            The commanded states to be written to the file.
+        remove_cols : list of strings, optional
+            A list of columns that will be excluded from
+            being written to the file. Default: None
+        """
+        outfile = os.path.join(outdir, 'states.dat')
         self.logger.info('Writing states to %s' % outfile)
         out = open(outfile, 'w')
         fmt = {'power': '%.1f',
@@ -433,9 +460,20 @@ class ACISThermalCheck(object):
         Ska.Numpy.pprint(newstates, fmt, out)
         out.close()
 
-    def write_temps(self, opt, times, temps):
-        """Write temperature predictions to file temperatures.dat"""
-        outfile = os.path.join(opt.outdir, 'temperatures.dat')
+    def write_temps(self, outdir, times, temps):
+        """
+        Write the states record array to the file "states.dat".
+
+        Parameters
+        ----------
+        outdir : string
+            The directory the file will be written to.
+        times : NumPy array
+            Times in seconds from the start of the mission
+        temps : NumPy array
+            Temperatures in Celsius
+        """
+        outfile = os.path.join(outdir, 'temperatures.dat')
         self.logger.info('Writing temperatures to %s' % outfile)
         T = temps[self.name]
         temp_recs = [(times[i], DateTime(times[i]).date, T[i])
@@ -715,7 +753,10 @@ class ACISThermalCheck(object):
         open(outfile, 'w').write(template.render(**context))
 
     def get_states(self, datestart, datestop, db):
-        """Get states exactly covering date range
+        """
+        JAZ: This function is likely to be refactored or removed
+
+        Get states exactly covering date range
 
         :param datestart: start date
         :param datestop: stop date
@@ -748,7 +789,8 @@ class ACISThermalCheck(object):
         return states
 
     def get_bs_cmds(self, oflsdir):
-        """Return commands for the backstop file in opt.oflsdir.
+        """
+        Return commands for the backstop file in opt.oflsdir.
         """
         import Ska.ParseCM
         backstop_file = globfile(os.path.join(oflsdir, 'CR*.backstop'))
@@ -763,12 +805,16 @@ class ACISThermalCheck(object):
         Fetch last ``days`` of available ``msids`` telemetry values before
         time ``tstart``.
 
-        :param tstart: start time for telemetry (secs)
-        :param msids: fetch msids list
-        :param days: length of telemetry request before ``tstart``
-        :param dt: sample time (secs)
-        :param name_map: dict mapping msid to recarray col name
-        :returns: np recarray of requested telemetry values from fetch
+        Parameters
+        ----------
+        tstart: float
+            Start time for telemetry (secs)
+        msids: list of strings
+            List of MSIDs to fetch
+        days: integer, optional
+            Length of telemetry request before ``tstart`` in days. Default: 14
+        name_map: dict
+            A mapping of MSID names to column names in the record array.
         """
         tstart = DateTime(tstart).secs
         start = DateTime(tstart - days * 86400).date
@@ -777,13 +823,15 @@ class ACISThermalCheck(object):
         msidset = fetch.MSIDset(msids, start, stop, stat='5min')
         start = max(x.times[0] for x in msidset.values())
         stop = min(x.times[-1] for x in msidset.values())
-        msidset.interpolate(328.0, start, stop + 1)  # 328 for '5min' stat
+        # Interpolate the MSIDs to a common set of times, 5 mins apart (328 s)
+        msidset.interpolate(328.0, start, stop + 1)
 
         # Finished when we found at least 4 good records (20 mins)
         if len(msidset.times) < 4:
             raise ValueError('Found no telemetry within %d days of %s'
                              % (days, str(tstart)))
 
+        # Construct the NumPy record array of telemetry,
         outnames = ['date'] + [name_map.get(x, x) for x in msids]
         vals = {name_map.get(x, x): msidset[x].vals for x in msids}
         vals['date'] = msidset.times
