@@ -322,10 +322,10 @@ class ACISThermalCheck(object):
         plt.rc("xtick", labelsize=10)
         plt.rc("ytick", labelsize=10)
         temps = {self.name: model.comp[self.msid].mvals}
-        # make_check_plots runs the validation of the model against previous telemetry
-        plots = self.make_check_plots(opt, states, model.times, temps, tstart)
-        # make_viols determines the violations and prints them out
-        viols = self.make_viols(opt, states, model.times, temps)
+        # make_prediction_plots runs the validation of the model against previous telemetry
+        plots = self.make_prediction_plots(opt.outdir, states, model.times, temps, tstart)
+        # make_prediction_viols determines the violations and prints them out
+        viols = self.make_prediction_viols(opt, states, model.times, temps)
         # write_states writes the commanded states to states.dat
         self.write_states(opt.outdir, states)
         # write_temps writes the temperatures to temperatures.dat
@@ -391,28 +391,33 @@ class ACISThermalCheck(object):
         """
         Find limit violations where MSID quantile values are outside the
         allowed range.
+
+        Parameters
+        ----------
+        plots_validation : list of dictionaries
+            List of dictionaries with information about the contents of the
+            plots which will be used to compute violations
         """
-    
         self.logger.info('Checking for validation violations')
-    
+
         viols = []
-    
+
         for plot in plots_validation:
             # 'plot' is actually a structure with plot info and stats about the
-            #  plotted data for a particular MSID.  'msid' can be a real MSID
-            #  (1DEAMZT) or pseudo like 'POWER'
+            # plotted data for a particular MSID. 'msid' can be a real MSID
+            # (1DEAMZT) or pseudo like 'POWER'
             msid = plot['msid']
-    
+
             # Make sure validation limits exist for this MSID
             if msid not in self.validation_limits:
                 continue
-    
+
             # Cycle through defined quantiles (e.g. 99 for 99%) and corresponding
             # limit values for this MSID.
             for quantile, limit in self.validation_limits[msid]:
                 # Get the quantile statistic as calculated when making plots
                 msid_quantile_value = float(plot['quant%02d' % quantile])
-    
+
                 # Check for a violation and take appropriate action
                 if abs(msid_quantile_value) > limit:
                     viol = {'msid': msid,
@@ -424,10 +429,10 @@ class ACISThermalCheck(object):
                     self.logger.info('WARNING: %s %d%% quantile value of %s exceeds '
                                      'limit of %.2f' %
                                      (msid, quantile, msid_quantile_value, limit))
-    
+
         return viols
 
-    def make_viols(self, times, temps):
+    def make_prediction_viols(self, times, temps):
         """
         Find limit violations where predicted temperature is above the
         yellow limit minus margin.
@@ -475,8 +480,7 @@ class ACISThermalCheck(object):
         fmt = {'power': '%.1f',
                'pitch': '%.2f',
                'tstart': '%.2f',
-               'tstop': '%.2f',
-               }
+               'tstop': '%.2f'}
         newcols = list(states.dtype.names)
         newcols.remove('T_%s' % self.name)
         if remove_cols is not None:
@@ -513,23 +517,36 @@ class ACISThermalCheck(object):
         Ska.Numpy.pprint(temp_array, fmt, out)
         out.close()
 
-    def make_check_plots(self, opt, states, times, temps, tstart):
+    def make_prediction_plots(self, outdir, states, times, temps, tstart):
         """
-        Make output plots.
+        Make plots of the thermal prediction as well as associated 
+        commanded states.
 
-        :param opt: options
-        :param states: commanded states
-        :param times: time stamps (sec) for temperature arrays
-        :param temps: dict of temperatures
-        :param tstart: load start time
-        :rtype: dict of review information including plot file names
+        Parameters
+        ----------
+        outdir : string
+            The path to the output directory.
+        states : NumPy record array
+            Commanded states
+        times : NumPy array
+            Times in seconds from the beginning of the mission for the
+            temperature arrays
+        temps : dict of NumPy arrays
+            Dictionary of temperature arrays
+        tstart : float
+            The start time of the load in seconds from the beginning of the
+            mission.
         """
         plots = {}
 
         # Start time of loads being reviewed expressed in units for plotdate()
         load_start = cxctime2plotdate([tstart])[0]
 
-        self.logger.info('Making temperature check plots')
+        # Make the plots for the temperature prediction. This loop allows us
+        # to make a plot for more than one temperature, but we currently only 
+        # do one. Plots are of temperature on the left axis and pitch on the
+        # right axis. 
+        self.logger.info('Making temperature prediction plots')
         for fig_id, msid in enumerate((self.name,)):
             plots[msid] = plot_two(fig_id=fig_id + 1,
                                    x=times,
@@ -540,20 +557,22 @@ class ACISThermalCheck(object):
                                    xlabel='Date',
                                    ylabel='Temperature (C)',
                                    ylabel2='Pitch (deg)',
-                                   ylim2=(40, 180),
-                                   )
+                                   ylim2=(40, 180))
+            # Add horizontal lines for the planning and caution limits
             plots[msid]['ax'].axhline(self.yellow[msid], linestyle='-', color='y',
                                       linewidth=2.0)
             plots[msid]['ax'].axhline(self.yellow[msid] - self.margin[msid], linestyle='--',
                                       color='y', linewidth=2.0)
+            # Add a vertical line to mark the start of the load
             plots[msid]['ax'].axvline(load_start, linestyle=':', color='g',
                                       linewidth=1.0)
             filename = self.MSIDs[self.name].lower() + '.png'
-            outfile = os.path.join(opt.outdir, filename)
+            outfile = os.path.join(outdir, filename)
             self.logger.info('Writing plot file %s' % outfile)
             plots[msid]['fig'].savefig(outfile)
             plots[msid]['filename'] = filename
 
+        # Make a plot of ACIS CCDs and SIM-Z position
         plots['pow_sim'] = plot_two(
             fig_id=3,
             title='ACIS CCDs and SIM-Z position',
@@ -566,8 +585,8 @@ class ACISThermalCheck(object):
             y2=pointpair(states['simpos']),
             ylabel2='SIM-Z (steps)',
             ylim2=(-105000, 105000),
-            figsize=(7.5, 3.5),
-            )
+            figsize=(7.5, 3.5))
+        # Add a vertical line to mark the start time of the load
         plots['pow_sim']['ax'].axvline(load_start, linestyle=':', color='g',
                                        linewidth=1.0)
         # The next several lines ensure that the width of the axes
@@ -578,7 +597,7 @@ class ACISThermalCheck(object):
         rm = plots[self.name]['fig'].subplotpars.right*w1/w2
         plots['pow_sim']['fig'].subplots_adjust(left=lm, right=rm)
         filename = 'pow_sim.png'
-        outfile = os.path.join(opt.outdir, filename)
+        outfile = os.path.join(outdir, filename)
         self.logger.info('Writing plot file %s' % outfile)
         plots['pow_sim']['fig'].savefig(outfile)
         plots['pow_sim']['filename'] = filename
@@ -615,7 +634,7 @@ class ACISThermalCheck(object):
         idxs = Ska.Numpy.interpolate(np.arange(len(tlm)), tlm['date'], model.times,
                                      method='nearest')
         tlm = tlm[idxs]
-        
+
         labels = {self.msid: 'Degrees (C)',
                   'pitch': 'Pitch (degrees)',
                   'tscpos': 'SIM-Z (steps/1000)',
@@ -759,14 +778,12 @@ class ACISThermalCheck(object):
 
         outfile = os.path.join(outdir, 'index.rst')
         self.logger.info('Writing report file %s' % outfile)
-        context = {
-             'oflsdir': oflsdir,
-             'plots': plots,
-             'viols': viols,
-             'valid_viols': valid_viols,
-             'proc': proc,
-             'plots_validation': plots_validation,
-             }
+        context = {'oflsdir': oflsdir,
+                   'plots': plots,
+                   'viols': viols,
+                   'valid_viols': valid_viols,
+                   'proc': proc,
+                   'plots_validation': plots_validation}
         index_template_file = ('index_template.rst'
                                if oflsdir else
                                'index_template_val_only.rst')
@@ -855,7 +872,10 @@ class ACISThermalCheck(object):
             raise ValueError('Found no telemetry within %d days of %s'
                              % (days, str(tstart)))
 
-        # Construct the NumPy record array of telemetry,
+        # Construct the NumPy record array of telemetry values
+        # for the different MSIDs (temperatures, pitch, etc).
+        # In some cases we replace the MSID name with something
+        # more human-readable.
         outnames = ['date'] + [name_map.get(x, x) for x in msids]
         vals = {name_map.get(x, x): msidset[x].vals for x in msids}
         vals['date'] = msidset.times
