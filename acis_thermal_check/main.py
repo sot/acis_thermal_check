@@ -102,6 +102,10 @@ class ACISThermalCheck(object):
                  other_opts=None):
         self.msid = msid
         self.name = name
+        # t_msid is another version of the name that corresponds
+        # to the command line argument that is the initial value
+        # for the temperature
+        self.t_msid = 'T_%s' % self.name
         self.MSIDs = MSIDs
         self.yellow = yellow
         self.margin = margin
@@ -244,8 +248,8 @@ class ACISThermalCheck(object):
             in the backstop file.
         """
         # Try to make initial state0 from cmd line options
-        t_msid = 'T_%s' % self.name
-        opts = ['pitch', 'simpos', 'ccd_count', 'fep_count', 'vid_board', 'clocking', t_msid]
+        opts = ['pitch', 'simpos', 'ccd_count', 'fep_count', 
+                'vid_board', 'clocking', self.t_msid]
         # self.other_opts will be filled from specific model tools
         if self.other_opts is not None:
             opts += self.other_opts
@@ -261,13 +265,13 @@ class ACISThermalCheck(object):
                        'q1': 0.0, 'q2': 0.0, 'q3': 0.0, 'q4': 1.0,
                        }
                       )
-        
+
         # If command-line option were not fully specified then get state0 as last
         # cmd_state that starts within available telemetry. We also add to this
         # dict the mean temperature at the start of state0.
         if None in state0.values():
-            state0 = self.set_initial_state(tlm, db, t_msid)
-    
+            state0 = self.set_initial_state(tlm, db)
+
         self.logger.debug('state0 at %s is\n%s' % (DateTime(state0['tstart']).date,
                                                    pformat(state0)))
 
@@ -276,7 +280,7 @@ class ACISThermalCheck(object):
         # Get commands after end of state0 through first backstop command time
         cmds_datestart = state0['datestop']
         cmds_datestop = bs_cmds[0]['date']
-    
+
         # Get timeline load segments including state0 and beyond.
         timeline_loads = db.fetchall("""SELECT * from timeline_loads
                                      WHERE datestop > '%s'
@@ -284,16 +288,16 @@ class ACISThermalCheck(object):
                                      % (cmds_datestart, cmds_datestop))
         self.logger.info('Found {} timeline_loads  after {}'.format(
                          len(timeline_loads), cmds_datestart))
-    
+
         # Get cmds since datestart within timeline_loads
         db_cmds = cmd_states.get_cmds(cmds_datestart, db=db, update_db=False,
                                       timeline_loads=timeline_loads)
-    
+
         # Delete non-load cmds that are within the backstop time span
         # => Keep if timeline_id is not None or date < bs_cmds[0]['time']
         db_cmds = [x for x in db_cmds if (x['timeline_id'] is not None or
                                           x['time'] < bs_cmds[0]['time'])]
-    
+
         self.logger.info('Got %d cmds from database between %s and %s' %
                          (len(db_cmds), cmds_datestart, cmds_datestop))
 
@@ -305,15 +309,15 @@ class ACISThermalCheck(object):
         states[-1].tstop = bs_cmds[-1]['time']
         self.logger.info('Found %d commanded states from %s to %s' %
                          (len(states), states[0]['datestart'], states[-1]['datestop']))
-    
+
         self.logger.info('Calculating %s thermal model' % self.name.upper())
 
         # calc_model_wrapper actually does the model calculation by running
         # model-specific code.
-        model = self.calc_model_wrapper(opt, states, state0['tstart'], tstop, 
-                                        t_msid, state0=state0)
+        model = self.calc_model_wrapper(opt.model_spec, states, state0['tstart'], 
+                                        tstop, state0=state0)
 
-        # Make the limit check plots and data files                                                                        
+        # Make the limit check plots and data files
         plt.rc("axes", labelsize=10, titlesize=12)
         plt.rc("xtick", labelsize=10)
         plt.rc("ytick", labelsize=10)
@@ -331,7 +335,7 @@ class ACISThermalCheck(object):
                     plots=plots, viols=viols)
 
 
-    def set_initial_state(self, tlm, db, t_msid):
+    def set_initial_state(self, tlm, db):
         """
         JAZ: This function will be refactored
 
@@ -354,16 +358,34 @@ class ACISThermalCheck(object):
                                        datepar='datestart', date_margin=-100)
         ok = ((tlm['date'] >= state0['tstart'] - 700) &
               (tlm['date'] <= state0['tstart'] + 700))
-        state0.update({t_msid: np.mean(tlm[self.msid][ok])})
+        state0.update({self.t_msid: np.mean(tlm[self.msid][ok])})
 
         return state0
 
-    def calc_model_wrapper(self, opt, states, tstart, tstop, t_msid, state0=None):
+    def calc_model_wrapper(self, model_spec, states, tstart, tstop,
+                           state0=None):
+        """
+        This method sets up the model and runs it. "calc_model" is
+        provided by the specific model instances.
+
+        Parameters
+        ----------
+        model_spec : string
+            Path to the JSON file containing the model specification.
+        states : NumPy record array
+            Commanded states
+        tstart : float
+            The start time of the model run.
+        tstop : float
+            The end time of the model run. 
+        state0 : initial state dictionary, optional
+            This state is used to set the initial temperature.
+        """
         if state0 is None:
             start_msid = None
         else:
-            start_msid = state0[t_msid]
-        return self.calc_model(opt.model_spec, states, tstart, tstop, start_msid)
+            start_msid = state0[self.t_msid]
+        return self.calc_model(model_spec, states, tstart, tstop, start_msid)
 
     def make_validation_viols(self, plots_validation):
         """
@@ -581,9 +603,7 @@ class ACISThermalCheck(object):
         # Create array of times at which to calculate temperatures, then do it
         self.logger.info('Calculating %s thermal model for validation' % self.name.upper())
 
-        t_msid = 'T_%s' % self.name
-
-        model = self.calc_model_wrapper(opt, states, start, stop, t_msid)
+        model = self.calc_model_wrapper(opt.model_spec, states, start, stop)
 
         # Use an OrderedDict here because we want the plots on the validation
         # page to appear in this order
