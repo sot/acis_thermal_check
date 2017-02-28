@@ -78,8 +78,9 @@ def config_logging(outdir, verbose, name):
     console.setFormatter(formatter)
     logger.addHandler(console)
 
-    filehandler = logging.FileHandler(
-            filename=os.path.join(outdir, 'run.dat'), mode='w')
+    logfile = os.path.join(outdir, 'run.dat')
+
+    filehandler = logging.FileHandler(filename=logfile, mode='w')
     filehandler.setFormatter(formatter)
     logger.addHandler(filehandler)
 
