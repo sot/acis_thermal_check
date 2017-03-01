@@ -194,7 +194,7 @@ class ACISThermalCheck(object):
                                     telem_msids,
                                     days=opt.days,
                                     name_map=name_map)
-        # tscpos needs to be converted to the correct units as used on the R/T pages
+        # tscpos needs to be converted to steps and must be in the right direction
         tlm['tscpos'] *= -397.7225924607
 
         # make predictions on oflsdir if defined
