@@ -38,8 +38,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'acis_thermal_check'
-copyright = u'2016, CXC ACIS Operations'
+project = u'ACIS Thermal Model Predictions and Testing'
+copyright = u'2016, CXC ACIS Operations Team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

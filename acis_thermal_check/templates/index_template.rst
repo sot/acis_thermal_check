@@ -1,5 +1,5 @@
 =======================
-{{proc.short_msid}} temperatures check
+{{proc.name}} temperatures check
 =======================
 .. role:: red
 
@@ -17,8 +17,8 @@ Summary
 Date start            {{proc.datestart}}
 Date stop             {{proc.datestop}}
 {{proc.msid}} status        {%if viols.default%}:red:`NOT OK`{% else %}OK{% endif%} (Planning Limit = {{"%.1f"|format(proc.msid_limit)}} C)
-{% if opt.loaddir %}
-Load directory        {{opt.loaddir}}
+{% if oflsdir %}
+Load directory        {{oflsdir}}
 {% endif %}
 Run time              {{proc.run_time}} by {{proc.run_user}}
 Run log               `<run.dat>`_
@@ -44,13 +44,13 @@ No {{proc.msid}} Violations
 .. image:: {{plots.pow_sim.filename}}
 
 =======================
-{{proc.short_msid}} Model Validation
+{{proc.name}} Model Validation
 =======================
 
 MSID quantiles
 ---------------
 
-Note: {{proc.short_msid}} quantiles are calculated using only points where {{proc.msid}} > {{proc.hist_limit.0}} degC.
+Note: {{proc.name}} quantiles are calculated using only points where {{proc.msid}} > {{proc.hist_limit.0}} degC.
 
 .. csv-table:: 
    :header: "MSID", "1%", "5%", "16%", "50%", "84%", "95%", "99%"
@@ -84,9 +84,9 @@ No Validation Violations
 -----------------------
 
 {% if proc.hist_limit|length == 2 %}
-Note: {{proc.short_msid}} residual histograms include points where {{proc.msid}} > {{proc.hist_limit.0}} degC in blue and points where {{proc.msid}} > {{proc.hist_limit.1}} degC in red.
+Note: {{proc.name}} residual histograms include points where {{proc.msid}} > {{proc.hist_limit.0}} degC in blue and points where {{proc.msid}} > {{proc.hist_limit.1}} degC in red.
 {% else %}
-Note: {{proc.short_msid}} residual histograms include only points where {{proc.msid}} > {{proc.hist_limit.0}} degC.
+Note: {{proc.name}} residual histograms include only points where {{proc.msid}} > {{proc.hist_limit.0}} degC.
 {% endif %}
 
 Red = telemetry, blue = model
