@@ -323,7 +323,7 @@ class ACISThermalCheck(object):
         # make_prediction_plots runs the validation of the model against previous telemetry
         plots = self.make_prediction_plots(opt.outdir, states, model.times, temps, tstart)
         # make_prediction_viols determines the violations and prints them out
-        viols = self.make_prediction_viols(opt, states, model.times, temps)
+        viols = self.make_prediction_viols(model.times, temps)
         # write_states writes the commanded states to states.dat
         self.write_states(opt.outdir, states)
         # write_temps writes the temperatures to temperatures.dat
