@@ -1,6 +1,6 @@
-=======================
+================================
 {{proc.name}} temperatures check
-=======================
+================================
 .. role:: red
 
 {% if proc.errors %}
@@ -13,22 +13,22 @@ Summary
 --------         
 .. class:: borderless
 
-====================  =============================================
-Date start            {{proc.datestart}}
-Date stop             {{proc.datestop}}
-{{proc.msid}} status        {%if viols.default%}:red:`NOT OK`{% else %}OK{% endif%} (Planning Limit = {{"%.1f"|format(proc.msid_limit)}} C)
+=====================  =============================================
+Date start             {{proc.datestart}}
+Date stop              {{proc.datestop}}
+{{proc.msid}} status   {%if viols.default%}:red:`NOT OK`{% else %}OK{% endif%} (Planning Limit = {{"%.1f"|format(proc.msid_limit)}} C)
 {% if oflsdir %}
-Load directory        {{oflsdir}}
+Load directory         {{oflsdir}}
 {% endif %}
-Run time              {{proc.run_time}} by {{proc.run_user}}
-Run log               `<run.dat>`_
-Temperatures          `<temperatures.dat>`_
-States                `<states.dat>`_
-====================  =============================================
+Run time               {{proc.run_time}} by {{proc.run_user}}
+Run log                `<run.dat>`_
+Temperatures           `<temperatures.dat>`_
+States                 `<states.dat>`_
+=====================  =============================================
 
 {% if viols.default  %}
 {{proc.msid}} Violations
--------------------
+------------------------
 =====================  =====================  ==================
 Date start             Date stop              Max temperature
 =====================  =====================  ==================
@@ -43,9 +43,9 @@ No {{proc.msid}} Violations
 .. image:: {{plots.default.filename}}
 .. image:: {{plots.pow_sim.filename}}
 
-=======================
+==============================
 {{proc.name}} Model Validation
-=======================
+==============================
 
 MSID quantiles
 ---------------
