@@ -322,7 +322,7 @@ class ACISThermalCheck(object):
         # make_prediction_plots runs the validation of the model against previous telemetry
         plots = self.make_prediction_plots(opt.outdir, states, model.times, temps, tstart)
         # make_prediction_viols determines the violations and prints them out
-        viols = self.make_prediction_viols(model.times, temps)
+        viols = self.make_prediction_viols(model.times, temps, tstart)
         # write_states writes the commanded states to states.dat
         self.write_states(opt.outdir, states)
         # write_temps writes the temperatures to temperatures.dat
@@ -432,7 +432,7 @@ class ACISThermalCheck(object):
 
         return viols
 
-    def make_prediction_viols(self, times, temps):
+    def make_prediction_viols(self, times, temps, tstart):
         """
         Find limit violations where predicted temperature is above the
         yellow limit minus margin.
@@ -443,6 +443,10 @@ class ACISThermalCheck(object):
             Times from the start of the mission in seconds.
         temps : dict of NumPy arrays
             NumPy arrays corresponding to the modeled temperatures
+        tstart : float
+            The start time of the load, used so that we only report
+            violations for times later than this time for the model
+            run.
         """
         self.logger.info('Checking for limit violations')
 
@@ -459,14 +463,17 @@ class ACISThermalCheck(object):
             # the planning limit and flag the duration and maximum of
             # the violation
             for change in changes:
-                viol = {'datestart': DateTime(times[change[0]]).date,
-                        'datestop': DateTime(times[change[1] - 1]).date,
-                        'maxtemp': temp[change[0]:change[1]].max()}
-                self.logger.info('WARNING: %s exceeds planning limit of %.2f '
-                                 'degC from %s to %s'
-                                 % (self.MSIDs[msid], plan_limit, viol['datestart'],
-                                    viol['datestop']))
-                viols[msid].append(viol)
+                # Only report violations which occur after the load being
+                # reviewed starts.
+                if times[change[0]] > tstart:
+                    viol = {'datestart': DateTime(times[change[0]]).date,
+                            'datestop': DateTime(times[change[1] - 1]).date,
+                            'maxtemp': temp[change[0]:change[1]].max()}
+                    self.logger.info('WARNING: %s exceeds planning limit of %.2f '
+                                     'degC from %s to %s'
+                                     % (self.MSIDs[msid], plan_limit, viol['datestart'],
+                                        viol['datestop']))
+                    viols[msid].append(viol)
 
         viols["default"] = viols[self.name]
 
