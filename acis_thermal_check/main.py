@@ -465,7 +465,9 @@ class ACISThermalCheck(object):
             for change in changes:
                 # Only report violations which occur after the load being
                 # reviewed starts.
-                if times[change[0]] > tstart:
+                in_load = times[change[0]] > tstart or \
+                          (times[change[0]] < tstart < times[change[1]])
+                if in_load:
                     viol = {'datestart': DateTime(times[change[0]]).date,
                             'datestop': DateTime(times[change[1] - 1]).date,
                             'maxtemp': temp[change[0]:change[1]].max()}
