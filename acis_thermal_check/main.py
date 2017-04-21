@@ -322,7 +322,7 @@ class ACISThermalCheck(object):
         # make_prediction_plots runs the validation of the model against previous telemetry
         plots = self.make_prediction_plots(opt.outdir, states, model.times, temps, bs_cmds[0]['time'])
         # make_prediction_viols determines the violations and prints them out
-        viols = self.make_prediction_viols(model.times, temps, tstart)
+        viols = self.make_prediction_viols(model.times, temps, bs_cmds[0]['time'])
         # write_states writes the commanded states to states.dat
         self.write_states(opt.outdir, states)
         # write_temps writes the temperatures to temperatures.dat
@@ -432,7 +432,7 @@ class ACISThermalCheck(object):
 
         return viols
 
-    def make_prediction_viols(self, times, temps, tstart):
+    def make_prediction_viols(self, times, temps, load_start):
         """
         Find limit violations where predicted temperature is above the
         yellow limit minus margin.
@@ -443,7 +443,7 @@ class ACISThermalCheck(object):
             Times from the start of the mission in seconds.
         temps : dict of NumPy arrays
             NumPy arrays corresponding to the modeled temperatures
-        tstart : float
+        load_start : float
             The start time of the load, used so that we only report
             violations for times later than this time for the model
             run.
@@ -465,8 +465,8 @@ class ACISThermalCheck(object):
             for change in changes:
                 # Only report violations which occur after the load being
                 # reviewed starts.
-                in_load = times[change[0]] > tstart or \
-                          (times[change[0]] < tstart < times[change[1]])
+                in_load = times[change[0]] > load_start or \
+                          (times[change[0]] < load_start < times[change[1]])
                 if in_load:
                     viol = {'datestart': DateTime(times[change[0]]).date,
                             'datestop': DateTime(times[change[1] - 1]).date,
@@ -538,7 +538,7 @@ class ACISThermalCheck(object):
         Ska.Numpy.pprint(temp_array, fmt, out)
         out.close()
 
-    def make_prediction_plots(self, outdir, states, times, temps, tstart):
+    def make_prediction_plots(self, outdir, states, times, temps, load_start):
         """
         Make plots of the thermal prediction as well as associated 
         commanded states.
@@ -554,14 +554,14 @@ class ACISThermalCheck(object):
             temperature arrays
         temps : dict of NumPy arrays
             Dictionary of temperature arrays
-        tstart : float
+        load_start : float
             The start time of the load in seconds from the beginning of the
             mission.
         """
         plots = {}
 
         # Start time of loads being reviewed expressed in units for plotdate()
-        load_start = cxctime2plotdate([tstart])[0]
+        load_start = cxctime2plotdate([load_start])[0]
 
         # Make the plots for the temperature prediction. This loop allows us
         # to make a plot for more than one temperature, but we currently only 
