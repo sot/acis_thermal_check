@@ -311,7 +311,7 @@ class ACISThermalCheck(object):
 
         # calc_model_wrapper actually does the model calculation by running
         # model-specific code.
-        model = self.calc_model_wrapper(opt.model_spec, states, state0['tstart'], 
+        model = self.calc_model_wrapper(opt.oflsdir, opt.model_spec, states, state0['tstart'], 
                                         tstop, state0=state0)
 
         # Make the limit check plots and data files
@@ -359,7 +359,7 @@ class ACISThermalCheck(object):
 
         return state0
 
-    def calc_model_wrapper(self, model_spec, states, tstart, tstop,
+    def calc_model_wrapper(self, oflsdir, model_spec, states, tstart, tstop,
                            state0=None):
         """
         This method sets up the model and runs it. "calc_model" is
@@ -367,6 +367,9 @@ class ACISThermalCheck(object):
 
         Parameters
         ----------
+        oflsdir : string
+            Path to the ofls directory that was used when running the model.
+            May be None if that was not the case.
         model_spec : string
             Path to the JSON file containing the model specification.
         states : NumPy record array
@@ -641,7 +644,7 @@ class ACISThermalCheck(object):
 
         # Run the thermal model from the beginning of obtained telemetry
         # to the end, so we can compare its outputs to the real values
-        model = self.calc_model_wrapper(opt.model_spec, states, start, stop)
+        model = self.calc_model_wrapper(opt.oflsdir, opt.model_spec, states, start, stop)
 
         # Use an OrderedDict here because we want the plots on the validation
         # page to appear in this order
