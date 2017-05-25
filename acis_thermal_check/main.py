@@ -714,17 +714,19 @@ class ACISThermalCheck(object):
             # what temperature range will be included in the quantiles
             # (we don't care about violations at low temperatures)
             if msid == self.msid:
-                ok = ((tlm[msid] > self.hist_limit[0]) & good_mask)
+                ok = (tlm[msid] > self.hist_limit[0]) & good_mask
             else:
                 ok = np.ones(len(tlm[msid]), dtype=bool)
             diff = np.sort(tlm[msid][ok] - pred[msid][ok])
             # The PSMC model has a second histogram limit
             if len(self.hist_limit) == 2:
                 if msid == self.msid:
-                    ok2 = ((tlm[msid] > self.hist_limit[1]) & good_mask)
+                    ok2 = (tlm[msid] > self.hist_limit[1]) & good_mask
                 else:
                     ok2 = np.ones(len(tlm[msid]), dtype=bool)
                 diff2 = np.sort(tlm[msid][ok2] - pred[msid][ok2])
+            else:
+                ok2 = np.zeros(len(tlm[msid]), dtype=bool)
             quant_line = "%s" % msid
             for quant in quantiles:
                 quant_val = diff[(len(diff) * quant) // 100]
@@ -739,7 +741,7 @@ class ACISThermalCheck(object):
                 fig.clf()
                 ax = fig.gca()
                 ax.hist(diff / scale, bins=50, log=(histscale == 'log'))
-                if msid == self.msid and len(self.hist_limit) == 2:
+                if msid == self.msid and len(self.hist_limit) == 2 and ok2.any():
                     ax.hist(diff2 / scale, bins=50, log=(histscale == 'log'),
                             color = 'red')
                 ax.set_title(msid.upper() + ' residuals: data - model')
