@@ -180,73 +180,45 @@ def get_options(msid, name, model_path, opts=None):
         A (key, value) dictionary of additional options for the parser. These
         may be defined by the thermal model checking tool if necessary.
     """
-    # At some point this should be changed to use
-    # argparse because optparse is deprecated
-    from optparse import OptionParser
-    parser = OptionParser()
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
     parser.set_defaults()
-    parser.add_option("--outdir",
-                      default="out",
-                      help="Output directory")
-    parser.add_option("--oflsdir",
-                      help="Load products OFLS directory")
-    parser.add_option("--model-spec",
-                      default=os.path.join(model_path, '%s_model_spec.json' % name),
-                      help="Model specification file")
-    parser.add_option("--days",
-                      type='float',
-                      default=21.0,
-                      help="Days of validation data (days)")
-    parser.add_option("--run-start",
-                      help="Reference time to replace run start time "
-                           "for regression testing")
-    parser.add_option("--traceback",
-                      default=True,
-                      help='Enable tracebacks')
-    parser.add_option("--verbose",
-                      type='int',
-                      default=1,
-                      help="Verbosity (0=quiet, 1=normal, 2=debug)")
-    parser.add_option("--ccd-count",
-                      type='int',
-                      default=6,
-                      help="Initial number of CCDs (default=6)")
-    parser.add_option("--fep-count",
-                      type='int',
-                      default=6,
-                      help="Initial number of FEPs (default=6)")
-    parser.add_option("--vid-board",
-                      type='int',
-                      default=1,
-                      help="Initial state of ACIS vid_board (default=1)")
-    parser.add_option("--clocking",
-                      type='int',
-                      default=1,
-                      help="Initial state of ACIS clocking (default=1)")
-    parser.add_option("--simpos",
-                      default=75616,
-                      type='float',
-                      help="Starting SIM-Z position (steps)")
-    parser.add_option("--pitch",
-                      default=150.0,
-                      type='float',
-                      help="Starting pitch (deg)")
-    parser.add_option("--T-%s" % name,
-                      type='float',
-                      help="Starting %s temperature (degC)" % msid)
-    parser.add_option("--cmd-states-db",
-                      default="sybase",
-                      help="Commanded states database server (sybase|sqlite)")
-    parser.add_option("--version",
-                      action='store_true',
-                      help="Print version")
+    parser.add_argument("--outdir", default="out", help="Output directory")
+    parser.add_argument("--oflsdir", help="Load products OFLS directory")
+    parser.add_argument("--model-spec", 
+                        default=os.path.join(model_path, '%s_model_spec.json' % name),
+                        help="Model specification file")
+    parser.add_argument("--days", type=float, default=21.0,
+                        help="Days of validation data (days)")
+    parser.add_argument("--run-start", help="Reference time to replace run "
+                                            "start time for regression testing")
+    parser.add_argument("--traceback", default=True, help='Enable tracebacks')
+    parser.add_argument("--verbose", type=int, default=1,
+                        help="Verbosity (0=quiet, 1=normal, 2=debug)")
+    parser.add_argument("--ccd-count", type=int, default=6,
+                        help="Initial number of CCDs (default=6)")
+    parser.add_argument("--fep-count", type=int, default=6,
+                        help="Initial number of FEPs (default=6)")
+    parser.add_argument("--vid-board", type=int, default=1,
+                        help="Initial state of ACIS vid_board (default=1)")
+    parser.add_argument("--clocking", type=int, default=1,
+                        help="Initial state of ACIS clocking (default=1)")
+    parser.add_argument("--simpos", default=75616.0, type=float,
+                        help="Starting SIM-Z position (steps)")
+    parser.add_argument("--pitch", default=150.0, type=float,
+                        help="Starting pitch (deg)")
+    parser.add_argument("--T-%s" % name, type=float,
+                        help="Starting %s temperature (degC)" % msid)
+    parser.add_argument("--cmd-states-db", default="sybase",
+                        help="Commanded states database server (sybase|sqlite)")
+    parser.add_argument("--version", action='store_true', help="Print version")
     if opts is not None:
         for opt_name, opt in opts:
-            parser.add_option("--%s" % opt_name, **opt)
+            parser.add_argument("--%s" % opt_name, **opt)
 
-    opt, args = parser.parse_args()
+    args = parser.parse_args()
 
-    if opt.cmd_states_db not in ('sybase', 'sqlite'):
+    if args.cmd_states_db not in ('sybase', 'sqlite'):
         raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
 
-    return opt, args
+    return args
