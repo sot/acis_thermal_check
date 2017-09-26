@@ -216,9 +216,9 @@ def get_options(msid, name, model_path, opts=None):
         for opt_name, opt in opts:
             parser.add_argument("--%s" % opt_name, **opt)
 
-    opt, args = parser.parse_args()
+    args = parser.parse_args()
 
-    if opt.cmd_states_db not in ('sybase', 'sqlite'):
+    if args.cmd_states_db not in ('sybase', 'sqlite'):
         raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
 
-    return opt, args
+    return args
