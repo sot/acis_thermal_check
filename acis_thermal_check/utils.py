@@ -222,3 +222,23 @@ def get_options(msid, name, model_path, opts=None):
         raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
 
     return args
+
+def get_acis_limits(msid):
+
+    import requests
+
+    yellow_hi = None
+    red_hi = None
+
+    url = "http://hea-www.cfa.harvard.edu/~acisweb/htdocs/acis/RT-ACIS60-V/limits.txt"
+
+    u = requests.get(url)
+
+    for line in u.text.split("\n"):
+        words = line.strip().split("\t")
+        if len(words) > 1 and words[0] == msid.upper():
+            yellow_hi = float(words[3])
+            red_hi = float(words[5])
+            break
+
+    return yellow_hi, red_hi
