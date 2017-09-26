@@ -247,6 +247,8 @@ class ACISThermalCheck(object):
             The SQL database handle from which commands will be drawn if 
             they are not in the backstop file.
         """
+        # JAZ: BEGIN SECTION TO BE REFACTORED
+
         # Try to make initial state0 from cmd line options
         opts = ['pitch', 'simpos', 'ccd_count', 'fep_count', 
                 'vid_board', 'clocking', self.t_msid]
@@ -264,7 +266,7 @@ class ACISThermalCheck(object):
                        'datestop': DateTime(tstart).date,
                        'q1': 0.0, 'q2': 0.0, 'q3': 0.0, 'q4': 1.0})
 
-        # If command-line option were not fully specified then get state0 as last
+        # If command-line options were not fully specified then get state0 as last
         # cmd_state that starts within available telemetry. We also add to this
         # dict the mean temperature at the start of state0.
         if None in state0.values():
@@ -272,8 +274,6 @@ class ACISThermalCheck(object):
 
         self.logger.debug('state0 at %s is\n%s' % (DateTime(state0['tstart']).date,
                                                    pformat(state0)))
-
-        # JAZ: BEGIN SECTION TO BE REFACTORED
 
         # Get commands after end of state0 through first backstop command time
         cmds_datestart = state0['datestop']
@@ -298,14 +298,14 @@ class ACISThermalCheck(object):
         self.logger.info('Got %d cmds from database between %s and %s' %
                          (len(db_cmds), cmds_datestart, cmds_datestop))
 
-        # JAZ: END SECTION TO BE REFACTORED
-
         # Get the commanded states from state0 through the end of backstop commands
         states = cmd_states.get_states(state0, db_cmds + bs_cmds)
         states[-1].datestop = bs_cmds[-1]['date']
         states[-1].tstop = bs_cmds[-1]['time']
         self.logger.info('Found %d commanded states from %s to %s' %
                          (len(states), states[0]['datestart'], states[-1]['datestop']))
+
+        # JAZ: END SECTION TO BE REFACTORED
 
         self.logger.info('Calculating %s thermal model' % self.name.upper())
 
@@ -352,7 +352,7 @@ class ACISThermalCheck(object):
         be used.
         """
         state0 = cmd_states.get_state0(DateTime(tlm['date'][-5]).date, db,
-                                       datepar='datestart', date_margin=-100)
+                                       datepar='datestart', date_margin=None)
         ok = ((tlm['date'] >= state0['tstart'] - 700) &
               (tlm['date'] <= state0['tstart'] + 700))
         state0.update({self.t_msid: np.mean(tlm[self.msid][ok])})
@@ -829,7 +829,7 @@ class ACISThermalCheck(object):
         """
         Make output text (in reST format) in opt.outdir, using jinja2
         to fill out the template. 
-        
+
         Parameters
         ----------
         oflsdir : string
