@@ -68,12 +68,12 @@ class TestOpts(object):
         self.load_week = load_week
         self.run_start = run_start
         self.outdir = outdir
-        # load_week sets the oflsdir
+        # load_week sets the bsdir
         if load_week is None:
-            self.oflsdir = None
+            self.bsdir = None
         else:
             load_year = "20%s" % load_week[-2:]
-            self.oflsdir = "/data/acis/LoadReviews/%s/%s/ofls" % (load_year, load_week)
+            self.bsdir = "/data/acis/LoadReviews/%s/%s/ofls" % (load_year, load_week)
         self.days = days
         self.ccd_count = ccd_count
         self.fep_count = fep_count

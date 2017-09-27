@@ -157,10 +157,10 @@ class ACISThermalCheck(object):
         self.logger.info('Command line options:\n%s\n' % pformat(opt.__dict__))
 
         tnow = DateTime(opt.run_start).secs
-        if opt.oflsdir is not None:
+        if opt.bsdir is not None:
             # If we are running a model for a particular load,
             # get tstart, tstop, commands from backstop file
-            # in opt.oflsdir
+            # in opt.bsdir
             bs_cmds = self.state_builder.get_bs_cmds()
             tstart = bs_cmds[0]['time']
             tstop = bs_cmds[-1]['time']
@@ -190,8 +190,8 @@ class ACISThermalCheck(object):
         # tscpos needs to be converted to steps and must be in the right direction
         tlm['tscpos'] *= -397.7225924607
 
-        # make predictions on oflsdir if defined
-        if opt.oflsdir is not None:
+        # make predictions on bsdir if defined
+        if opt.bsdir is not None:
             pred = self.make_week_predict(opt, tstart, tstop, bs_cmds, tlm)
         else:
             pred = dict(plots=None, viols=None, times=None, states=None,
@@ -207,7 +207,7 @@ class ACISThermalCheck(object):
 
         # Write everything to the web page.
         # First, write the reStructuredText file.
-        self.write_index_rst(opt.oflsdir, opt.outdir, proc, plots_validation, 
+        self.write_index_rst(opt.bsdir, opt.outdir, proc, plots_validation, 
                              valid_viols=valid_viols, plots=pred['plots'], 
                              viols=pred['viols'])
         # Second, convert reST to HTML
@@ -723,7 +723,7 @@ class ACISThermalCheck(object):
         outtext = del_colgroup.sub('', open(outfile).read())
         open(outfile, 'w').write(outtext)
 
-    def write_index_rst(self, oflsdir, outdir, proc, plots_validation, 
+    def write_index_rst(self, bsdir, outdir, proc, plots_validation, 
                         valid_viols=None, plots=None, viols=None):
         """
         Make output text (in reST format) in opt.outdir, using jinja2
@@ -731,9 +731,10 @@ class ACISThermalCheck(object):
 
         Parameters
         ----------
-        oflsdir : string
-            Path to the ofls directory that was used when running the model.
-            May be None if that was not the case.
+        bsdir : string
+            Path to the directory containing the backstop file that was 
+            used when running the model. May be None if that was not 
+            the case.
         outdir : string
             Path to the location where the outputs will be written.
         proc : dict
@@ -754,7 +755,7 @@ class ACISThermalCheck(object):
         outfile = os.path.join(outdir, 'index.rst')
         self.logger.info('Writing report file %s' % outfile)
         # Set up the context for the reST file
-        context = {'oflsdir': oflsdir,
+        context = {'bsdir': bsdir,
                    'plots': plots,
                    'viols': viols,
                    'valid_viols': valid_viols,
@@ -762,7 +763,7 @@ class ACISThermalCheck(object):
                    'plots_validation': plots_validation}
         # Open up the reST template and send the context to it using jinja2
         index_template_file = ('index_template.rst'
-                               if oflsdir else
+                               if bsdir else
                                'index_template_val_only.rst')
         index_template = open(os.path.join(TASK_DATA, 'acis_thermal_check', 
                                            'templates', index_template_file)).read()

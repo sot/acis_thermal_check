@@ -26,10 +26,10 @@ class LegacyStateBuilder(StateBuilder):
 
     def get_bs_cmds(self):
         """
-        Return commands for the backstop file in opt.oflsdir.
+        Return commands for the backstop file in opt.bsdir.
         """
         import Ska.ParseCM
-        backstop_file = globfile(os.path.join(self.args.oflsdir, 'CR*.backstop'))
+        backstop_file = globfile(os.path.join(self.args.bsdir, 'CR*.backstop'))
         self.logger.info('Using backstop file %s' % backstop_file)
         bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
         self.logger.info('Found %d backstop commands between %s and %s' %

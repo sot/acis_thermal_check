@@ -184,7 +184,9 @@ def get_options(msid, name, model_path, opts=None):
     parser = ArgumentParser()
     parser.set_defaults()
     parser.add_argument("--outdir", default="out", help="Output directory")
-    parser.add_argument("--oflsdir", help="Load products OFLS directory")
+    parser.add_argument("--bsdir", help="Path to the directory containing the backstop file")
+    parser.add_argument("--oflsdir", help="Path to the directory containing the backstop "
+                                          "file (legacy argument)")
     parser.add_argument("--model-spec", 
                         default=os.path.join(model_path, '%s_model_spec.json' % name),
                         help="Model specification file")
@@ -214,11 +216,15 @@ def get_options(msid, name, model_path, opts=None):
     parser.add_argument("--state-builder", default="legacy",
                         help="StateBuilder to use (legacy|acis)")
     parser.add_argument("--version", action='store_true', help="Print version")
+
     if opts is not None:
         for opt_name, opt in opts:
             parser.add_argument("--%s" % opt_name, **opt)
 
     args = parser.parse_args()
+
+    if args.oflsdir is not None:
+        args.bsdir = args.oflsdir
 
     if args.cmd_states_db not in ('sybase', 'sqlite'):
         raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
