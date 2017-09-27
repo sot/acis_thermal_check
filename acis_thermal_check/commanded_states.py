@@ -55,11 +55,14 @@ class LegacyStateBuilder(StateBuilder):
         Instead we supply ``date_margin=None`` so that get_state0 will find the newest
         state consistent with the ``date`` criterion and pcad_mode == 'NPNT'.
         """
-        state0 = cmd_states.get_state0(DateTime(tlm['date'][-5]).date, self.db,
-                                       datepar='datestart', date_margin=None)
-        ok = ((tlm['date'] >= state0['tstart'] - 700) &
-              (tlm['date'] <= state0['tstart'] + 700))
-        state0.update({self.thermal_check.t_msid: np.mean(tlm[self.thermal_check.msid][ok])})
+        start = DateTime(tlm['date'][-5])
+        state0 = cmd_states.get_state0(start.date, self.db, datepar='datestart', 
+                                       date_margin=None)
+        # last 10 samples
+        state0.update({self.thermal_check.t_msid: np.mean(tlm[self.thermal_check.msid][-10:])})
+        # middle of the last 10 samples
+        state0['datestart'] = start.date
+        state0['tstart'] = start.secs
 
         return state0
 
