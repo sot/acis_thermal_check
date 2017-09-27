@@ -553,7 +553,7 @@ class ACISThermalCheck(object):
 
         # Run the thermal model from the beginning of obtained telemetry
         # to the end, so we can compare its outputs to the real values
-        model = self.calc_model_wrapper(opt.oflsdir, opt.model_spec, states, start, stop)
+        model = self.calc_model_wrapper(opt.model_spec, states, start, stop)
 
         # Use an OrderedDict here because we want the plots on the validation
         # page to appear in this order
