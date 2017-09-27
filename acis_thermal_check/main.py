@@ -155,14 +155,6 @@ class ACISThermalCheck(object):
 
         self.logger.info('Command line options:\n%s\n' % pformat(opt.__dict__))
 
-        # JAZ: The database code is likely to be refactored or removed
-        # Connect to database (NEED TO USE aca_read for sybase; user is ignored for sqlite)
-        server = ('sybase' if opt.cmd_states_db == 'sybase' else
-                  os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3'))
-        self.logger.info('Connecting to {} to get cmd_states'.format(server))
-        db = Ska.DBI.DBI(dbi=opt.cmd_states_db, server=server, user='aca_read',
-                         database='aca')
-
         tnow = DateTime(opt.run_start).secs
         if opt.oflsdir is not None:
             # If we are running a model for a particular load,
@@ -199,14 +191,14 @@ class ACISThermalCheck(object):
 
         # make predictions on oflsdir if defined
         if opt.oflsdir is not None:
-            pred = self.make_week_predict(opt, tstart, tstop, bs_cmds, tlm, db)
+            pred = self.make_week_predict(opt, tstart, tstop, bs_cmds, tlm)
         else:
             pred = dict(plots=None, viols=None, times=None, states=None,
                         temps=None)
 
         # Validation
         # Make the validation plots
-        plots_validation = self.make_validation_plots(opt, tlm, db)
+        plots_validation = self.make_validation_plots(opt, tlm)
         # Determine violations of temperature validation
         valid_viols = self.make_validation_viols(plots_validation)
         if len(valid_viols) > 0:
@@ -225,7 +217,7 @@ class ACISThermalCheck(object):
                     viols=pred['viols'], proc=proc,
                     plots_validation=plots_validation)
 
-    def make_week_predict(self, opt, tstart, tstop, bs_cmds, tlm, db):
+    def make_week_predict(self, opt, tstart, tstop, bs_cmds, tlm):
         """
         Parameters
         ----------
@@ -243,76 +235,12 @@ class ACISThermalCheck(object):
             converted into commanded states
         tlm : NumPy structured array
             Telemetry which will be used to construct the initial temperature
-        db : SQL database handle
-            The SQL database handle from which commands will be drawn if 
-            they are not in the backstop file.
         """
-        # JAZ: BEGIN SECTION TO BE REFACTORED
-
-        # Try to make initial state0 from cmd line options
-        opts = ['pitch', 'simpos', 'ccd_count', 'fep_count', 
-                'vid_board', 'clocking', self.t_msid]
-        # self.other_opts will be filled from specific model tools
-        if self.other_opts is not None:
-            opts += self.other_opts
-
-        # Create the initial state in state0, attempting to use the values from the
-        # command line. We set this up with an initial dummy quaternion and a
-        # 30-second state duration.
-        state0 = dict((x, getattr(opt, x)) for x in opts)
-        state0.update({'tstart': tstart - 30,
-                       'tstop': tstart,
-                       'datestart': DateTime(tstart - 30).date,
-                       'datestop': DateTime(tstart).date,
-                       'q1': 0.0, 'q2': 0.0, 'q3': 0.0, 'q4': 1.0})
-
-        # If command-line options were not fully specified then get state0 as last
-        # cmd_state that starts within available telemetry. We also add to this
-        # dict the mean temperature at the start of state0.
-        if None in state0.values():
-            state0 = self.set_initial_state(tlm, db)
-
-        self.logger.debug('state0 at %s is\n%s' % (DateTime(state0['tstart']).date,
-                                                   pformat(state0)))
-
-        # Get commands after end of state0 through first backstop command time
-        cmds_datestart = state0['datestop']
-        cmds_datestop = bs_cmds[0]['date']
-
-        # Get timeline load segments including state0 and beyond.
-        timeline_loads = db.fetchall("""SELECT * from timeline_loads
-                                     WHERE datestop > '%s'
-                                     and datestart < '%s'"""
-                                     % (cmds_datestart, cmds_datestop))
-        self.logger.info('Found {} timeline_loads  after {}'.format(
-                         len(timeline_loads), cmds_datestart))
-
-        # Get cmds since datestart within timeline_loads
-        db_cmds = cmd_states.get_cmds(cmds_datestart, db=db, update_db=False,
-                                      timeline_loads=timeline_loads)
-
-        # Delete non-load cmds that are within the backstop time span
-        # => Keep if timeline_id is not None or date < bs_cmds[0]['time']
-        db_cmds = [x for x in db_cmds if x['time'] < bs_cmds[0]['time']]
-
-        self.logger.info('Got %d cmds from database between %s and %s' %
-                         (len(db_cmds), cmds_datestart, cmds_datestop))
-
-        # Get the commanded states from state0 through the end of backstop commands
-        states = cmd_states.get_states(state0, db_cmds + bs_cmds)
-        states[-1].datestop = bs_cmds[-1]['date']
-        states[-1].tstop = bs_cmds[-1]['time']
-        self.logger.info('Found %d commanded states from %s to %s' %
-                         (len(states), states[0]['datestart'], states[-1]['datestop']))
-
-        # JAZ: END SECTION TO BE REFACTORED
-
         self.logger.info('Calculating %s thermal model' % self.name.upper())
 
         # calc_model_wrapper actually does the model calculation by running
         # model-specific code.
-        model = self.calc_model_wrapper(opt.oflsdir, opt.model_spec, states, state0['tstart'], 
-                                        tstop, state0=state0)
+        model = self.calc_model_wrapper(opt.model_spec, states, state0['tstart'], tstop, state0=state0)
 
         # Make the limit check plots and data files
         plt.rc("axes", labelsize=10, titlesize=12)
@@ -330,7 +258,6 @@ class ACISThermalCheck(object):
 
         return dict(opt=opt, states=states, times=model.times, temps=temps,
                     plots=plots, viols=viols)
-
 
     def set_initial_state(self, tlm, db):
         """
@@ -359,17 +286,13 @@ class ACISThermalCheck(object):
 
         return state0
 
-    def calc_model_wrapper(self, oflsdir, model_spec, states, tstart, tstop,
-                           state0=None):
+    def calc_model_wrapper(self, model_spec, states, tstart, tstop, state0=None):
         """
         This method sets up the model and runs it. "calc_model" is
         provided by the specific model instances.
 
         Parameters
         ----------
-        oflsdir : string
-            Path to the ofls directory that was used when running the model.
-            May be None if that was not the case.
         model_spec : string
             Path to the JSON file containing the model specification.
         states : NumPy record array
@@ -628,7 +551,7 @@ class ACISThermalCheck(object):
 
         return plots
 
-    def make_validation_plots(self, opt, tlm, db):
+    def make_validation_plots(self, opt, tlm):
         """
         Make validation output plots by running the thermal model from a
         time in the past forward to the present and compare it to real
@@ -640,9 +563,6 @@ class ACISThermalCheck(object):
             The command-line options
         tlm : NumPy record array
             NumPy record array of telemetry
-        db : SQL database handle
-            The SQL database handle from which commands will be drawn if 
-            they are not in the backstop file. JAZ: likely to be refactored
         """
         outdir = opt.outdir
         start = tlm['date'][0]
