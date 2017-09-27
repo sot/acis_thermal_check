@@ -211,6 +211,8 @@ def get_options(msid, name, model_path, opts=None):
                         help="Starting %s temperature (degC)" % msid)
     parser.add_argument("--cmd-states-db", default="sybase",
                         help="Commanded states database server (sybase|sqlite)")
+    parser.add_argument("--state-builder", default="legacy",
+                        help="StateBuilder to use (legacy|acis)")
     parser.add_argument("--version", action='store_true', help="Print version")
     if opts is not None:
         for opt_name, opt in opts:

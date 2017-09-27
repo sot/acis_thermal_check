@@ -15,7 +15,6 @@ import numpy as np
 import Ska.DBI
 import Ska.Numpy
 from Chandra.Time import DateTime
-import Chandra.cmd_states as cmd_states
 import matplotlib.pyplot as plt
 from Ska.Matplotlib import cxctime2plotdate, \
     pointpair, plot_cxctime
@@ -24,7 +23,7 @@ import shutil
 import logging
 import acis_thermal_check
 version = acis_thermal_check.__version__
-from acis_thermal_check.utils import globfile, \
+from acis_thermal_check.utils import \
     config_logging, TASK_DATA, plot_two
 
 class ACISThermalCheck(object):
@@ -96,10 +95,9 @@ class ACISThermalCheck(object):
         Other command-line options that may need to be processed
         by the thermal model go into this dictionary.
     """
-    def __init__(self, msid, name, MSIDs, yellow, margin,
-                 validation_limits, hist_limit, calc_model,
-                 other_telem=None, other_map=None,
-                 other_opts=None):
+    def __init__(self, msid, name, state_builder, MSIDs, yellow, 
+                 margin, validation_limits, hist_limit, calc_model,
+                 other_telem=None, other_map=None, other_opts=None):
         self.msid = msid
         self.name = name
         # t_msid is another version of the name that corresponds
@@ -116,6 +114,7 @@ class ACISThermalCheck(object):
         self.other_telem = other_telem
         self.other_map = other_map
         self.other_opts = other_opts
+        self.state_builder = state_builder(self)
 
     def driver(self, opt):
         """
@@ -125,10 +124,12 @@ class ACISThermalCheck(object):
 
         Parameters
         ----------
-        opt : OptionParser arguments
+        opt : ArgumentParser arguments
             The command-line options object, which has the options
             attached to it as attributes
         """
+        self.state_builder.set_options(opt)
+
         if not os.path.exists(opt.outdir):
             os.mkdir(opt.outdir)
 
@@ -145,13 +146,13 @@ class ACISThermalCheck(object):
                     hist_limit=self.hist_limit)
         proc["msid_limit"] = self.yellow[self.name] - self.margin[self.name]
         self.logger.info('##############################'
-                    '#######################################')
+                         '#######################################')
         self.logger.info('# %s_check.py run at %s by %s'
-                    % (self.name, proc['run_time'], proc['run_user']))
+                         % (self.name, proc['run_time'], proc['run_user']))
         self.logger.info('# acis_thermal_check version = %s' % version)
         self.logger.info('# model_spec file = %s' % os.path.abspath(opt.model_spec))
         self.logger.info('###############################'
-                    '######################################\n')
+                         '######################################\n')
 
         self.logger.info('Command line options:\n%s\n' % pformat(opt.__dict__))
 
@@ -160,7 +161,7 @@ class ACISThermalCheck(object):
             # If we are running a model for a particular load,
             # get tstart, tstop, commands from backstop file
             # in opt.oflsdir
-            bs_cmds = self.get_bs_cmds(opt.oflsdir)
+            bs_cmds = self.state_builder.get_bs_cmds()
             tstart = bs_cmds[0]['time']
             tstop = bs_cmds[-1]['time']
 
@@ -238,9 +239,14 @@ class ACISThermalCheck(object):
         """
         self.logger.info('Calculating %s thermal model' % self.name.upper())
 
+        # Call the state builder to get the commanded states.
+        states, state0 = self.state_builder.get_predict_states(opt, tlm, tstart, 
+                                                               tstop)
+
         # calc_model_wrapper actually does the model calculation by running
         # model-specific code.
-        model = self.calc_model_wrapper(opt.model_spec, states, state0['tstart'], tstop, state0=state0)
+        model = self.calc_model_wrapper(opt.model_spec, states, state0['tstart'], 
+                                        tstop, state0=state0)
 
         # Make the limit check plots and data files
         plt.rc("axes", labelsize=10, titlesize=12)
@@ -258,33 +264,6 @@ class ACISThermalCheck(object):
 
         return dict(opt=opt, states=states, times=model.times, temps=temps,
                     plots=plots, viols=viols)
-
-    def set_initial_state(self, tlm, db):
-        """
-        JAZ: This function will be refactored
-
-        Get the initial state corresponding to the end of available telemetry (minus a
-        bit).
-
-        The original logic in get_state0() is to return a state that is absolutely,
-        positively reliable by insisting that the returned state is at least
-        ``date_margin`` days old, where the default is 10 days.  That is too conservative
-        (given the way commanded states are actually managed) and not what is desired
-        here, which is a recent state from which to start thermal propagation.
-
-        Instead we supply ``date_margin=-100`` so that get_state0 will find the newest
-        state consistent with the ``date`` criterion and pcad_mode == 'NPNT'.
-
-        When Chandra.cmd_states >= 3.10 is available, then ``date_margin=None`` should
-        be used.
-        """
-        state0 = cmd_states.get_state0(DateTime(tlm['date'][-5]).date, db,
-                                       datepar='datestart', date_margin=None)
-        ok = ((tlm['date'] >= state0['tstart'] - 700) &
-              (tlm['date'] <= state0['tstart'] + 700))
-        state0.update({self.t_msid: np.mean(tlm[self.msid][ok])})
-
-        return state0
 
     def calc_model_wrapper(self, model_spec, states, tstart, tstop, state0=None):
         """
@@ -568,7 +547,7 @@ class ACISThermalCheck(object):
         start = tlm['date'][0]
         stop = tlm['date'][-1]
         # JAZ: This next line is likely to be refactored
-        states = self.get_states(start, stop, db)
+        states = self.state_builder.get_validation_states(start, stop)
 
         self.logger.info('Calculating %s thermal model for validation' % self.name.upper())
 
@@ -791,54 +770,6 @@ class ACISThermalCheck(object):
         template = jinja2.Template(index_template)
         # Render the template and write it to a file
         open(outfile, 'w').write(template.render(**context))
-
-    def get_states(self, datestart, datestop, db):
-        """
-        JAZ: This function is likely to be refactored or removed
-
-        Get states exactly covering date range
-
-        :param datestart: start date
-        :param datestop: stop date
-        :param db: database handle
-        :returns: np recarry of states
-        """
-        datestart = DateTime(datestart).date
-        datestop = DateTime(datestop).date
-        self.logger.info('Getting commanded states between %s - %s' %
-                     (datestart, datestop))
-
-        # Get all states that intersect specified date range
-        cmd = """SELECT * FROM cmd_states
-                 WHERE datestop > '%s' AND datestart < '%s'
-                 ORDER BY datestart""" % (datestart, datestop)
-        self.logger.debug('Query command: %s' % cmd)
-        states = db.fetchall(cmd)
-        self.logger.info('Found %d commanded states' % len(states))
-
-        # Set start and end state date/times to match telemetry span.  Extend the
-        # state durations by a small amount because of a precision issue converting
-        # to date and back to secs.  (The reference tstop could be just over the
-        # 0.001 precision of date and thus cause an out-of-bounds error when
-        # interpolating state values).
-        states[0].tstart = DateTime(datestart).secs - 0.01
-        states[0].datestart = DateTime(states[0].tstart).date
-        states[-1].tstop = DateTime(datestop).secs + 0.01
-        states[-1].datestop = DateTime(states[-1].tstop).date
-
-        return states
-
-    def get_bs_cmds(self, oflsdir):
-        """
-        Return commands for the backstop file in opt.oflsdir.
-        """
-        import Ska.ParseCM
-        backstop_file = globfile(os.path.join(oflsdir, 'CR*.backstop'))
-        self.logger.info('Using backstop file %s' % backstop_file)
-        bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
-        self.logger.info('Found %d backstop commands between %s and %s' %
-                         (len(bs_cmds), bs_cmds[0]['date'], bs_cmds[-1]['date']))
-        return bs_cmds
 
     def get_telem_values(self, tstart, msids, days=14, name_map={}):
         """
