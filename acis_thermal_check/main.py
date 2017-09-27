@@ -456,7 +456,8 @@ class ACISThermalCheck(object):
             plan_limit = self.yellow[msid] - self.margin[msid]
             # The NumPy black magic of the next two lines is to figure 
             # out which time periods have planning limit violations and 
-            # to find the bounding indexes of these times. 
+            # to find the bounding indexes of these times. This will also
+            # find violations which happen for one discrete time value also.
             bad = np.concatenate(([False], temp >= plan_limit, [False]))
             changes = np.flatnonzero(bad[1:] != bad[:-1]).reshape(-1, 2)
             # Now go through the periods where the temperature violates
