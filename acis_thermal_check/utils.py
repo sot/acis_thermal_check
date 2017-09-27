@@ -183,38 +183,40 @@ def get_options(msid, name, model_path, opts=None):
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.set_defaults()
-    parser.add_argument("--outdir", default="out", help="Output directory")
-    parser.add_argument("--bsdir", help="Path to the directory containing the backstop file")
+    parser.add_argument("--outdir", default="out", help="Output directory.")
+    parser.add_argument("--backstop_file", help="Path to the backstop file. If a directory, "
+                                                "the backstop file will be searched for within "
+                                                "this directory.")
     parser.add_argument("--oflsdir", help="Path to the directory containing the backstop "
                                           "file (legacy argument)")
     parser.add_argument("--model-spec", 
                         default=os.path.join(model_path, '%s_model_spec.json' % name),
-                        help="Model specification file")
+                        help="Model specification file.")
     parser.add_argument("--days", type=float, default=21.0,
-                        help="Days of validation data (days)")
+                        help="Days of validation data.")
     parser.add_argument("--run-start", help="Reference time to replace run "
-                                            "start time for regression testing")
-    parser.add_argument("--traceback", default=True, help='Enable tracebacks')
+                                            "start time for regression testing.")
+    parser.add_argument("--traceback", default=True, help='Enable tracebacks.')
     parser.add_argument("--verbose", type=int, default=1,
                         help="Verbosity (0=quiet, 1=normal, 2=debug)")
     parser.add_argument("--ccd-count", type=int, default=6,
-                        help="Initial number of CCDs (default=6)")
+                        help="Initial number of CCDs (default=6).")
     parser.add_argument("--fep-count", type=int, default=6,
-                        help="Initial number of FEPs (default=6)")
+                        help="Initial number of FEPs (default=6).")
     parser.add_argument("--vid-board", type=int, default=1,
-                        help="Initial state of ACIS vid_board (default=1)")
+                        help="Initial state of ACIS vid_board (default=1).")
     parser.add_argument("--clocking", type=int, default=1,
-                        help="Initial state of ACIS clocking (default=1)")
+                        help="Initial state of ACIS clocking (default=1).")
     parser.add_argument("--simpos", default=75616.0, type=float,
-                        help="Starting SIM-Z position (steps)")
+                        help="Starting SIM-Z position (steps).")
     parser.add_argument("--pitch", default=150.0, type=float,
-                        help="Starting pitch (deg)")
+                        help="Starting pitch (deg).")
     parser.add_argument("--T-%s" % name, type=float,
-                        help="Starting %s temperature (degC)" % msid)
+                        help="Starting %s temperature (degC)." % msid)
     parser.add_argument("--cmd-states-db", default="sybase",
-                        help="Commanded states database server (sybase|sqlite)")
+                        help="Commanded states database server (sybase|sqlite).")
     parser.add_argument("--state-builder", default="legacy",
-                        help="StateBuilder to use (legacy|acis)")
+                        help="StateBuilder to use (legacy|acis).")
     parser.add_argument("--version", action='store_true', help="Print version")
 
     if opts is not None:
@@ -224,7 +226,7 @@ def get_options(msid, name, model_path, opts=None):
     args = parser.parse_args()
 
     if args.oflsdir is not None:
-        args.bsdir = args.oflsdir
+        args.backstop_file = args.oflsdir
 
     if args.cmd_states_db not in ('sybase', 'sqlite'):
         raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')

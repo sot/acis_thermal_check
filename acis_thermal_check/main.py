@@ -157,10 +157,10 @@ class ACISThermalCheck(object):
         self.logger.info('Command line options:\n%s\n' % pformat(opt.__dict__))
 
         tnow = DateTime(opt.run_start).secs
-        if opt.bsdir is not None:
+        if opt.backstop_file is not None:
             # If we are running a model for a particular load,
             # get tstart, tstop, commands from backstop file
-            # in opt.bsdir
+            # in opt.backstop_file
             bs_cmds = self.state_builder.get_bs_cmds()
             tstart = bs_cmds[0]['time']
             tstop = bs_cmds[-1]['time']
@@ -190,8 +190,8 @@ class ACISThermalCheck(object):
         # tscpos needs to be converted to steps and must be in the right direction
         tlm['tscpos'] *= -397.7225924607
 
-        # make predictions on bsdir if defined
-        if opt.bsdir is not None:
+        # make predictions on a backstop file if defined
+        if opt.backstop_file is not None:
             pred = self.make_week_predict(opt, tstart, tstop, bs_cmds, tlm)
         else:
             pred = dict(plots=None, viols=None, times=None, states=None,
@@ -207,7 +207,11 @@ class ACISThermalCheck(object):
 
         # Write everything to the web page.
         # First, write the reStructuredText file.
-        self.write_index_rst(opt.bsdir, opt.outdir, proc, plots_validation, 
+        if opt.backstop_file is None:
+            bsdir = None
+        else:
+            bsdir = os.path.dirname(opt.backstop_file)
+        self.write_index_rst(bsdir, opt.outdir, proc, plots_validation, 
                              valid_viols=valid_viols, plots=pred['plots'], 
                              viols=pred['viols'])
         # Second, convert reST to HTML
