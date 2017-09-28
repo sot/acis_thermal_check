@@ -199,18 +199,6 @@ def get_options(msid, name, model_path, opts=None):
     parser.add_argument("--traceback", default=True, help='Enable tracebacks.')
     parser.add_argument("--verbose", type=int, default=1,
                         help="Verbosity (0=quiet, 1=normal, 2=debug)")
-    parser.add_argument("--ccd-count", type=int, default=6,
-                        help="Initial number of CCDs (default=6).")
-    parser.add_argument("--fep-count", type=int, default=6,
-                        help="Initial number of FEPs (default=6).")
-    parser.add_argument("--vid-board", type=int, default=1,
-                        help="Initial state of ACIS vid_board (default=1).")
-    parser.add_argument("--clocking", type=int, default=1,
-                        help="Initial state of ACIS clocking (default=1).")
-    parser.add_argument("--simpos", default=75616.0, type=float,
-                        help="Starting SIM-Z position (steps).")
-    parser.add_argument("--pitch", default=150.0, type=float,
-                        help="Starting pitch (deg).")
     parser.add_argument("--T-%s" % name, type=float,
                         help="Starting %s temperature (degC)." % msid)
     parser.add_argument("--cmd-states-db", default="sybase",

@@ -91,13 +91,10 @@ class ACISThermalCheck(object):
         A dictionary which maps names to MSIDs, e.g.:
         {'sim_z': 'tscpos', 'dp_pitch': 'pitch'}. Used to map
         names understood by Xija to MSIDs.
-    other_opts : dictionary, optional
-        Other command-line options that may need to be processed
-        by the thermal model go into this dictionary.
     """
     def __init__(self, msid, name, state_builder, MSIDs, yellow, 
                  margin, validation_limits, hist_limit, calc_model,
-                 other_telem=None, other_map=None, other_opts=None):
+                 other_telem=None, other_map=None):
         self.msid = msid
         self.name = name
         # t_msid is another version of the name that corresponds
@@ -113,7 +110,6 @@ class ACISThermalCheck(object):
         self.logger = logging.getLogger('%s_check' % self.name)
         self.other_telem = other_telem
         self.other_map = other_map
-        self.other_opts = other_opts
         self.state_builder = state_builder(self)
 
     def driver(self, opt):
@@ -226,7 +222,7 @@ class ACISThermalCheck(object):
         """
         Parameters
         ----------
-        opt : OptionParser arguments
+        opt : ArgumentParser arguments
             The command-line options object, which has the options
             attached to it as attributes
         tstart : float
@@ -244,8 +240,7 @@ class ACISThermalCheck(object):
         self.logger.info('Calculating %s thermal model' % self.name.upper())
 
         # Call the state builder to get the commanded states.
-        states, state0 = self.state_builder.get_predict_states(opt, tlm, tstart, 
-                                                               tstop)
+        states, state0 = self.state_builder.get_predict_states(tstart, tstop, tlm)
 
         # calc_model_wrapper actually does the model calculation by running
         # model-specific code.

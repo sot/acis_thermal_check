@@ -55,40 +55,32 @@ class LegacyStateBuilder(StateBuilder):
         Instead we supply ``date_margin=None`` so that get_state0 will find the newest
         state consistent with the ``date`` criterion and pcad_mode == 'NPNT'.
         """
+        # The -5 here has us back off from the last telemetry reading just a bit
         start = DateTime(tlm['date'][-5])
         state0 = cmd_states.get_state0(start.date, self.db, datepar='datestart', 
                                        date_margin=None)
-        # last 10 samples
-        state0.update({self.thermal_check.t_msid: np.mean(tlm[self.thermal_check.msid][-10:])})
-        # middle of the last 10 samples
+        
+        # First check to see if we have an initial temperature input
+        # from the command line
+        T_init = getattr(self.args, self.thermal_check.t_msid)
+        
+        if T_init is None:
+            # Otherwise, construct T_init from the last 10 samples of
+            # available telemetry
+            T_init = np.mean(tlm[self.thermal_check.msid][-10:])
+        
+        state0.update({self.thermal_check.t_msid: T_init})
+        # Set time to the middle of the last 10 samples
         state0['datestart'] = start.date
         state0['tstart'] = start.secs
 
         return state0
 
-    def get_predict_states(self, opt, tlm, tstart, tstop):
-        # Try to make initial state0 from cmd line options
-        opts = ['pitch', 'simpos', 'ccd_count', 'fep_count',
-                'vid_board', 'clocking', self.thermal_check.t_msid]
-        # self.other_opts will be filled from specific model tools
-        if self.thermal_check.other_opts is not None:
-            opts += self.thermal_check.other_opts
+    def get_predict_states(self, tstart, tstop, tlm):
 
-        # Create the initial state in state0, attempting to use the values from the
-        # command line. We set this up with an initial dummy quaternion and a
-        # 30-second state duration.
-        state0 = dict((x, getattr(opt, x)) for x in opts)
-        state0.update({'tstart': tstart - 30,
-                       'tstop': tstart,
-                       'datestart': DateTime(tstart - 30).date,
-                       'datestop': DateTime(tstart).date,
-                       'q1': 0.0, 'q2': 0.0, 'q3': 0.0, 'q4': 1.0})
-
-        # If command-line options were not fully specified then get state0 as last
-        # cmd_state that starts within available telemetry. We also add to this
-        # dict the mean temperature at the start of state0.
-        if None in state0.values():
-            state0 = self.set_initial_state(tlm)
+        # Get state0 as last cmd_state that starts within available telemetry. 
+        # We also add to this dict the mean temperature at the start of state0.
+        state0 = self.set_initial_state(tlm)
 
         self.logger.debug('state0 at %s is\n%s' % (DateTime(state0['tstart']).date,
                           pformat(state0)))
