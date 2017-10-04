@@ -39,7 +39,7 @@ class LegacyStateBuilder(StateBuilder):
         self.logger.info('Found %d backstop commands between %s and %s' %
                          (len(bs_cmds), bs_cmds[0]['date'], bs_cmds[-1]['date']))
         self.bs_cmds = bs_cmds
-        return bs_cmds
+        return bs_cmds[0]['time'], bs_cmds[-1]['time']
 
     def set_initial_state(self, tlm):
         """

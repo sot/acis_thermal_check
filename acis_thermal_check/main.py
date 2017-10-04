@@ -1,7 +1,7 @@
 from __future__ import print_function
 
-# Matplotlib setup                                                             
-# Use Agg backend for command-line (non-interactive) operation                                                
+# Matplotlib setup
+# Use Agg backend for command-line (non-interactive) operation
 import matplotlib
 matplotlib.use('Agg')
 
@@ -112,7 +112,7 @@ class ACISThermalCheck(object):
         self.other_map = other_map
         self.state_builder = state_builder(self)
 
-    def run_model_from_load(self, args):
+    def run_load(self, args):
         """
         The main interface to all of ACISThermalCheck's functions.
         This method must be called by the particular thermal model
@@ -153,20 +153,12 @@ class ACISThermalCheck(object):
         self.logger.info('Command line options:\n%s\n' % pformat(args.__dict__))
 
         tnow = DateTime(args.run_start).secs
-        if args.backstop_file is not None:
-            # If we are running a model for a particular load,
-            # get tstart, tstop, commands from backstop file
-            # in args.backstop_file
-            bs_cmds = self.state_builder.get_bs_cmds()
-            tstart = bs_cmds[0]['time']
-            tstop = bs_cmds[-1]['time']
+        # Get tstart, tstop, commands from backstop file
+        # in args.backstop_file
+        tstart, tstop = self.state_builder.get_bs_cmds()
 
-            proc.update(dict(datestart=DateTime(tstart).date,
-                             datestop=DateTime(tstop).date))
-        else:
-            # Otherwise, the start time for the run is whatever is in
-            # args.run_start
-            tstart = tnow
+        proc.update(dict(datestart=DateTime(tstart).date,
+                         datestop=DateTime(tstop).date))
 
         # Get temperature and other telemetry for 3 weeks prior to min(tstart, NOW)
         telem_msids = [self.msid, 'sim_z', 'dp_pitch', 'dp_dpa_power', 'roll']
@@ -186,12 +178,8 @@ class ACISThermalCheck(object):
         # tscpos needs to be converted to steps and must be in the right direction
         tlm['tscpos'] *= -397.7225924607
 
-        # make predictions on a backstop file if defined
-        if args.backstop_file is not None:
-            pred = self.make_week_predict(args, tstart, tstop, bs_cmds, tlm)
-        else:
-            pred = dict(plots=None, viols=None, times=None, states=None,
-                        temps=None)
+        # make predictions on a backstop file
+        pred = self.make_week_predict(args, tstart, tstop, tlm)
 
         # Validation
         # Make the validation plots
@@ -216,7 +204,7 @@ class ACISThermalCheck(object):
                     viols=pred['viols'], proc=proc,
                     plots_validation=plots_validation)
 
-    def make_week_predict(self, args, tstart, tstop, bs_cmds, tlm):
+    def make_week_predict(self, args, tstart, tstop, tlm):
         """
         Parameters
         ----------
@@ -229,9 +217,6 @@ class ACISThermalCheck(object):
         tstop : float
             The stop time of the model run in seconds from the beginning
             of the mission.
-        bs_cmds : list of dictionaries
-            The commands determined from the backstop file that will be
-            converted into commanded states
         tlm : NumPy structured array
             Telemetry which will be used to construct the initial temperature
         """
@@ -251,9 +236,9 @@ class ACISThermalCheck(object):
         plt.rc("ytick", labelsize=10)
         temps = {self.name: model.comp[self.msid].mvals}
         # make_prediction_plots runs the validation of the model against previous telemetry
-        plots = self.make_prediction_plots(args.outdir, states, model.times, temps, bs_cmds[0]['time'])
+        plots = self.make_prediction_plots(args.outdir, states, model.times, temps, tstart)
         # make_prediction_viols determines the violations and prints them out
-        viols = self.make_prediction_viols(model.times, temps, bs_cmds[0]['time'])
+        viols = self.make_prediction_viols(model.times, temps, tstart)
         # write_states writes the commanded states to states.dat
         self.write_states(args.outdir, states)
         # write_temps writes the temperatures to temperatures.dat

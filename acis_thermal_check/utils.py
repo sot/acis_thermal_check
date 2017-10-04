@@ -161,11 +161,12 @@ def plot_two(fig_id, x, y, x2, y2,
 
     return {'fig': fig, 'ax': ax, 'ax2': ax2}
 
-def get_options(msid, name, model_path, opts=None):
+def get_load_options(msid, name, model_path, opts=None):
     """
-    Construct the argument parser for command-line options. Sets up the
-    parser and defines default options. This function should be used by
-    the specific thermal model checking tools.
+    Construct the argument parser for command-line options for running
+    predictions and validations for a load. Sets up the parser and 
+    defines default options. This function should be used by the specific 
+    thermal model checking tools.
 
     Parameters
     ----------
@@ -183,12 +184,10 @@ def get_options(msid, name, model_path, opts=None):
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.set_defaults()
-    parser.add_argument("--outdir", default="out", help="Output directory.")
-    parser.add_argument("--backstop_file", help="Path to the backstop file. If a directory, "
-                                                "the backstop file will be searched for within "
-                                                "this directory.")
-    parser.add_argument("--oflsdir", help="Path to the directory containing the backstop "
-                                          "file (legacy argument)")
+    parser.add_argument("backstop_file", help="Path to the backstop file. If a directory, "
+                                              "the backstop file will be searched for within "
+                                               "this directory.")
+    parser.add_argument("outdir", help="Output directory.")
     parser.add_argument("--model-spec", 
                         default=os.path.join(model_path, '%s_model_spec.json' % name),
                         help="Model specification file.")
@@ -212,9 +211,6 @@ def get_options(msid, name, model_path, opts=None):
             parser.add_argument("--%s" % opt_name, **opt)
 
     args = parser.parse_args()
-
-    if args.oflsdir is not None:
-        args.backstop_file = args.oflsdir
 
     if args.cmd_states_db not in ('sybase', 'sqlite'):
         raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
