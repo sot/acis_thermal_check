@@ -112,7 +112,7 @@ class ACISThermalCheck(object):
         self.other_map = other_map
         self.state_builder = state_builder(self)
 
-    def driver(self, opt):
+    def run_model_from_load(self, opt):
         """
         The main interface to all of ACISThermalCheck's functions.
         This method must be called by the particular thermal model
