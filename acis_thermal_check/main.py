@@ -112,7 +112,7 @@ class ACISThermalCheck(object):
         self.other_map = other_map
         self.state_builder = state_builder(self)
 
-    def run_load(self, args):
+    def driver(self, args):
         """
         The main interface to all of ACISThermalCheck's functions.
         This method must be called by the particular thermal model
@@ -155,10 +155,18 @@ class ACISThermalCheck(object):
         tnow = DateTime(args.run_start).secs
         # Get tstart, tstop, commands from backstop file
         # in args.backstop_file
-        tstart, tstop = self.state_builder.get_bs_cmds()
+        if args.backstop_file is not None:
+            # If we are running a model for a particular load,
+            # get tstart, tstop, commands from backstop file
+            # in args.backstop_file
+            tstart, tstop = self.state_builder.get_bs_cmds()
 
-        proc.update(dict(datestart=DateTime(tstart).date,
-                         datestop=DateTime(tstop).date))
+            proc.update(dict(datestart=DateTime(tstart).date,
+                             datestop=DateTime(tstop).date))
+        else:
+            # Otherwise, the start time for the run is whatever is in
+            # args.run_start
+            tstart = tnow
 
         # Get temperature and other telemetry for 3 weeks prior to min(tstart, NOW)
         telem_msids = [self.msid, 'sim_z', 'dp_pitch', 'dp_dpa_power', 'roll']
@@ -178,8 +186,12 @@ class ACISThermalCheck(object):
         # tscpos needs to be converted to steps and must be in the right direction
         tlm['tscpos'] *= -397.7225924607
 
-        # make predictions on a backstop file
-        pred = self.make_week_predict(args, tstart, tstop, tlm)
+        # make predictions on a backstop file if defined
+        if args.backstop_file is not None:
+            pred = self.make_week_predict(args, tstart, tstop,  tlm)
+        else:
+            pred = dict(plots=None, viols=None, times=None, states=None,
+                        temps=None)
 
         # Validation
         # Make the validation plots
