@@ -26,7 +26,7 @@ class LegacyStateBuilder(StateBuilder):
 
     def get_bs_cmds(self):
         """
-        Return commands for the backstop file in opt.backstop_file.
+        Return commands for the backstop file in args.backstop_file.
         """
         import Ska.ParseCM
         if os.path.isdir(self.args.backstop_file):

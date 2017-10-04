@@ -112,7 +112,7 @@ class ACISThermalCheck(object):
         self.other_map = other_map
         self.state_builder = state_builder(self)
 
-    def run_model_from_load(self, opt):
+    def run_model_from_load(self, args):
         """
         The main interface to all of ACISThermalCheck's functions.
         This method must be called by the particular thermal model
@@ -120,18 +120,18 @@ class ACISThermalCheck(object):
 
         Parameters
         ----------
-        opt : ArgumentParser arguments
+        args : ArgumentParser arguments
             The command-line options object, which has the options
             attached to it as attributes
         """
-        self.state_builder.set_options(opt)
+        self.state_builder.set_options(args)
 
-        if not os.path.exists(opt.outdir):
-            os.mkdir(opt.outdir)
+        if not os.path.exists(args.outdir):
+            os.mkdir(args.outdir)
 
         # Configure the logger so that it knows which model
         # we are using and how verbose it is supposed to be
-        config_logging(opt.outdir, opt.verbose, self.name)
+        config_logging(args.outdir, args.verbose, self.name)
 
         # Store info relevant to processing for use in outputs
         proc = dict(run_user=os.environ['USER'],
@@ -146,17 +146,17 @@ class ACISThermalCheck(object):
         self.logger.info('# %s_check.py run at %s by %s'
                          % (self.name, proc['run_time'], proc['run_user']))
         self.logger.info('# acis_thermal_check version = %s' % version)
-        self.logger.info('# model_spec file = %s' % os.path.abspath(opt.model_spec))
+        self.logger.info('# model_spec file = %s' % os.path.abspath(args.model_spec))
         self.logger.info('###############################'
                          '######################################\n')
 
-        self.logger.info('Command line options:\n%s\n' % pformat(opt.__dict__))
+        self.logger.info('Command line options:\n%s\n' % pformat(args.__dict__))
 
-        tnow = DateTime(opt.run_start).secs
-        if opt.backstop_file is not None:
+        tnow = DateTime(args.run_start).secs
+        if args.backstop_file is not None:
             # If we are running a model for a particular load,
             # get tstart, tstop, commands from backstop file
-            # in opt.backstop_file
+            # in args.backstop_file
             bs_cmds = self.state_builder.get_bs_cmds()
             tstart = bs_cmds[0]['time']
             tstop = bs_cmds[-1]['time']
@@ -165,7 +165,7 @@ class ACISThermalCheck(object):
                              datestop=DateTime(tstop).date))
         else:
             # Otherwise, the start time for the run is whatever is in
-            # opt.run_start
+            # args.run_start
             tstart = tnow
 
         # Get temperature and other telemetry for 3 weeks prior to min(tstart, NOW)
@@ -181,48 +181,46 @@ class ACISThermalCheck(object):
         # Get the telemetry values which will be used for prediction and validation
         tlm = self.get_telem_values(min(tstart, tnow),
                                     telem_msids,
-                                    days=opt.days,
+                                    days=args.days,
                                     name_map=name_map)
         # tscpos needs to be converted to steps and must be in the right direction
         tlm['tscpos'] *= -397.7225924607
 
         # make predictions on a backstop file if defined
-        if opt.backstop_file is not None:
-            pred = self.make_week_predict(opt, tstart, tstop, bs_cmds, tlm)
+        if args.backstop_file is not None:
+            pred = self.make_week_predict(args, tstart, tstop, bs_cmds, tlm)
         else:
             pred = dict(plots=None, viols=None, times=None, states=None,
                         temps=None)
 
         # Validation
         # Make the validation plots
-        plots_validation = self.make_validation_plots(opt, tlm)
+        plots_validation = self.make_validation_plots(args, tlm)
         # Determine violations of temperature validation
         valid_viols = self.make_validation_viols(plots_validation)
         if len(valid_viols) > 0:
-            self.logger.info('validation warning(s) in output at %s' % opt.outdir)
+            self.logger.info('validation warning(s) in output at %s' % args.outdir)
 
         # Write everything to the web page.
         # First, write the reStructuredText file.
-        if opt.backstop_file is None:
-            bsdir = None
-        else:
-            bsdir = os.path.dirname(opt.backstop_file)
-        self.write_index_rst(bsdir, opt.outdir, proc, plots_validation, 
+        bsdir = os.path.dirname(args.backstop_file)
+
+        self.write_index_rst(bsdir, args.outdir, proc, plots_validation, 
                              valid_viols=valid_viols, plots=pred['plots'], 
                              viols=pred['viols'])
         # Second, convert reST to HTML
-        self.rst_to_html(opt.outdir, proc)
+        self.rst_to_html(args.outdir, proc)
 
-        return dict(opt=opt, states=pred['states'], times=pred['times'],
+        return dict(args=args, states=pred['states'], times=pred['times'],
                     temps=pred['temps'], plots=pred['plots'],
                     viols=pred['viols'], proc=proc,
                     plots_validation=plots_validation)
 
-    def make_week_predict(self, opt, tstart, tstop, bs_cmds, tlm):
+    def make_week_predict(self, args, tstart, tstop, bs_cmds, tlm):
         """
         Parameters
         ----------
-        opt : ArgumentParser arguments
+        args : ArgumentParser arguments
             The command-line options object, which has the options
             attached to it as attributes
         tstart : float
@@ -244,7 +242,7 @@ class ACISThermalCheck(object):
 
         # calc_model_wrapper actually does the model calculation by running
         # model-specific code.
-        model = self.calc_model_wrapper(opt.model_spec, states, state0['tstart'], 
+        model = self.calc_model_wrapper(args.model_spec, states, state0['tstart'], 
                                         tstop, state0=state0)
 
         # Make the limit check plots and data files
@@ -253,15 +251,15 @@ class ACISThermalCheck(object):
         plt.rc("ytick", labelsize=10)
         temps = {self.name: model.comp[self.msid].mvals}
         # make_prediction_plots runs the validation of the model against previous telemetry
-        plots = self.make_prediction_plots(opt.outdir, states, model.times, temps, bs_cmds[0]['time'])
+        plots = self.make_prediction_plots(args.outdir, states, model.times, temps, bs_cmds[0]['time'])
         # make_prediction_viols determines the violations and prints them out
         viols = self.make_prediction_viols(model.times, temps, bs_cmds[0]['time'])
         # write_states writes the commanded states to states.dat
-        self.write_states(opt.outdir, states)
+        self.write_states(args.outdir, states)
         # write_temps writes the temperatures to temperatures.dat
-        self.write_temps(opt.outdir, model.times, temps)
+        self.write_temps(args.outdir, model.times, temps)
 
-        return dict(opt=opt, states=states, times=model.times, temps=temps,
+        return dict(args=args, states=states, times=model.times, temps=temps,
                     plots=plots, viols=viols)
 
     def calc_model_wrapper(self, model_spec, states, tstart, tstop, state0=None):
@@ -529,7 +527,7 @@ class ACISThermalCheck(object):
 
         return plots
 
-    def make_validation_plots(self, opt, tlm):
+    def make_validation_plots(self, args, tlm):
         """
         Make validation output plots by running the thermal model from a
         time in the past forward to the present and compare it to real
@@ -537,12 +535,12 @@ class ACISThermalCheck(object):
 
         Parameters
         ----------
-        opt : OptionParser options
+        args : ArgumentParser options
             The command-line options
         tlm : NumPy record array
             NumPy record array of telemetry
         """
-        outdir = opt.outdir
+        outdir = args.outdir
         start = tlm['date'][0]
         stop = tlm['date'][-1]
         # JAZ: This next line is likely to be refactored
@@ -552,7 +550,7 @@ class ACISThermalCheck(object):
 
         # Run the thermal model from the beginning of obtained telemetry
         # to the end, so we can compare its outputs to the real values
-        model = self.calc_model_wrapper(opt.model_spec, states, start, stop)
+        model = self.calc_model_wrapper(args.model_spec, states, start, stop)
 
         # Use an OrderedDict here because we want the plots on the validation
         # page to appear in this order
@@ -673,7 +671,7 @@ class ACISThermalCheck(object):
         # If run_start is specified this is likely for regression testing
         # or other debugging.  In this case write out the full predicted and
         # telemetered dataset as a pickle.
-        if opt.run_start:
+        if args.run_start:
             filename = os.path.join(outdir, 'validation_data.pkl')
             self.logger.info('Writing validation data %s' % filename)
             f = open(filename, 'wb')
@@ -725,7 +723,7 @@ class ACISThermalCheck(object):
     def write_index_rst(self, bsdir, outdir, proc, plots_validation, 
                         valid_viols=None, plots=None, viols=None):
         """
-        Make output text (in reST format) in opt.outdir, using jinja2
+        Make output text (in reST format) in args.outdir, using jinja2
         to fill out the template. 
 
         Parameters
