@@ -268,6 +268,10 @@ class HDF5StateBuilder(StateBuilder):
         datestop : string
             The end date to grab states before.
         """
+        datestart = DateTime(datestart).date
+        datestop = DateTime(datestop).date
+        self.logger.info('Getting commanded states between %s - %s' %
+                         (datestart, datestop))
         return cmd_states.fetch_states(datestart, datestop)
 
 state_builders = {"legacy": LegacyStateBuilder,
