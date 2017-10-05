@@ -84,7 +84,8 @@ class LegacyStateBuilder(StateBuilder):
         self.db = Ska.DBI.DBI(dbi=args.cmd_states_db, server=server, user='aca_read',
                               database='aca')
         super(LegacyStateBuilder, self).set_options(args)
-        self._get_bs_cmds()
+        if self.args.backstop_file is not None:
+            self._get_bs_cmds()
 
     def _get_bs_cmds(self):
         """

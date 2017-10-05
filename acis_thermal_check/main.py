@@ -189,7 +189,7 @@ class ACISThermalCheck(object):
 
         # make predictions on a backstop file if defined
         if args.backstop_file is not None:
-            pred = self.make_week_predict(args, tlm)
+            pred = self.make_week_predict(args, tstart, tstop, tlm)
         else:
             pred = dict(plots=None, viols=None, times=None, states=None,
                         temps=None)
@@ -204,7 +204,10 @@ class ACISThermalCheck(object):
 
         # Write everything to the web page.
         # First, write the reStructuredText file.
-        bsdir = os.path.dirname(args.backstop_file)
+        if args.backstop_file is None:
+            bsdir = None
+        else:
+            bsdir = os.path.dirname(args.backstop_file)
 
         self.write_index_rst(bsdir, args.outdir, proc, plots_validation, 
                              valid_viols=valid_viols, plots=pred['plots'], 
@@ -236,7 +239,7 @@ class ACISThermalCheck(object):
         self.logger.info('Calculating %s thermal model' % self.name.upper())
 
         # Call the state builder to get the commanded states.
-        states, state0 = self.state_builder.get_predict_states(tstart, tstop, tlm)
+        states, state0 = self.state_builder.get_predict_states(tlm)
 
         # calc_model_wrapper actually does the model calculation by running
         # model-specific code.
