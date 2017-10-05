@@ -184,28 +184,32 @@ def get_options(msid, name, model_path, opts=None):
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.set_defaults()
-    parser.add_argument("--outdir", default="out", help="Output directory.")
+    parser.add_argument("--outdir", default="out", help="Output directory. Default: 'out'")
     parser.add_argument("--backstop_file", help="Path to the backstop file. If a directory, "
                                                 "the backstop file will be searched for within "
-                                                "this directory.")
+                                                "this directory. Default: None")
     parser.add_argument("--oflsdir", help="Path to the directory containing the backstop "
-                                          "file (legacy argument)")
+                                          "file (legacy argument). Default: None")
     parser.add_argument("--model-spec", 
                         default=os.path.join(model_path, '%s_model_spec.json' % name),
-                        help="Model specification file.")
+                        help="Model specification file. Defaults to the one included with "
+                             "the model package.")
     parser.add_argument("--days", type=float, default=21.0,
-                        help="Days of validation data.")
-    parser.add_argument("--run-start", help="Reference time to replace run "
-                                            "start time for regression testing.")
-    parser.add_argument("--traceback", default=True, help='Enable tracebacks.')
+                        help="Days of validation data. Default: 21")
+    parser.add_argument("--run-start", help="Reference time to replace run start time "
+                                            "for regression testing. The default is to "
+                                            "use the current time.")
+    parser.add_argument("--traceback", default=True, help='Enable tracebacks. Default: True')
     parser.add_argument("--verbose", type=int, default=1,
                         help="Verbosity (0=quiet, 1=normal, 2=debug)")
     parser.add_argument("--T-%s" % name, type=float,
-                        help="Starting %s temperature (degC)." % msid)
+                        help="Starting %s temperature (degC). Default is to compute it "
+                             "from telemetry." % msid)
     parser.add_argument("--cmd-states-db", default="sybase",
-                        help="Commanded states database server (sybase|sqlite).")
+                        help="Commanded states database server (sybase|sqlite). "
+                             "Default: sybase, only used if state-builder=legacy.")
     parser.add_argument("--state-builder", default="legacy",
-                        help="StateBuilder to use (legacy|acis|hdf5).")
+                        help="StateBuilder to use (legacy|acis|hdf5). Default: legacy")
     parser.add_argument("--version", action='store_true', help="Print version")
 
     if opts is not None:
