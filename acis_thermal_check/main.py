@@ -159,7 +159,8 @@ class ACISThermalCheck(object):
             # If we are running a model for a particular load,
             # get tstart, tstop, commands from backstop file
             # in args.backstop_file
-            tstart, tstop = self.state_builder.get_bs_cmds()
+            tstart = self.state_builder.tstart
+            tstop = self.state_builder.tstop
 
             proc.update(dict(datestart=DateTime(tstart).date,
                              datestop=DateTime(tstop).date))
@@ -188,7 +189,7 @@ class ACISThermalCheck(object):
 
         # make predictions on a backstop file if defined
         if args.backstop_file is not None:
-            pred = self.make_week_predict(args, tstart, tstop,  tlm)
+            pred = self.make_week_predict(args, tlm)
         else:
             pred = dict(plots=None, viols=None, times=None, states=None,
                         temps=None)
@@ -540,7 +541,6 @@ class ACISThermalCheck(object):
         outdir = args.outdir
         start = tlm['date'][0]
         stop = tlm['date'][-1]
-        # JAZ: This next line is likely to be refactored
         states = self.state_builder.get_validation_states(start, stop)
 
         self.logger.info('Calculating %s thermal model for validation' % self.name.upper())

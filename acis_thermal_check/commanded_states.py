@@ -29,8 +29,9 @@ class LegacyStateBuilder(StateBuilder):
         self.db = Ska.DBI.DBI(dbi=args.cmd_states_db, server=server, user='aca_read',
                               database='aca')
         super(LegacyStateBuilder, self).set_options(args)
+        self._get_bs_cmds()
 
-    def get_bs_cmds(self):
+    def _get_bs_cmds(self):
         """
         Return commands for the backstop file in args.backstop_file.
         """
@@ -45,9 +46,10 @@ class LegacyStateBuilder(StateBuilder):
         self.logger.info('Found %d backstop commands between %s and %s' %
                          (len(bs_cmds), bs_cmds[0]['date'], bs_cmds[-1]['date']))
         self.bs_cmds = bs_cmds
-        return bs_cmds[0]['time'], bs_cmds[-1]['time']
+        self.tstart = bs_cmds[0]['time']
+        self.tstop = bs_cmds[-1]['time']
 
-    def set_initial_state(self, tlm):
+    def _set_initial_state(self, tlm):
         """
         Get the initial state corresponding to the end of available telemetry (minus a
         bit).
@@ -65,16 +67,16 @@ class LegacyStateBuilder(StateBuilder):
         start = DateTime(tlm['date'][-5])
         state0 = cmd_states.get_state0(start.date, self.db, datepar='datestart', 
                                        date_margin=None)
-        
+
         # First check to see if we have an initial temperature input
         # from the command line
         T_init = getattr(self.args, self.thermal_check.t_msid)
-        
+
         if T_init is None:
             # Otherwise, construct T_init from the last 10 samples of
             # available telemetry
             T_init = np.mean(tlm[self.thermal_check.msid][-10:])
-        
+
         state0.update({self.thermal_check.t_msid: T_init})
         # Set time to the middle of the last 10 samples
         state0['datestart'] = start.date
@@ -82,11 +84,11 @@ class LegacyStateBuilder(StateBuilder):
 
         return state0
 
-    def get_predict_states(self, tstart, tstop, tlm):
+    def get_predict_states(self, tlm):
 
         # Get state0 as last cmd_state that starts within available telemetry. 
         # We also add to this dict the mean temperature at the start of state0.
-        state0 = self.set_initial_state(tlm)
+        state0 = self._set_initial_state(tlm)
 
         self.logger.debug('state0 at %s is\n%s' % (DateTime(state0['tstart']).date,
                           pformat(state0)))
