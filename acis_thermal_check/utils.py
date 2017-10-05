@@ -205,7 +205,7 @@ def get_options(msid, name, model_path, opts=None):
     parser.add_argument("--cmd-states-db", default="sybase",
                         help="Commanded states database server (sybase|sqlite).")
     parser.add_argument("--state-builder", default="legacy",
-                        help="StateBuilder to use (legacy|acis).")
+                        help="StateBuilder to use (legacy|acis|hdf5).")
     parser.add_argument("--version", action='store_true', help="Print version")
 
     if opts is not None:

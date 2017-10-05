@@ -163,5 +163,14 @@ class ACISStateBuilder(StateBuilder):
     def __init__(self, thermal_check):
         raise NotImplementedError
 
+class HDF5StateBuilder(StateBuilder):
+    def get_predict_states(self, tlm):
+        raise NotImplementedError("The 'hdf5' state builder can only "
+                                  "be used for validation, not prediction!")
+
+    def get_validation_states(self, datestart, datestop):
+        return cmd_states.fetch_states(datestart, datestop)
+
 state_builders = {"legacy": LegacyStateBuilder,
-                  "acis": ACISStateBuilder}
+                  "acis": ACISStateBuilder,
+                  "hdf5": HDF5StateBuilder}
