@@ -7,21 +7,76 @@ import numpy as np
 from acis_thermal_check.utils import globfile
 
 class StateBuilder(object):
+    """
+    This is the base class for all StateBuilder objects. It
+    should not be used by itself, but subclassed.
+
+    Parameters
+    ----------
+    thermal_check : :class:`~acis_thermal_check.main.ACISThermalCheck` object
+        The ACISThermalCheck object this StateBuilder is attached to.
+    """
     def __init__(self, thermal_check):
         self.thermal_check = thermal_check
         self.logger = self.thermal_check.logger
 
     def set_options(self, args):
+        """
+        Give the StateBuilder arguments that were passed in
+        from the command line
+
+        Subclasses may want to overload this to do other things
+        with the arguments. 
+
+        Parameters
+        ----------
+        args : ArgumentParser object
+            Command line arguments
+        """
         self.args = args
 
     def get_predict_states(self, tlm):
+        """
+        Get the states used for the thermal prediction.
+
+        Parameters
+        ----------
+        tlm : dictionary
+            Dictionary containg temperature and other telemetry
+        """
         pass
 
     def get_validation_states(self, datestart, datestop):
+        """
+        Get states for validation of the thermal model.
+
+        Parameters
+        ----------
+        datestart : string
+            The start date to grab states afterward.
+        datestop : string
+            The end date to grab states before.
+        """
         pass
 
 class LegacyStateBuilder(StateBuilder):
+    """
+    The LegacyStateBuilder contains the original code used to 
+    obtain commanded states for prediction and validation of
+    a thermal model for a particular command load. It can also
+    be used for validation only.
+    """
     def set_options(self, args):
+        """
+        Give the LegacyStateBuilder arguments that were passed in 
+        from the command line, and set up the connection to the 
+        commanded states database
+
+        Parameters
+        ----------
+        args : ArgumentParser object
+            Command line arguments
+        """
         # Connect to database (NEED TO USE aca_read for sybase; user is ignored for sqlite)
         server = ('sybase' if args.cmd_states_db == 'sybase' else
                   os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3'))
@@ -33,7 +88,8 @@ class LegacyStateBuilder(StateBuilder):
 
     def _get_bs_cmds(self):
         """
-        Return commands for the backstop file in args.backstop_file.
+        Internal method used to btain commands from the backstop 
+        file and store them.
         """
         import Ska.ParseCM
         if os.path.isdir(self.args.backstop_file):
@@ -51,17 +107,24 @@ class LegacyStateBuilder(StateBuilder):
 
     def _set_initial_state(self, tlm):
         """
-        Get the initial state corresponding to the end of available telemetry (minus a
-        bit).
+        Internal method used to get the initial state corresponding 
+        to the end of available telemetry (minus a bit).
 
-        The original logic in get_state0() is to return a state that is absolutely,
-        positively reliable by insisting that the returned state is at least
-        ``date_margin`` days old, where the default is 10 days.  That is too conservative
-        (given the way commanded states are actually managed) and not what is desired
+        The original logic in get_state0() is to return a state that 
+        is absolutely, positively reliable by insisting that the 
+        returned state is at least ``date_margin`` days old, where the 
+        default is 10 days. That is too conservative (given the way 
+        commanded states are actually managed) and not what is desired
         here, which is a recent state from which to start thermal propagation.
 
-        Instead we supply ``date_margin=None`` so that get_state0 will find the newest
-        state consistent with the ``date`` criterion and pcad_mode == 'NPNT'.
+        Instead we supply ``date_margin=None`` so that get_state0 will 
+        find the newest state consistent with the ``date`` criterion 
+        and pcad_mode == 'NPNT'.
+
+        Parameters
+        ----------
+        tlm : dictionary
+            Dictionary containg temperature and other telemetry
         """
         # The -5 here has us back off from the last telemetry reading just a bit
         start = DateTime(tlm['date'][-5])
@@ -85,7 +148,14 @@ class LegacyStateBuilder(StateBuilder):
         return state0
 
     def get_predict_states(self, tlm):
+        """
+        Get the states used for the thermal prediction.
 
+        Parameters
+        ----------
+        tlm : dictionary
+            Dictionary containg temperature and other telemetry
+        """
         # Get state0 as last cmd_state that starts within available telemetry. 
         # We also add to this dict the mean temperature at the start of state0.
         state0 = self._set_initial_state(tlm)
@@ -127,12 +197,14 @@ class LegacyStateBuilder(StateBuilder):
 
     def get_validation_states(self, datestart, datestop):
         """
-        Get states exactly covering date range
+        Get states for validation of the thermal model.
 
-        :param datestart: start date
-        :param datestop: stop date
-        :param db: database handle
-        :returns: np recarry of states
+        Parameters
+        ----------
+        datestart : string
+            The start date to grab states afterward.
+        datestop : string
+            The end date to grab states before.
         """
         datestart = DateTime(datestart).date
         datestop = DateTime(datestop).date
@@ -164,11 +236,37 @@ class ACISStateBuilder(StateBuilder):
         raise NotImplementedError
 
 class HDF5StateBuilder(StateBuilder):
+    """
+    The HDF5StateBuilder obtains states from the commanded
+    states database using Chandra.cmd_states.fetch_states.
+    It can only be used for model validation and not prediction,
+    since this database is only updated after load products
+    are approved.
+    """
     def get_predict_states(self, tlm):
+        """
+        Get the states used for the thermal prediction.
+        NOT IMPLEMENTED for HDF5StateBuilder.
+
+        Parameters
+        ----------
+        tlm : dictionary
+            Dictionary containg temperature and other telemetry
+        """
         raise NotImplementedError("The 'hdf5' state builder can only "
                                   "be used for validation, not prediction!")
 
     def get_validation_states(self, datestart, datestop):
+        """
+        Get states for validation of the thermal model.
+
+        Parameters
+        ----------
+        datestart : string
+            The start date to grab states afterward.
+        datestop : string
+            The end date to grab states before.
+        """
         return cmd_states.fetch_states(datestart, datestop)
 
 state_builders = {"legacy": LegacyStateBuilder,
