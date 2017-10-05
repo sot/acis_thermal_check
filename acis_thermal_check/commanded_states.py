@@ -14,6 +14,12 @@ class StateBuilder(object):
     def set_options(self, args):
         self.args = args
 
+    def get_predict_states(self, tlm):
+        pass
+
+    def get_validation_states(self, datestart, datestop):
+        pass
+
 class LegacyStateBuilder(StateBuilder):
     def set_options(self, args):
         # Connect to database (NEED TO USE aca_read for sybase; user is ignored for sqlite)
