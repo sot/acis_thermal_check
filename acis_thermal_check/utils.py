@@ -223,7 +223,15 @@ def get_options(msid, name, model_path, opts=None):
     return args
 
 def get_acis_limits(msid):
+    """
+    Get the current red and yellow hi limits for a given 
+    ACIS-related MSID. 
 
+    Parameters
+    ----------
+    msid : string
+        The MSID to get the limits for, e.g. "1deamzt".
+    """
     import requests
 
     yellow_hi = None
