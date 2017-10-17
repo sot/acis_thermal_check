@@ -199,6 +199,8 @@ def get_options(msid, name, model_path, opts=None):
     parser.add_argument("--run-start", help="Reference time to replace run start time "
                                             "for regression testing. The default is to "
                                             "use the current time.")
+    parser.add_argument("--interrupt", help="Set this flag if this is an interrupt load.",
+                        action='store_true')
     parser.add_argument("--traceback", default=True, help='Enable tracebacks. Default: True')
     parser.add_argument("--verbose", type=int, default=1,
                         help="Verbosity (0=quiet, 1=normal, 2=debug)")
