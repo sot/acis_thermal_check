@@ -183,8 +183,21 @@ class LegacyStateBuilder(StateBuilder):
         # Delete non-load cmds that are within the backstop time span
         # => Keep if timeline_id is not None (if a normal load)
         # or date < bs_cmds[0]['time']
+
+        # If this is an interrupt load, we don't want to include the end 
+        # commands from the continuity load since not all of them will be valid,
+        # and we could end up evolving on states which would not be present in 
+        # the load under review. However, once the load has been approved and is
+        # running / has run on the spacecraft, the states in the database will 
+        # be correct, and we will want to include all relevant commands from the
+        # continuity load. To check for this, we find the current time and see 
+        # the load under review is still in the future. If it is, we then treat
+        # this as an interrupt if requested, otherwise, we don't. 
+        current_time = DateTime().secs
+        interrupt = self.args.interrupt and self.bs_cmds[0]["time"] > current_time
+
         db_cmds = [x for x in db_cmds
-                   if ((x['timeline_id'] is not None and not self.args.interrupt) or
+                   if ((x['timeline_id'] is not None and not interrupt) or
                        x['time'] < self.bs_cmds[0]['time'])]
 
         self.logger.info('Got %d cmds from database between %s and %s' %
