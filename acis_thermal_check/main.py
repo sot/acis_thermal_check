@@ -152,6 +152,11 @@ class ACISThermalCheck(object):
 
         self.logger.info('Command line options:\n%s\n' % pformat(args.__dict__))
 
+        if args.backstop_file is None:
+            self.bsdir = None
+        else:
+            self.bsdir = os.path.dirname(args.backstop_file)
+
         tnow = DateTime(args.run_start).secs
         # Get tstart, tstop, commands from backstop file
         # in args.backstop_file
@@ -204,12 +209,8 @@ class ACISThermalCheck(object):
 
         # Write everything to the web page.
         # First, write the reStructuredText file.
-        if args.backstop_file is None:
-            bsdir = None
-        else:
-            bsdir = os.path.dirname(args.backstop_file)
 
-        self.write_index_rst(bsdir, args.outdir, proc, plots_validation, 
+        self.write_index_rst(self.bsdir, args.outdir, proc, plots_validation, 
                              valid_viols=valid_viols, plots=pred['plots'], 
                              viols=pred['viols'])
         # Second, convert reST to HTML
