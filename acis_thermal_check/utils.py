@@ -161,7 +161,7 @@ def plot_two(fig_id, x, y, x2, y2,
 
     return {'fig': fig, 'ax': ax, 'ax2': ax2}
 
-def get_options(msid, name, model_path, opts=None):
+def get_options(name, model_path, opts=None):
     """
     Construct the argument parser for command-line options for running
     predictions and validations for a load. Sets up the parser and 
@@ -170,8 +170,6 @@ def get_options(msid, name, model_path, opts=None):
 
     Parameters
     ----------
-    msid : string
-        The MSID mnemomic for the temperature to be modeled.
     name : string
         The name of the ACIS component whose temperature is being modeled.
     model_path : string
@@ -204,9 +202,9 @@ def get_options(msid, name, model_path, opts=None):
     parser.add_argument("--traceback", default=True, help='Enable tracebacks. Default: True')
     parser.add_argument("--verbose", type=int, default=1,
                         help="Verbosity (0=quiet, 1=normal, 2=debug)")
-    parser.add_argument("--T-%s" % name, type=float,
-                        help="Starting %s temperature (degC). Default is to compute it "
-                             "from telemetry." % msid)
+    parser.add_argument("--T-init" % name, type=float,
+                        help="Starting temperature (degC or degF, depending on the model). "
+                             "Default is to compute it from telemetry.")
     parser.add_argument("--cmd-states-db", default="sybase",
                         help="Commanded states database server (sybase|sqlite). "
                              "Default: sybase, only used if state-builder=legacy.")

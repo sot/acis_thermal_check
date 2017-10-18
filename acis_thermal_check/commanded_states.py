@@ -132,13 +132,13 @@ class LegacyStateBuilder(StateBuilder):
         state0 = cmd_states.get_state0(start.date, self.db, datepar='datestart', 
                                        date_margin=None)
 
-        # First check to see if we have an initial temperature input
-        # from the command line
-        T_init = getattr(self.args, self.thermal_check.t_msid)
-
-        if T_init is None:
-            # Otherwise, construct T_init from the last 10 samples of
-            # available telemetry
+        if self.args.T_init is not None:
+            # If we have an initial temperature input from the
+            # command line, use it
+            T_init = self.args.T_init
+        else:
+            # Otherwise, construct T_init from the last 10 samples 
+            # of available telemetry
             T_init = np.mean(tlm[self.thermal_check.msid][-10:])
 
         state0.update({self.thermal_check.t_msid: T_init})
