@@ -5,6 +5,7 @@ import logging
 import os
 import matplotlib.pyplot as plt
 from Ska.Matplotlib import cxctime2plotdate
+import six
 
 TASK_DATA = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -223,6 +224,10 @@ def get_options(name, model_path, opts=None):
 
     if args.cmd_states_db not in ('sybase', 'sqlite'):
         raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
+
+    # Enforce sqlite cmd states db for Python 3
+    if six.PY3 and args.cmd_states_db == 'sybase':
+        args.cmd_states_db = 'sqlite'
 
     return args
 
