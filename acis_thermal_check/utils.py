@@ -188,7 +188,9 @@ def get_options(name, model_path, opts=None):
                                                 "the backstop file will be searched for within "
                                                 "this directory. Default: None")
     parser.add_argument("--oflsdir", help="Path to the directory containing the backstop "
-                                          "file (legacy argument). Default: None")
+                                          "file (legacy argument). If specified, it will "
+                                          "override the value of the backstop_file "
+                                          "argument. Default: None")
     parser.add_argument("--model-spec", 
                         default=os.path.join(model_path, '%s_model_spec.json' % name),
                         help="Model specification file. Defaults to the one included with "
@@ -208,7 +210,7 @@ def get_options(name, model_path, opts=None):
                              "Default is to compute it from telemetry.")
     parser.add_argument("--cmd-states-db", default="sybase",
                         help="Commanded states database server (sybase|sqlite). "
-                             "Default: sybase, only used if state-builder=legacy.")
+                             "Only used if state-builder=legacy. Default: sybase")
     parser.add_argument("--state-builder", default="legacy",
                         help="StateBuilder to use (legacy|acis|hdf5). Default: legacy")
     parser.add_argument("--version", action='store_true', help="Print version")
