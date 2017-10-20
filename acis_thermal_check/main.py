@@ -155,7 +155,10 @@ class ACISThermalCheck(object):
         if args.backstop_file is None:
             self.bsdir = None
         else:
-            self.bsdir = os.path.dirname(args.backstop_file)
+            if os.path.isdir(args.backstop_file):
+                self.bsdir = args.backstop_file
+            else:
+                self.bsdir = os.path.dirname(args.backstop_file)
 
         tnow = DateTime(args.run_start).secs
         # Get tstart, tstop, commands from backstop file
