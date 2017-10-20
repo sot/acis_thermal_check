@@ -139,12 +139,11 @@ class LegacyStateBuilder(StateBuilder):
         else:
             # Otherwise, construct T_init from the last 10 samples 
             # of available telemetry
-            T_init = np.mean(tlm[self.thermal_check.msid][-10:])
+            ok = ((tlm['date'] >= state0['tstart'] - 700) &
+                  (tlm['date'] <= state0['tstart'] + 700))
+            T_init = np.mean(tlm[self.thermal_check.msid][ok])
 
         state0.update({self.thermal_check.t_msid: T_init})
-        # Set time to the middle of the last 10 samples
-        state0['datestart'] = start.date
-        state0['tstart'] = start.secs
 
         return state0
 
