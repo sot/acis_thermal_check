@@ -137,8 +137,8 @@ class SQLStateBuilder(StateBuilder):
             # command line, use it
             T_init = self.args.T_init
         else:
-            # Otherwise, construct T_init from the last 10 samples 
-            # of available telemetry
+            # Otherwise, construct T_init from an average of 
+            # telemetry values around state0
             ok = ((tlm['date'] >= state0['tstart'] - 700) &
                   (tlm['date'] <= state0['tstart'] + 700))
             T_init = np.mean(tlm[self.thermal_check.msid][ok])
