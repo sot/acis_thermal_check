@@ -243,7 +243,7 @@ class ACISThermalCheck(object):
         self.logger.info('Calculating %s thermal model' % self.name.upper())
 
         # Call the state builder to get the commanded states.
-        states, state0 = self.state_builder.get_predict_states(tlm)
+        states, state0 = self.state_builder.get_prediction_states(tlm)
 
         # calc_model_wrapper actually does the model calculation by running
         # model-specific code.

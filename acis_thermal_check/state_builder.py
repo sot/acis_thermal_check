@@ -35,7 +35,7 @@ class StateBuilder(object):
         """
         self.args = args
 
-    def get_predict_states(self, tlm):
+    def get_prediction_states(self, tlm):
         """
         Get the states used for the thermal prediction.
 
@@ -147,7 +147,7 @@ class SQLStateBuilder(StateBuilder):
 
         return state0
 
-    def get_predict_states(self, tlm):
+    def get_prediction_states(self, tlm):
         """
         Get the states used for the thermal prediction.
 
@@ -259,7 +259,7 @@ class HDF5StateBuilder(StateBuilder):
     since this database is only updated after load products
     are approved.
     """
-    def get_predict_states(self, tlm):
+    def get_prediction_states(self, tlm):
         """
         Get the states used for the thermal prediction.
         NOT IMPLEMENTED for HDF5StateBuilder.
