@@ -44,7 +44,7 @@ class StateBuilder(object):
         tlm : dictionary
             Dictionary containg temperature and other telemetry
         """
-        pass
+        raise NotImplementedError("'StateBuilder should be subclassed!")
 
     def get_validation_states(self, datestart, datestop):
         """
@@ -57,7 +57,7 @@ class StateBuilder(object):
         datestop : string
             The end date to grab states before.
         """
-        pass
+        raise NotImplementedError("'StateBuilder should be subclassed!")
 
 class SQLStateBuilder(StateBuilder):
     """
