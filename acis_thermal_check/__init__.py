@@ -3,7 +3,7 @@ __version__ = "2.0-dev"
 from acis_thermal_check.main import \
     ACISThermalCheck
 from acis_thermal_check.state_builder import \
-    LegacyStateBuilder, ACISStateBuilder, \
+    SQLStateBuilder, ACISStateBuilder, \
     HDF5StateBuilder, state_builders
 from acis_thermal_check.utils import \
     calc_off_nom_rolls, get_options, \

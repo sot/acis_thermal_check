@@ -59,16 +59,16 @@ class StateBuilder(object):
         """
         pass
 
-class LegacyStateBuilder(StateBuilder):
+class SQLStateBuilder(StateBuilder):
     """
-    The LegacyStateBuilder contains the original code used to 
+    The SQLStateBuilder contains the original code used to 
     obtain commanded states for prediction and validation of
     a thermal model for a particular command load. It can also
     be used for validation only.
     """
     def set_options(self, args):
         """
-        Give the LegacyStateBuilder arguments that were passed in 
+        Give the SQLStateBuilder arguments that were passed in 
         from the command line, and set up the connection to the 
         commanded states database
 
@@ -83,7 +83,7 @@ class LegacyStateBuilder(StateBuilder):
         self.logger.info('Connecting to {} to get cmd_states'.format(server))
         self.db = Ska.DBI.DBI(dbi=args.cmd_states_db, server=server, user='aca_read',
                               database='aca')
-        super(LegacyStateBuilder, self).set_options(args)
+        super(SQLStateBuilder, self).set_options(args)
         if self.args.backstop_file is not None:
             self._get_bs_cmds()
 
@@ -289,6 +289,6 @@ class HDF5StateBuilder(StateBuilder):
                          (datestart, datestop))
         return cmd_states.fetch_states(datestart, datestop)
 
-state_builders = {"legacy": LegacyStateBuilder,
+state_builders = {"sql": SQLStateBuilder,
                   "acis": ACISStateBuilder,
                   "hdf5": HDF5StateBuilder}

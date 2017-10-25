@@ -210,9 +210,9 @@ def get_options(name, model_path, opts=None):
                              "Default is to compute it from telemetry.")
     parser.add_argument("--cmd-states-db", default="sybase",
                         help="Commanded states database server (sybase|sqlite). "
-                             "Only used if state-builder=legacy. Default: sybase")
-    parser.add_argument("--state-builder", default="legacy",
-                        help="StateBuilder to use (legacy|acis|hdf5). Default: legacy")
+                             "Only used if state-builder=sql. Default: sybase")
+    parser.add_argument("--state-builder", default="sql",
+                        help="StateBuilder to use (sql|acis|hdf5). Default: sql")
     parser.add_argument("--version", action='store_true', help="Print version")
 
     if opts is not None:
@@ -224,7 +224,7 @@ def get_options(name, model_path, opts=None):
     if args.oflsdir is not None:
         args.backstop_file = args.oflsdir
 
-    if args.state_builder == "legacy":
+    if args.state_builder == "sql":
         if args.cmd_states_db not in ('sybase', 'sqlite'):
             raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
 
