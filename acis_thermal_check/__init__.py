@@ -7,7 +7,8 @@ from acis_thermal_check.state_builder import \
     HDF5StateBuilder, state_builders
 from acis_thermal_check.utils import \
     calc_off_nom_rolls, get_options, \
-    get_acis_limits, make_state_builder
+    get_acis_limits, make_state_builder, \
+    mylog
 
 def test(*args, **kwargs):
     '''
