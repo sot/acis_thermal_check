@@ -3,7 +3,6 @@ import Ska.DBI
 from Chandra.Time import DateTime
 from pprint import pformat
 import Chandra.cmd_states as cmd_states
-import numpy as np
 from acis_thermal_check.utils import globfile, mylog
 
 class StateBuilder(object):
