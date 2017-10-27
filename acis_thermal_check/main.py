@@ -426,7 +426,7 @@ class ACISThermalCheck(object):
                'tstart': '%.2f',
                'tstop': '%.2f'}
         newcols = list(states.dtype.names)
-        newcols.remove('T_%s' % self.name)
+        #newcols.remove(self.msid)
         if remove_cols is not None:
             for col in remove_cols:
                 newcols.remove(col)
