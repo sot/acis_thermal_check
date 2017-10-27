@@ -192,14 +192,16 @@ class ACISThermalCheck(object):
 
         # make predictions on a backstop file if defined
         if args.backstop_file is not None:
-            pred = self.make_week_predict(args, tstart, tstop, tlm)
+            pred = self.make_week_predict(tstart, tstop, tlm, args.T_init,
+                                          args.model_spec, args.outdir)
         else:
             pred = dict(plots=None, viols=None, times=None, states=None,
                         temps=None)
 
         # Validation
         # Make the validation plots
-        plots_validation = self.make_validation_plots(args, tlm)
+        plots_validation = self.make_validation_plots(tlm, args.model_spec, 
+                                                      args.outdir, args.run_start)
         # Determine violations of temperature validation
         valid_viols = self.make_validation_viols(plots_validation)
         if len(valid_viols) > 0:
@@ -219,13 +221,11 @@ class ACISThermalCheck(object):
                     viols=pred['viols'], proc=proc,
                     plots_validation=plots_validation)
 
-    def make_week_predict(self, args, tstart, tstop, tlm):
+    def make_week_predict(self, tstart, tstop, tlm, T_init, model_spec,
+                          outdir):
         """
         Parameters
         ----------
-        args : ArgumentParser arguments
-            The command-line options object, which has the options
-            attached to it as attributes
         tstart : float
             The start time of the model run in seconds from the beginning
             of the mission.
@@ -234,6 +234,13 @@ class ACISThermalCheck(object):
             of the mission.
         tlm : NumPy structured array
             Telemetry which will be used to construct the initial temperature
+        T_init : float
+            The initial temperature of the model prediction. If None, an
+            initial value will be constructed from telemetry.
+        model_spec : string
+            The path to the thermal model specification.
+        outdir : string
+            The directory to write outputs to.
         """
         mylog.info('Calculating %s thermal model' % self.name.upper())
 
@@ -245,13 +252,10 @@ class ACISThermalCheck(object):
 
         # We now determine the initial temperature.
 
-        if args.T_init is not None:
-            # If we have an initial temperature input from the
-            # command line, use it
-            T_init = args.T_init
-        else:
-            # Otherwise, construct T_init from an average of
-            # telemetry values around state0
+        # If we have an initial temperature input from the
+        # command line, use it, otherwise construct T_init 
+        # from an average of telemetry values around state0
+        if T_init is None:
             ok = ((tlm['date'] >= state0['tstart'] - 700) &
                   (tlm['date'] <= state0['tstart'] + 700))
             T_init = np.mean(tlm[self.msid][ok])
@@ -260,7 +264,7 @@ class ACISThermalCheck(object):
 
         # calc_model_wrapper actually does the model calculation by running
         # model-specific code.
-        model = self.calc_model_wrapper(args.model_spec, states, state0['tstart'], 
+        model = self.calc_model_wrapper(model_spec, states, state0['tstart'], 
                                         tstop, state0=state0)
 
         # Make the limit check plots and data files
@@ -269,15 +273,15 @@ class ACISThermalCheck(object):
         plt.rc("ytick", labelsize=10)
         temps = {self.name: model.comp[self.msid].mvals}
         # make_prediction_plots runs the validation of the model against previous telemetry
-        plots = self.make_prediction_plots(args.outdir, states, model.times, temps, tstart)
+        plots = self.make_prediction_plots(outdir, states, model.times, temps, tstart)
         # make_prediction_viols determines the violations and prints them out
         viols = self.make_prediction_viols(model.times, temps, tstart)
         # write_states writes the commanded states to states.dat
-        self.write_states(args.outdir, states)
+        self.write_states(outdir, states)
         # write_temps writes the temperatures to temperatures.dat
-        self.write_temps(args.outdir, model.times, temps)
+        self.write_temps(outdir, model.times, temps)
 
-        return dict(args=args, states=states, times=model.times, temps=temps,
+        return dict(states=states, times=model.times, temps=temps,
                     plots=plots, viols=viols)
 
     def calc_model_wrapper(self, model_spec, states, tstart, tstop, state0=None):
@@ -546,7 +550,7 @@ class ACISThermalCheck(object):
 
         return plots
 
-    def make_validation_plots(self, args, tlm):
+    def make_validation_plots(self, tlm, model_spec, outdir, run_start):
         """
         Make validation output plots by running the thermal model from a
         time in the past forward to the present and compare it to real
@@ -554,12 +558,15 @@ class ACISThermalCheck(object):
 
         Parameters
         ----------
-        args : ArgumentParser options
-            The command-line options
         tlm : NumPy record array
             NumPy record array of telemetry
+        model_spec : string
+            The path to the thermal model specification.
+        outdir : string
+            The directory to write outputs to.
+        run_start : string
+            The starting date/time of the run. 
         """
-        outdir = args.outdir
         start = tlm['date'][0]
         stop = tlm['date'][-1]
         states = self.state_builder.get_validation_states(start, stop)
@@ -568,7 +575,7 @@ class ACISThermalCheck(object):
 
         # Run the thermal model from the beginning of obtained telemetry
         # to the end, so we can compare its outputs to the real values
-        model = self.calc_model_wrapper(args.model_spec, states, start, stop)
+        model = self.calc_model_wrapper(model_spec, states, start, stop)
 
         # Use an OrderedDict here because we want the plots on the validation
         # page to appear in this order
@@ -689,7 +696,7 @@ class ACISThermalCheck(object):
         # If run_start is specified this is likely for regression testing
         # or other debugging.  In this case write out the full predicted and
         # telemetered dataset as a pickle.
-        if args.run_start:
+        if run_start:
             filename = os.path.join(outdir, 'validation_data.pkl')
             mylog.info('Writing validation data %s' % filename)
             f = open(filename, 'wb')
@@ -741,7 +748,7 @@ class ACISThermalCheck(object):
     def write_index_rst(self, bsdir, outdir, proc, plots_validation, 
                         valid_viols=None, plots=None, viols=None):
         """
-        Make output text (in reST format) in args.outdir, using jinja2
+        Make output text (in reST format) in outdir, using jinja2
         to fill out the template. 
 
         Parameters
