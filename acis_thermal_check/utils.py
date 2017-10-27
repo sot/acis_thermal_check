@@ -9,6 +9,8 @@ import six
 
 TASK_DATA = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
+mylog = logging.getLogger('acis_thermal_check')
+
 def calc_off_nom_rolls(states):
     """
     Calculate the off-nominal rolls from commanded states, which
@@ -39,7 +41,7 @@ def globfile(pathglob):
     else:
         return files[0]
 
-def config_logging(outdir, verbose, name):
+def config_logging(outdir, verbose):
     """
     Set up file and console logger.
     See http://docs.python.org/library/logging.html#logging-to-multiple-destinations
@@ -53,8 +55,6 @@ def config_logging(outdir, verbose, name):
     verbose : integer
         Indicate how verbose we want the logger to be.
         (0=quiet, 1=normal, 2=debug)
-    name : string
-        The name of the ACIS component whose temperature is being modeled.
     """
     # Disable auto-configuration of root logger by adding a null handler.
     # This prevents other modules (e.g. Chandra.cmd_states) from generating
@@ -70,7 +70,7 @@ def config_logging(outdir, verbose, name):
                 1: logging.INFO,
                 2: logging.DEBUG}.get(verbose, logging.INFO)
 
-    logger = logging.getLogger('%s_check' % name)
+    logger = logging.getLogger('acis_thermal_check')
     logger.setLevel(loglevel)
 
     formatter = logging.Formatter('%(message)s')

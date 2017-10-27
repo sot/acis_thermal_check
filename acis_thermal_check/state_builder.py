@@ -4,7 +4,7 @@ from Chandra.Time import DateTime
 from pprint import pformat
 import Chandra.cmd_states as cmd_states
 import numpy as np
-from acis_thermal_check.utils import globfile
+from acis_thermal_check.utils import globfile, mylog
 
 class StateBuilder(object):
     """
@@ -80,8 +80,8 @@ class SQLStateBuilder(StateBuilder):
         # Connect to database (NEED TO USE aca_read for sybase; user is ignored for sqlite)
         server = ('sybase' if args.cmd_states_db == 'sybase' else
                   os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3'))
-        self.logger.info('Connecting to {} to get cmd_states'.format(server))
         self.db = Ska.DBI.DBI(dbi=args.cmd_states_db, server=server, user='aca_read',
+        mylog.info('Connecting to {} to get cmd_states'.format(server))
                               database='aca')
         super(SQLStateBuilder, self).set_options(args)
         if self.args.backstop_file is not None:
@@ -98,10 +98,10 @@ class SQLStateBuilder(StateBuilder):
                                                   'CR*.backstop'))
         else:
             backstop_file = self.args.backstop_file
-        self.logger.info('Using backstop file %s' % backstop_file)
+        mylog.info('Using backstop file %s' % backstop_file)
         bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
-        self.logger.info('Found %d backstop commands between %s and %s' %
-                         (len(bs_cmds), bs_cmds[0]['date'], bs_cmds[-1]['date']))
+        mylog.info('Found %d backstop commands between %s and %s' %
+                   (len(bs_cmds), bs_cmds[0]['date'], bs_cmds[-1]['date']))
         self.bs_cmds = bs_cmds
         self.tstart = bs_cmds[0]['time']
         self.tstop = bs_cmds[-1]['time']
@@ -160,8 +160,8 @@ class SQLStateBuilder(StateBuilder):
         # We also add to this dict the mean temperature at the start of state0.
         state0 = self._set_initial_state(tlm)
 
-        self.logger.debug('state0 at %s is\n%s' % (DateTime(state0['tstart']).date,
-                          pformat(state0)))
+        mylog.debug('state0 at %s is\n%s' % (DateTime(state0['tstart']).date,
+                                             pformat(state0)))
 
         # Get commands after end of state0 through first backstop command time
         cmds_datestart = state0['datestop']
@@ -172,8 +172,8 @@ class SQLStateBuilder(StateBuilder):
                                           WHERE datestop > '%s'
                                           and datestart < '%s'"""
                                           % (cmds_datestart, cmds_datestop))
-        self.logger.info('Found {} timeline_loads  after {}'.format(
-                         len(timeline_loads), cmds_datestart))
+        mylog.info('Found {} timeline_loads  after {}'.format(
+                   len(timeline_loads), cmds_datestart))
 
         # Get cmds since datestart within timeline_loads
         db_cmds = cmd_states.get_cmds(cmds_datestart, db=self.db, update_db=False,
@@ -199,15 +199,15 @@ class SQLStateBuilder(StateBuilder):
                    if ((x['timeline_id'] is not None and not interrupt) or
                        x['time'] < self.bs_cmds[0]['time'])]
 
-        self.logger.info('Got %d cmds from database between %s and %s' %
-                         (len(db_cmds), cmds_datestart, cmds_datestop))
+        mylog.info('Got %d cmds from database between %s and %s' %
+                   (len(db_cmds), cmds_datestart, cmds_datestop))
 
         # Get the commanded states from state0 through the end of backstop commands
         states = cmd_states.get_states(state0, db_cmds + self.bs_cmds)
         states[-1].datestop = self.bs_cmds[-1]['date']
         states[-1].tstop = self.bs_cmds[-1]['time']
-        self.logger.info('Found %d commanded states from %s to %s' %
-                         (len(states), states[0]['datestart'], states[-1]['datestop']))
+        mylog.info('Found %d commanded states from %s to %s' %
+                   (len(states), states[0]['datestart'], states[-1]['datestop']))
 
         return states, state0
 
@@ -224,16 +224,16 @@ class SQLStateBuilder(StateBuilder):
         """
         datestart = DateTime(datestart).date
         datestop = DateTime(datestop).date
-        self.logger.info('Getting commanded states between %s - %s' %
-                         (datestart, datestop))
+        mylog.info('Getting commanded states between %s - %s' %
+                   (datestart, datestop))
 
         # Get all states that intersect specified date range
         cmd = """SELECT * FROM cmd_states
                  WHERE datestop > '%s' AND datestart < '%s'
                  ORDER BY datestart""" % (datestart, datestop)
-        self.logger.debug('Query command: %s' % cmd)
+        mylog.debug('Query command: %s' % cmd)
         states = self.db.fetchall(cmd)
-        self.logger.info('Found %d commanded states' % len(states))
+        mylog.info('Found %d commanded states' % len(states))
 
         # Set start and end state date/times to match telemetry span.  Extend the
         # state durations by a small amount because of a precision issue converting
@@ -285,8 +285,8 @@ class HDF5StateBuilder(StateBuilder):
         """
         datestart = DateTime(datestart).date
         datestop = DateTime(datestop).date
-        self.logger.info('Getting commanded states between %s - %s' %
-                         (datestart, datestop))
+        mylog.info('Getting commanded states between %s - %s' %
+                   (datestart, datestop))
         return cmd_states.fetch_states(datestart, datestop)
 
 state_builders = {"sql": SQLStateBuilder,

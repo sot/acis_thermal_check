@@ -20,11 +20,11 @@ from Ska.Matplotlib import cxctime2plotdate, \
     pointpair, plot_cxctime
 import Ska.engarchive.fetch_sci as fetch
 import shutil
-import logging
 import acis_thermal_check
 version = acis_thermal_check.__version__
 from acis_thermal_check.utils import \
-    config_logging, TASK_DATA, plot_two
+    config_logging, TASK_DATA, plot_two, \
+    mylog
 
 class ACISThermalCheck(object):
     r"""
@@ -107,7 +107,6 @@ class ACISThermalCheck(object):
         self.validation_limits = validation_limits
         self.hist_limit = hist_limit
         self.calc_model = calc_model
-        self.logger = logging.getLogger('%s_check' % self.name)
         self.other_telem = other_telem
         self.other_map = other_map
         self.state_builder = state_builder(self)
@@ -131,7 +130,7 @@ class ACISThermalCheck(object):
 
         # Configure the logger so that it knows which model
         # we are using and how verbose it is supposed to be
-        config_logging(args.outdir, args.verbose, self.name)
+        config_logging(args.outdir, args.verbose)
 
         # Store info relevant to processing for use in outputs
         proc = dict(run_user=os.environ['USER'],
@@ -141,16 +140,15 @@ class ACISThermalCheck(object):
                     name=self.name.upper(),
                     hist_limit=self.hist_limit)
         proc["msid_limit"] = self.yellow[self.name] - self.margin[self.name]
-        self.logger.info('##############################'
-                         '#######################################')
-        self.logger.info('# %s_check.py run at %s by %s'
-                         % (self.name, proc['run_time'], proc['run_user']))
-        self.logger.info('# acis_thermal_check version = %s' % version)
-        self.logger.info('# model_spec file = %s' % os.path.abspath(args.model_spec))
-        self.logger.info('###############################'
-                         '######################################\n')
-
-        self.logger.info('Command line options:\n%s\n' % pformat(args.__dict__))
+        mylog.info('##############################'
+                   '#######################################')
+        mylog.info('# %s_check.py run at %s by %s'
+                   % (self.name, proc['run_time'], proc['run_user']))
+        mylog.info('# acis_thermal_check version = %s' % version)
+        mylog.info('# model_spec file = %s' % os.path.abspath(args.model_spec))
+        mylog.info('###############################'
+                   '######################################\n')
+        mylog.info('Command line options:\n%s\n' % pformat(args.__dict__))
 
         if args.backstop_file is None:
             self.bsdir = None
@@ -208,7 +206,7 @@ class ACISThermalCheck(object):
         # Determine violations of temperature validation
         valid_viols = self.make_validation_viols(plots_validation)
         if len(valid_viols) > 0:
-            self.logger.info('validation warning(s) in output at %s' % args.outdir)
+            mylog.info('validation warning(s) in output at %s' % args.outdir)
 
         # Write everything to the web page.
         # First, write the reStructuredText file.
@@ -240,7 +238,7 @@ class ACISThermalCheck(object):
         tlm : NumPy structured array
             Telemetry which will be used to construct the initial temperature
         """
-        self.logger.info('Calculating %s thermal model' % self.name.upper())
+        mylog.info('Calculating %s thermal model' % self.name.upper())
 
         # Call the state builder to get the commanded states.
         states, state0 = self.state_builder.get_prediction_states(tlm)
@@ -302,7 +300,7 @@ class ACISThermalCheck(object):
             List of dictionaries with information about the contents of the
             plots which will be used to compute violations
         """
-        self.logger.info('Checking for validation violations')
+        mylog.info('Checking for validation violations')
 
         viols = []
 
@@ -330,9 +328,9 @@ class ACISThermalCheck(object):
                             'quant': quantile,
                             }
                     viols.append(viol)
-                    self.logger.info('WARNING: %s %d%% quantile value of %s exceeds '
-                                     'limit of %.2f' %
-                                     (msid, quantile, msid_quantile_value, limit))
+                    mylog.info('WARNING: %s %d%% quantile value of %s exceeds '
+                               'limit of %.2f' % (msid, quantile,
+                                                  msid_quantile_value, limit))
 
         return viols
 
@@ -352,7 +350,7 @@ class ACISThermalCheck(object):
             violations for times later than this time for the model
             run.
         """
-        self.logger.info('Checking for limit violations')
+        mylog.info('Checking for limit violations')
 
         viols = dict((x, []) for x in self.MSIDs)
         for msid in self.MSIDs:
@@ -376,10 +374,11 @@ class ACISThermalCheck(object):
                     viol = {'datestart': DateTime(times[change[0]]).date,
                             'datestop': DateTime(times[change[1] - 1]).date,
                             'maxtemp': temp[change[0]:change[1]].max()}
-                    self.logger.info('WARNING: %s exceeds planning limit of %.2f '
-                                     'degC from %s to %s'
-                                     % (self.MSIDs[msid], plan_limit, viol['datestart'],
-                                        viol['datestop']))
+                    mylog.info('WARNING: %s exceeds planning limit of %.2f '
+                               'degC from %s to %s' % (self.MSIDs[msid],
+                                                       plan_limit,
+                                                       viol['datestart'],
+                                                       viol['datestop']))
                     viols[msid].append(viol)
 
         viols["default"] = viols[self.name]
@@ -401,7 +400,7 @@ class ACISThermalCheck(object):
             being written to the file. Default: None
         """
         outfile = os.path.join(outdir, 'states.dat')
-        self.logger.info('Writing states to %s' % outfile)
+        mylog.info('Writing states to %s' % outfile)
         out = open(outfile, 'w')
         fmt = {'power': '%.1f',
                'pitch': '%.2f',
@@ -430,7 +429,7 @@ class ACISThermalCheck(object):
             Temperatures in Celsius
         """
         outfile = os.path.join(outdir, 'temperatures.dat')
-        self.logger.info('Writing temperatures to %s' % outfile)
+        mylog.info('Writing temperatures to %s' % outfile)
         T = temps[self.name]
         temp_recs = [(times[i], DateTime(times[i]).date, T[i])
                      for i in range(len(times))]
@@ -472,7 +471,7 @@ class ACISThermalCheck(object):
         # to make a plot for more than one temperature, but we currently only 
         # do one. Plots are of temperature on the left axis and pitch on the
         # right axis. 
-        self.logger.info('Making temperature prediction plots')
+        mylog.info('Making temperature prediction plots')
         for fig_id, msid in enumerate((self.name,)):
             plots[msid] = plot_two(fig_id=fig_id + 1,
                                    x=times,
@@ -494,7 +493,7 @@ class ACISThermalCheck(object):
                                       linewidth=2.0)
             filename = self.MSIDs[self.name].lower() + '.png'
             outfile = os.path.join(outdir, filename)
-            self.logger.info('Writing plot file %s' % outfile)
+            mylog.info('Writing plot file %s' % outfile)
             plots[msid]['fig'].savefig(outfile)
             plots[msid]['filename'] = filename
 
@@ -524,7 +523,7 @@ class ACISThermalCheck(object):
         plots['pow_sim']['fig'].subplots_adjust(left=lm, right=rm)
         filename = 'pow_sim.png'
         outfile = os.path.join(outdir, filename)
-        self.logger.info('Writing plot file %s' % outfile)
+        mylog.info('Writing plot file %s' % outfile)
         plots['pow_sim']['fig'].savefig(outfile)
         plots['pow_sim']['filename'] = filename
 
@@ -550,7 +549,7 @@ class ACISThermalCheck(object):
         stop = tlm['date'][-1]
         states = self.state_builder.get_validation_states(start, stop)
 
-        self.logger.info('Calculating %s thermal model for validation' % self.name.upper())
+        mylog.info('Calculating %s thermal model for validation' % self.name.upper())
 
         # Run the thermal model from the beginning of obtained telemetry
         # to the end, so we can compare its outputs to the real values
@@ -593,7 +592,7 @@ class ACISThermalCheck(object):
                 good_mask[bad] = False
 
         plots = []
-        self.logger.info('Making %s model validation plots and quantile table' % self.name.upper())
+        mylog.info('Making %s model validation plots and quantile table' % self.name.upper())
         quantiles = (1, 5, 16, 50, 84, 95, 99)
         # store lines of quantile table in a string and write out later
         quant_table = ''
@@ -616,7 +615,7 @@ class ACISThermalCheck(object):
             ax.grid()
             filename = msid + '_valid.png'
             outfile = os.path.join(outdir, filename)
-            self.logger.info('Writing plot file %s' % outfile)
+            mylog.info('Writing plot file %s' % outfile)
             fig.savefig(outfile)
             plot['lines'] = filename
 
@@ -659,7 +658,7 @@ class ACISThermalCheck(object):
                 fig.subplots_adjust(bottom=0.18)
                 filename = '%s_valid_hist_%s.png' % (msid, histscale)
                 outfile = os.path.join(outdir, filename)
-                self.logger.info('Writing plot file %s' % outfile)
+                mylog.info('Writing plot file %s' % outfile)
                 fig.savefig(outfile)
                 plot['hist' + histscale] = filename
 
@@ -667,7 +666,7 @@ class ACISThermalCheck(object):
 
         # Write quantile tables to a CSV file
         filename = os.path.join(outdir, 'validation_quant.csv')
-        self.logger.info('Writing quantile table %s' % filename)
+        mylog.info('Writing quantile table %s' % filename)
         f = open(filename, 'w')
         f.write(quant_table)
         f.close()
@@ -677,7 +676,7 @@ class ACISThermalCheck(object):
         # telemetered dataset as a pickle.
         if args.run_start:
             filename = os.path.join(outdir, 'validation_data.pkl')
-            self.logger.info('Writing validation data %s' % filename)
+            mylog.info('Writing validation data %s' % filename)
             f = open(filename, 'wb')
             pickle.dump({'pred': pred, 'tlm': tlm}, f, protocol=-1)
             f.close()
@@ -715,8 +714,8 @@ class ACISThermalCheck(object):
         if status != 0:
             proc['errors'].append('rst2html.py failed with status {}: see run log'
                                   .format(status))
-            self.logger.error('rst2html.py failed')
-            self.logger.error(''.join(spawn.outlines) + '\n')
+            mylog.error('rst2html.py failed')
+            mylog.error(''.join(spawn.outlines) + '\n')
 
         # Remove the stupid <colgroup> field that docbook inserts.  This
         # <colgroup> prevents HTML table auto-sizing.
@@ -754,7 +753,7 @@ class ACISThermalCheck(object):
         import jinja2
 
         outfile = os.path.join(outdir, 'index.rst')
-        self.logger.info('Writing report file %s' % outfile)
+        mylog.info('Writing report file %s' % outfile)
         # Set up the context for the reST file
         context = {'bsdir': bsdir,
                    'plots': plots,
@@ -792,7 +791,7 @@ class ACISThermalCheck(object):
         tstart = DateTime(tstart).secs
         start = DateTime(tstart - days * 86400).date
         stop = DateTime(tstart).date
-        self.logger.info('Fetching telemetry between %s and %s' % (start, stop))
+        mylog.info('Fetching telemetry between %s and %s' % (start, stop))
         msidset = fetch.MSIDset(msids, start, stop, stat='5min')
         start = max(x.times[0] for x in msidset.values())
         stop = min(x.times[-1] for x in msidset.values())
