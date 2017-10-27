@@ -404,7 +404,7 @@ class ACISThermalCheck(object):
 
         return viols
 
-    def write_states(self, outdir, states, remove_cols=None):
+    def write_states(self, outdir, states):
         """
         Write the states record array to the file "states.dat".
 
@@ -414,9 +414,6 @@ class ACISThermalCheck(object):
             The directory the file will be written to.
         states : NumPy record array
             The commanded states to be written to the file.
-        remove_cols : list of strings, optional
-            A list of columns that will be excluded from
-            being written to the file. Default: None
         """
         outfile = os.path.join(outdir, 'states.dat')
         mylog.info('Writing states to %s' % outfile)
@@ -425,13 +422,7 @@ class ACISThermalCheck(object):
                'pitch': '%.2f',
                'tstart': '%.2f',
                'tstop': '%.2f'}
-        newcols = list(states.dtype.names)
-        #newcols.remove(self.msid)
-        if remove_cols is not None:
-            for col in remove_cols:
-                newcols.remove(col)
-        newstates = np.rec.fromarrays([states[x] for x in newcols], names=newcols)
-        Ska.Numpy.pprint(newstates, fmt, out)
+        Ska.Numpy.pprint(states, fmt, out)
         out.close()
 
     def write_temps(self, outdir, times, temps):
