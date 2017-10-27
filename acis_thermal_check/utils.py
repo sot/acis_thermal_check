@@ -234,6 +234,31 @@ def get_options(name, model_path, opts=None):
 
     return args
 
+def make_state_builder(name, args):
+    """
+    Take the command-line arguments and use them to construct
+    a StateBuilder object which will be used for the thermal
+    prediction and validation.
+
+    Parameters
+    ----------
+    name : string 
+        The identifier for the state builder to be used.
+    args : ArgumentParser arguments
+        The arguments to pass to the StateBuilder subclass.
+    """
+    from acis_thermal_check.state_builder import state_builders
+    builder_class = state_builders[name]
+    if name == "sql":
+        state_builder = builder_class(interrupt=args.interrupt,
+                                      backstop_file=args.backstop_file,
+                                      cmd_states_db=args.cmd_states_db)
+    elif name == "acis":
+        raise NotImplementedError
+    elif name == "hdf5":
+        state_builder = builder_class()
+    return state_builder
+
 def get_acis_limits(msid):
     """
     Get the current red and yellow hi limits for a given 

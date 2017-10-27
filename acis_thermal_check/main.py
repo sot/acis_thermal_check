@@ -92,15 +92,11 @@ class ACISThermalCheck(object):
         {'sim_z': 'tscpos', 'dp_pitch': 'pitch'}. Used to map
         names understood by Xija to MSIDs.
     """
-    def __init__(self, msid, name, state_builder, MSIDs, yellow, 
-                 margin, validation_limits, hist_limit, calc_model,
+    def __init__(self, msid, name, MSIDs, yellow, margin, 
+                 validation_limits, hist_limit, calc_model,
                  other_telem=None, other_map=None):
         self.msid = msid
         self.name = name
-        # t_msid is another version of the name that corresponds
-        # to the command line argument that is the initial value
-        # for the temperature
-        self.t_msid = 'T_%s' % self.name
         self.MSIDs = MSIDs
         self.yellow = yellow
         self.margin = margin
@@ -109,9 +105,8 @@ class ACISThermalCheck(object):
         self.calc_model = calc_model
         self.other_telem = other_telem
         self.other_map = other_map
-        self.state_builder = state_builder(self)
 
-    def driver(self, args):
+    def driver(self, args, state_builder):
         """
         The main interface to all of ACISThermalCheck's functions.
         This method must be called by the particular thermal model
@@ -122,8 +117,10 @@ class ACISThermalCheck(object):
         args : ArgumentParser arguments
             The command-line options object, which has the options
             attached to it as attributes
+        state_builder : StateBuilder object
+            The StateBuilder object used to construct commanded states
         """
-        self.state_builder.set_options(args)
+        self.state_builder = state_builder
 
         if not os.path.exists(args.outdir):
             os.mkdir(args.outdir)
@@ -241,7 +238,25 @@ class ACISThermalCheck(object):
         mylog.info('Calculating %s thermal model' % self.name.upper())
 
         # Call the state builder to get the commanded states.
-        states, state0 = self.state_builder.get_prediction_states(tlm)
+
+        # The -5 here has us back off from the last telemetry reading just a bit
+        tbegin = DateTime(tlm['date'][-5]).date
+        states, state0 = self.state_builder.get_prediction_states(tbegin)
+
+        # We now determine the initial temperature.
+
+        if args.T_init is not None:
+            # If we have an initial temperature input from the
+            # command line, use it
+            T_init = args.T_init
+        else:
+            # Otherwise, construct T_init from an average of
+            # telemetry values around state0
+            ok = ((tlm['date'] >= state0['tstart'] - 700) &
+                  (tlm['date'] <= state0['tstart'] + 700))
+            T_init = np.mean(tlm[self.msid][ok])
+
+        state0.update({self.msid: T_init})
 
         # calc_model_wrapper actually does the model calculation by running
         # model-specific code.
@@ -286,7 +301,7 @@ class ACISThermalCheck(object):
         if state0 is None:
             start_msid = None
         else:
-            start_msid = state0[self.t_msid]
+            start_msid = state0[self.msid]
         return self.calc_model(model_spec, states, tstart, tstop, start_msid)
 
     def make_validation_viols(self, plots_validation):
