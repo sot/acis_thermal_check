@@ -3,8 +3,8 @@ import Ska.DBI
 from Chandra.Time import DateTime
 from pprint import pformat
 import Chandra.cmd_states as cmd_states
-from acis_thermal_check.utils import globfile
 import logging
+from Ska.File import get_globfiles
 
 class StateBuilder(object):
     """
@@ -87,8 +87,9 @@ class SQLStateBuilder(StateBuilder):
         """
         import Ska.ParseCM
         if os.path.isdir(self.backstop_file):
-            backstop_file = globfile(os.path.join(self.backstop_file, 
-                                                  'CR*.backstop'))
+            # Returns a list but requires exactly 1 match
+            backstop_file = get_globfiles(os.path.join(self.backstop_file,
+                                                       'CR*.backstop'))[0]
         else:
             backstop_file = self.backstop_file
         self.logger.info('Using backstop file %s' % backstop_file)

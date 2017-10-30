@@ -1,6 +1,5 @@
 import numpy as np
 import Ska.Sun
-import glob
 import logging
 import os
 import matplotlib.pyplot as plt
@@ -27,19 +26,6 @@ def calc_off_nom_rolls(states):
         time = (state['tstart'] + state['tstop']) / 2
         off_nom_rolls.append(Ska.Sun.off_nominal_roll(att, time))
     return np.array(off_nom_rolls)
-
-def globfile(pathglob):
-    """
-    Return the one file name matching ``pathglob``. Zero or multiple
-    matches raises an IOError exception.
-    """
-    files = glob.glob(pathglob)
-    if len(files) == 0:
-        raise IOError('No files matching %s' % pathglob)
-    elif len(files) > 1:
-        raise IOError('Multiple files matching %s' % pathglob)
-    else:
-        return files[0]
 
 def config_logging(outdir, verbose):
     """
