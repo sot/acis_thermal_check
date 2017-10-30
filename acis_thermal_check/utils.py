@@ -252,11 +252,12 @@ def make_state_builder(name, args):
     if name == "sql":
         state_builder = builder_class(interrupt=args.interrupt,
                                       backstop_file=args.backstop_file,
-                                      cmd_states_db=args.cmd_states_db)
+                                      cmd_states_db=args.cmd_states_db,
+                                      logger=mylog)
     elif name == "acis":
         raise NotImplementedError
     elif name == "hdf5":
-        state_builder = builder_class()
+        state_builder = builder_class(logger=mylog)
     return state_builder
 
 def get_acis_limits(msid):
