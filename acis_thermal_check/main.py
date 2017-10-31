@@ -139,13 +139,15 @@ class ACISThermalCheck(object):
         proc["msid_limit"] = self.yellow[self.name] - self.margin[self.name]
         mylog.info('##############################'
                    '#######################################')
-        mylog.info('# %s_check.py run at %s by %s'
+        mylog.info('# %s_check run at %s by %s'
                    % (self.name, proc['run_time'], proc['run_user']))
         mylog.info('# acis_thermal_check version = %s' % version)
         mylog.info('# model_spec file = %s' % os.path.abspath(args.model_spec))
         mylog.info('###############################'
                    '######################################\n')
         mylog.info('Command line options:\n%s\n' % pformat(args.__dict__))
+
+        mylog.info("ACISThermalCheck is using the '%s' state builder." % args.state_builder)
 
         if args.backstop_file is None:
             self.bsdir = None
