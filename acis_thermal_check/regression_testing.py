@@ -33,57 +33,28 @@ class TestOpts(object):
         be supplied.
     days : float, optional
         The number of days to run the model for. Default: 21.0
-    ccd_count : integer, optional
-        If ``load_week`` is not supplied, this will be the CCD count
-        for the model run. Default: 6
-    fep_count : integer, optional
-        If ``load_week`` is not supplied, this will be the FEP count
-        for the model run. Default: 6
-    vid_board : integer, optional
-        If ``load_week`` is not supplied, this will set whether or not
-        the video boards are on. Default: 1 (ON)
-    clocking : integer, optional
-        If ``load_week`` is not supplied, this will set whether or not
-        the CCDs are clocking. Default: 1 (YES)
-    simpos : float, optional
-        If ``load_week`` is not supplied, this will be the SIM position
-        in units of steps. Default: 75616.0 (ACIS-S)
-    pitch : float, optional
-        If ``load_week`` is not supplied, this will be the pitch angle
-        in units of degrees. Default: 150.0 (ACIS-S)
     T_init : float, optional
         The starting temperature for the run. If not set, it will be
         determined from telemetry.
-    dh_heater : integer, optional
-        If ``load_week`` is not supplied, this will set whether or not
-        the detector housing heater is on. Default: 0 (OFF)
     cmd_states_db : string
         The mode of database access for the commanded states database.
         "sybase" or "sqlite". Default: "sybase"
     """
     def __init__(self, name, run_start, outdir, model_spec=None,
-                 load_week=None, days=21.0, ccd_count=6, fep_count=6,
-                 vid_board=1, clocking=1, simpos=75616.0, pitch=150.0,
-                 T_init=None, dh_heater=0, cmd_states_db='sybase'):
+                 load_week=None, days=21.0, T_init=None, 
+                 cmd_states_db='sybase'):
         self.load_week = load_week
         self.run_start = run_start
         self.outdir = outdir
-        # load_week sets the oflsdir
+        # load_week sets the bsdir
         if load_week is None:
-            self.oflsdir = None
+            self.bsdir = None
         else:
             load_year = "20%s" % load_week[-2:]
-            self.oflsdir = "/data/acis/LoadReviews/%s/%s/ofls" % (load_year, load_week)
+            self.bsdir = "/data/acis/LoadReviews/%s/%s/ofls" % (load_year, load_week)
         self.days = days
-        self.ccd_count = ccd_count
-        self.fep_count = fep_count
-        self.vid_board = vid_board
-        self.clocking = clocking
-        self.simpos = simpos
-        self.pitch = pitch
         self.cmd_states_db = cmd_states_db
         setattr(self, "T_%s" % name, T_init)
-        self.dh_heater = dh_heater
         self.traceback = True
         self.verbose = 1
         self.model_spec = model_spec

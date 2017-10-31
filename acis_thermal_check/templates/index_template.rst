@@ -17,8 +17,8 @@ Summary
 Date start             {{proc.datestart}}
 Date stop              {{proc.datestop}}
 Model status           {%if viols.default%}:red:`NOT OK`{% else %}OK{% endif%} (Planning Limit = {{"%.1f"|format(proc.msid_limit)}} C)
-{% if oflsdir %}
-Load directory         {{oflsdir}}
+{% if bsdir %}
+Load directory         {{bsdir}}
 {% endif %}
 Run time               {{proc.run_time}} by {{proc.run_user}}
 Run log                `<run.dat>`_

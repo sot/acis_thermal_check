@@ -1,12 +1,14 @@
 import numpy as np
 import Ska.Sun
-import glob
 import logging
 import os
 import matplotlib.pyplot as plt
 from Ska.Matplotlib import cxctime2plotdate
+import six
 
 TASK_DATA = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+mylog = logging.getLogger('acis_thermal_check')
 
 def calc_off_nom_rolls(states):
     """
@@ -25,20 +27,7 @@ def calc_off_nom_rolls(states):
         off_nom_rolls.append(Ska.Sun.off_nominal_roll(att, time))
     return np.array(off_nom_rolls)
 
-def globfile(pathglob):
-    """
-    Return the one file name matching ``pathglob``. Zero or multiple
-    matches raises an IOError exception.
-    """
-    files = glob.glob(pathglob)
-    if len(files) == 0:
-        raise IOError('No files matching %s' % pathglob)
-    elif len(files) > 1:
-        raise IOError('Multiple files matching %s' % pathglob)
-    else:
-        return files[0]
-
-def config_logging(outdir, verbose, name):
+def config_logging(outdir, verbose):
     """
     Set up file and console logger.
     See http://docs.python.org/library/logging.html#logging-to-multiple-destinations
@@ -52,8 +41,6 @@ def config_logging(outdir, verbose, name):
     verbose : integer
         Indicate how verbose we want the logger to be.
         (0=quiet, 1=normal, 2=debug)
-    name : string
-        The name of the ACIS component whose temperature is being modeled.
     """
     # Disable auto-configuration of root logger by adding a null handler.
     # This prevents other modules (e.g. Chandra.cmd_states) from generating
@@ -69,7 +56,7 @@ def config_logging(outdir, verbose, name):
                 1: logging.INFO,
                 2: logging.DEBUG}.get(verbose, logging.INFO)
 
-    logger = logging.getLogger('%s_check' % name)
+    logger = logging.getLogger('acis_thermal_check')
     logger.setLevel(loglevel)
 
     formatter = logging.Formatter('%(message)s')
@@ -161,16 +148,15 @@ def plot_two(fig_id, x, y, x2, y2,
 
     return {'fig': fig, 'ax': ax, 'ax2': ax2}
 
-def get_options(msid, name, model_path, opts=None):
+def get_options(name, model_path, opts=None):
     """
-    Construct the argument parser for command-line options. Sets up the
-    parser and defines default options. This function should be used by
-    the specific thermal model checking tools.
+    Construct the argument parser for command-line options for running
+    predictions and validations for a load. Sets up the parser and 
+    defines default options. This function should be used by the specific 
+    thermal model checking tools.
 
     Parameters
     ----------
-    msid : string
-        The MSID mnemomic for the temperature to be modeled.
     name : string
         The name of the ACIS component whose temperature is being modeled.
     model_path : string
@@ -183,48 +169,93 @@ def get_options(msid, name, model_path, opts=None):
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.set_defaults()
-    parser.add_argument("--outdir", default="out", help="Output directory")
-    parser.add_argument("--oflsdir", help="Load products OFLS directory")
+    parser.add_argument("--outdir", default="out", help="Output directory. Default: 'out'")
+    parser.add_argument("--backstop_file", help="Path to the backstop file. If a directory, "
+                                                "the backstop file will be searched for within "
+                                                "this directory. Default: None")
+    parser.add_argument("--oflsdir", help="Path to the directory containing the backstop "
+                                          "file (legacy argument). If specified, it will "
+                                          "override the value of the backstop_file "
+                                          "argument. Default: None")
     parser.add_argument("--model-spec", 
                         default=os.path.join(model_path, '%s_model_spec.json' % name),
-                        help="Model specification file")
+                        help="Model specification file. Defaults to the one included with "
+                             "the model package.")
     parser.add_argument("--days", type=float, default=21.0,
-                        help="Days of validation data (days)")
-    parser.add_argument("--run-start", help="Reference time to replace run "
-                                            "start time for regression testing")
-    parser.add_argument("--traceback", default=True, help='Enable tracebacks')
+                        help="Days of validation data. Default: 21")
+    parser.add_argument("--run-start", help="Reference time to replace run start time "
+                                            "for regression testing. The default is to "
+                                            "use the current time.")
+    parser.add_argument("--interrupt", help="Set this flag if this is an interrupt load.",
+                        action='store_true')
+    parser.add_argument("--traceback", default=True, help='Enable tracebacks. Default: True')
     parser.add_argument("--verbose", type=int, default=1,
                         help="Verbosity (0=quiet, 1=normal, 2=debug)")
-    parser.add_argument("--ccd-count", type=int, default=6,
-                        help="Initial number of CCDs (default=6)")
-    parser.add_argument("--fep-count", type=int, default=6,
-                        help="Initial number of FEPs (default=6)")
-    parser.add_argument("--vid-board", type=int, default=1,
-                        help="Initial state of ACIS vid_board (default=1)")
-    parser.add_argument("--clocking", type=int, default=1,
-                        help="Initial state of ACIS clocking (default=1)")
-    parser.add_argument("--simpos", default=75616.0, type=float,
-                        help="Starting SIM-Z position (steps)")
-    parser.add_argument("--pitch", default=150.0, type=float,
-                        help="Starting pitch (deg)")
-    parser.add_argument("--T-%s" % name, type=float,
-                        help="Starting %s temperature (degC)" % msid)
+    parser.add_argument("--T-init", type=float,
+                        help="Starting temperature (degC or degF, depending on the model). "
+                             "Default is to compute it from telemetry.")
     parser.add_argument("--cmd-states-db", default="sybase",
-                        help="Commanded states database server (sybase|sqlite)")
+                        help="Commanded states database server (sybase|sqlite). "
+                             "Only used if state-builder=sql. Default: sybase")
+    parser.add_argument("--state-builder", default="sql",
+                        help="StateBuilder to use (sql|acis|hdf5). Default: sql")
     parser.add_argument("--version", action='store_true', help="Print version")
+
     if opts is not None:
         for opt_name, opt in opts:
             parser.add_argument("--%s" % opt_name, **opt)
 
     args = parser.parse_args()
 
-    if args.cmd_states_db not in ('sybase', 'sqlite'):
-        raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
+    if args.oflsdir is not None:
+        args.backstop_file = args.oflsdir
+
+    if args.state_builder == "sql":
+        if args.cmd_states_db not in ('sybase', 'sqlite'):
+            raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
+
+        # Enforce sqlite cmd states db for Python 3
+        if six.PY3 and args.cmd_states_db == 'sybase':
+            args.cmd_states_db = 'sqlite'
 
     return args
 
-def get_acis_limits(msid):
+def make_state_builder(name, args):
+    """
+    Take the command-line arguments and use them to construct
+    a StateBuilder object which will be used for the thermal
+    prediction and validation.
 
+    Parameters
+    ----------
+    name : string 
+        The identifier for the state builder to be used.
+    args : ArgumentParser arguments
+        The arguments to pass to the StateBuilder subclass.
+    """
+    from acis_thermal_check.state_builder import state_builders
+    builder_class = state_builders[name]
+    if name == "sql":
+        state_builder = builder_class(interrupt=args.interrupt,
+                                      backstop_file=args.backstop_file,
+                                      cmd_states_db=args.cmd_states_db,
+                                      logger=mylog)
+    elif name == "acis":
+        raise NotImplementedError
+    elif name == "hdf5":
+        state_builder = builder_class(logger=mylog)
+    return state_builder
+
+def get_acis_limits(msid):
+    """
+    Get the current red and yellow hi limits for a given 
+    ACIS-related MSID. 
+
+    Parameters
+    ----------
+    msid : string
+        The MSID to get the limits for, e.g. "1deamzt".
+    """
     import requests
 
     yellow_hi = None
