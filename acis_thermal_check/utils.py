@@ -346,14 +346,15 @@ def get_acis_limits(msid):
     if msid.startswith("tmp_"):
         url = "http://cxc.cfa.harvard.edu/acis/PMON/pmon_limits.txt"
         cols = (5, 6)
+        msid = "ADC_"+msid.upper()
     else:
-        url = "http://hea-www.cfa.harvard.edu/~acisweb/htdocs/acis/RT-ACIS60-V/limits.txt"
+        url = "http://cxc.cfa.harvard.edu/acis/Thermal/MSID_Limits.txt"
         cols = (3, 5)
 
     u = requests.get(url)
 
     for line in u.text.split("\n"):
-        words = line.strip().split("\t")
+        words = line.strip().split()
         if len(words) > 1 and words[0] == msid.upper():
             yellow_hi = float(words[cols[0]])
             red_hi = float(words[cols[1]])
