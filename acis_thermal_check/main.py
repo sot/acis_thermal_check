@@ -212,8 +212,7 @@ class ACISThermalCheck(object):
         # First, write the reStructuredText file.
 
         self.write_index_rst(self.bsdir, args.outdir, proc, plots_validation, 
-                             valid_viols=valid_viols, plots=pred['plots'], 
-                             viols=pred['viols'])
+                             pred, valid_viols=valid_viols)
         # Second, convert reST to HTML
         self.rst_to_html(args.outdir, proc)
 
@@ -738,7 +737,7 @@ class ACISThermalCheck(object):
         open(outfile, 'w').write(outtext)
 
     def write_index_rst(self, bsdir, outdir, proc, plots_validation, 
-                        valid_viols=None, plots=None, viols=None):
+                        pred, valid_viols=None):
         """
         Make output text (in reST format) in outdir, using jinja2
         to fill out the template. 
@@ -770,8 +769,8 @@ class ACISThermalCheck(object):
         mylog.info('Writing report file %s' % outfile)
         # Set up the context for the reST file
         context = {'bsdir': bsdir,
-                   'plots': plots,
-                   'viols': viols,
+                   'plots': pred["plots"],
+                   'viols': pred["viols"],
                    'valid_viols': valid_viols,
                    'proc': proc,
                    'plots_validation': plots_validation}
