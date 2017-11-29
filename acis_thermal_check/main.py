@@ -7,7 +7,7 @@ matplotlib.use('Agg')
 
 import os
 from pprint import pformat
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import re
 import time
 import pickle
@@ -197,8 +197,7 @@ class ACISThermalCheck(object):
             pred = self.make_week_predict(tstart, tstop, tlm, args.T_init,
                                           args.model_spec, args.outdir)
         else:
-            pred = dict(plots=None, viols=None, times=None, states=None,
-                        temps=None)
+            pred = defaultdict(lambda: None)
 
         # Validation
         # Make the validation plots
