@@ -124,8 +124,9 @@ class ACISThermalCheck(object):
 
         proc = self._setup_proc_and_logger(args)
 
-        tstart, tstop, tnow = self.determine_times(args.run_start, 
-                                                   args.backstop_file)
+        is_weekly_load = args.backstop_file is not None
+        tstart, tstop, tnow = self._determine_times(args.run_start,
+                                                    is_weekly_load)
 
         # Get the telemetry values which will be used
         # for prediction and validation
@@ -726,7 +727,16 @@ class ACISThermalCheck(object):
         open(outfile, 'w').write(template.render(**context))
 
     def _setup_proc_and_logger(self, args):
+        """
+        This method does some initial setup and logs important
+        information.
 
+        Parameters
+        ----------
+        args : ArgumentParser arguments
+            The command-line options object, which has the options
+            attached to it as attributes
+        """
         if not os.path.exists(args.outdir):
             os.mkdir(args.outdir)
 
@@ -763,11 +773,20 @@ class ACISThermalCheck(object):
                 self.bsdir = os.path.dirname(args.backstop_file)
         return proc
 
-    def determine_times(self, run_start, backstop_file):
+    def _determine_times(self, run_start, is_weekly_load):
+        """
+        Determine the start and stop times
+
+        Parameters
+        ----------
+        run_start : string
+            The starting date/time of the run.
+        is_weekly_load : boolean
+            Whether or not this is a weekly load.
+        """
         tnow = DateTime(run_start).secs
-        # Get tstart, tstop, commands from backstop file
-        # in args.backstop_file
-        if backstop_file is not None:
+        # Get tstart, tstop, commands from state builder
+        if is_weekly_load:
             # If we are running a model for a particular load,
             # get tstart, tstop, commands from backstop file
             # in args.backstop_file
