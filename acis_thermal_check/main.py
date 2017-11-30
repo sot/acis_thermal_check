@@ -159,6 +159,38 @@ class ACISThermalCheck(object):
 
         return
 
+    def get_states(self, tlm, T_init):
+        """
+        Call the state builder to get the commanded states and
+        determine the initial temperature.
+
+        Parameters
+        ----------
+        tlm : NumPy structured array
+            Telemetry which will be used to construct the initial temperature
+        T_init : float
+            The initial temperature of the model prediction. If None, an
+            initial value will be constructed from telemetry.
+        """
+
+        # The -5 here has us back off from the last telemetry reading just a bit
+        tbegin = DateTime(tlm['date'][-5]).date
+        states, state0 = self.state_builder.get_prediction_states(tbegin)
+
+        # We now determine the initial temperature.
+
+        # If we have an initial temperature input from the
+        # command line, use it, otherwise construct T_init 
+        # from an average of telemetry values around state0
+        if T_init is None:
+            ok = ((tlm['date'] >= state0['tstart'] - 700) &
+                  (tlm['date'] <= state0['tstart'] + 700))
+            T_init = np.mean(tlm[self.msid][ok])
+
+        state0.update({self.msid: T_init})
+
+        return states, state0
+
     def make_week_predict(self, tstart, tstop, tlm, T_init, model_spec,
                           outdir):
         """
@@ -182,23 +214,8 @@ class ACISThermalCheck(object):
         """
         mylog.info('Calculating %s thermal model' % self.name.upper())
 
-        # Call the state builder to get the commanded states.
-
-        # The -5 here has us back off from the last telemetry reading just a bit
-        tbegin = DateTime(tlm['date'][-5]).date
-        states, state0 = self.state_builder.get_prediction_states(tbegin)
-
-        # We now determine the initial temperature.
-
-        # If we have an initial temperature input from the
-        # command line, use it, otherwise construct T_init 
-        # from an average of telemetry values around state0
-        if T_init is None:
-            ok = ((tlm['date'] >= state0['tstart'] - 700) &
-                  (tlm['date'] <= state0['tstart'] + 700))
-            T_init = np.mean(tlm[self.msid][ok])
-
-        state0.update({self.msid: T_init})
+        # Get commanded states and set initial temperature
+        states, state0 = self.get_states(tlm, T_init)
 
         # calc_model_wrapper actually does the model calculation by running
         # model-specific code.
