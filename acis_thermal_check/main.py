@@ -157,10 +157,7 @@ class ACISThermalCheck(object):
         # Second, convert reST to HTML
         self.rst_to_html(args.outdir, proc)
 
-        return dict(args=args, states=pred['states'], times=pred['times'],
-                    temps=pred['temps'], plots=pred['plots'],
-                    viols=pred['viols'], proc=proc,
-                    plots_validation=plots_validation)
+        return
 
     def make_week_predict(self, tstart, tstop, tlm, T_init, model_spec,
                           outdir):
