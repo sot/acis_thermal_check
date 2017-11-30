@@ -151,9 +151,9 @@ class ACISThermalCheck(object):
 
         # Write everything to the web page.
         # First, write the reStructuredText file.
-
         self.write_index_rst(self.bsdir, args.outdir, proc, plots_validation, 
                              pred, valid_viols=valid_viols)
+
         # Second, convert reST to HTML
         self.rst_to_html(args.outdir, proc)
 
