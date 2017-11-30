@@ -122,75 +122,14 @@ class ACISThermalCheck(object):
         """
         self.state_builder = state_builder
 
-        if not os.path.exists(args.outdir):
-            os.mkdir(args.outdir)
+        proc = self._setup_proc_and_logger(args)
 
-        # Configure the logger so that it knows which model
-        # we are using and how verbose it is supposed to be
-        config_logging(args.outdir, args.verbose)
+        tstart, tstop, tnow = self.determine_times(args.run_start, 
+                                                   args.backstop_file)
 
-        # Store info relevant to processing for use in outputs
-        proc = dict(run_user=os.environ['USER'],
-                    run_time=time.ctime(),
-                    errors=[],
-                    msid=self.msid.upper(),
-                    name=self.name.upper(),
-                    hist_limit=self.hist_limit)
-        proc["msid_limit"] = self.yellow[self.name] - self.margin[self.name]
-        mylog.info('##############################'
-                   '#######################################')
-        mylog.info('# %s_check run at %s by %s'
-                   % (self.name, proc['run_time'], proc['run_user']))
-        mylog.info('# acis_thermal_check version = %s' % version)
-        mylog.info('# model_spec file = %s' % os.path.abspath(args.model_spec))
-        mylog.info('###############################'
-                   '######################################\n')
-        mylog.info('Command line options:\n%s\n' % pformat(args.__dict__))
-
-        mylog.info("ACISThermalCheck is using the '%s' state builder." % args.state_builder)
-
-        if args.backstop_file is None:
-            self.bsdir = None
-        else:
-            if os.path.isdir(args.backstop_file):
-                self.bsdir = args.backstop_file
-            else:
-                self.bsdir = os.path.dirname(args.backstop_file)
-
-        tnow = DateTime(args.run_start).secs
-        # Get tstart, tstop, commands from backstop file
-        # in args.backstop_file
-        if args.backstop_file is not None:
-            # If we are running a model for a particular load,
-            # get tstart, tstop, commands from backstop file
-            # in args.backstop_file
-            tstart = self.state_builder.tstart
-            tstop = self.state_builder.tstop
-
-            proc.update(dict(datestart=DateTime(tstart).date,
-                             datestop=DateTime(tstop).date))
-        else:
-            # Otherwise, the start time for the run is whatever is in
-            # args.run_start
-            tstart = tnow
-
-        # Get temperature and other telemetry for 3 weeks prior to min(tstart, NOW)
-        telem_msids = [self.msid, 'sim_z', 'dp_pitch', 'dp_dpa_power', 'roll']
-        # If the calling program has other MSIDs it wishes us to check, add them
-        # to the list which is supposed to be grabbed from the engineering archive
-        if self.other_telem is not None:
-            telem_msids += self.other_telem
-        # This is a map of MSIDs
-        name_map = {'sim_z': 'tscpos', 'dp_pitch': 'pitch'}
-        if self.other_map is not None:
-            name_map.update(self.other_map)
-        # Get the telemetry values which will be used for prediction and validation
-        tlm = self.get_telem_values(min(tstart, tnow),
-                                    telem_msids,
-                                    days=args.days,
-                                    name_map=name_map)
-        # tscpos needs to be converted to steps and must be in the right direction
-        tlm['tscpos'] *= -397.7225924607
+        # Get the telemetry values which will be used
+        # for prediction and validation
+        tlm = self.get_telem_values(min(tstart, tnow), days=args.days)
 
         # make predictions on a backstop file if defined
         if args.backstop_file is not None:
@@ -201,8 +140,9 @@ class ACISThermalCheck(object):
 
         # Validation
         # Make the validation plots
-        plots_validation = self.make_validation_plots(tlm, args.model_spec, 
+        plots_validation = self.make_validation_plots(tlm, args.model_spec,
                                                       args.outdir, args.run_start)
+
         # Determine violations of temperature validation
         valid_viols = self.make_validation_viols(plots_validation)
         if len(valid_viols) > 0:
@@ -785,27 +725,92 @@ class ACISThermalCheck(object):
         # Render the template and write it to a file
         open(outfile, 'w').write(template.render(**context))
 
-    def get_telem_values(self, tstart, msids, days=14, name_map={}):
+    def _setup_proc_and_logger(self, args):
+
+        if not os.path.exists(args.outdir):
+            os.mkdir(args.outdir)
+
+        # Configure the logger so that it knows which model
+        # we are using and how verbose it is supposed to be
+        config_logging(args.outdir, args.verbose)
+
+        # Store info relevant to processing for use in outputs
+        proc = dict(run_user=os.environ['USER'],
+                    run_time=time.ctime(),
+                    errors=[],
+                    msid=self.msid.upper(),
+                    name=self.name.upper(),
+                    hist_limit=self.hist_limit)
+        proc["msid_limit"] = self.yellow[self.name] - self.margin[self.name]
+        mylog.info('##############################'
+                   '#######################################')
+        mylog.info('# %s_check run at %s by %s'
+                   % (self.name, proc['run_time'], proc['run_user']))
+        mylog.info('# acis_thermal_check version = %s' % version)
+        mylog.info('# model_spec file = %s' % os.path.abspath(args.model_spec))
+        mylog.info('###############################'
+                   '######################################\n')
+        mylog.info('Command line options:\n%s\n' % pformat(args.__dict__))
+
+        mylog.info("ACISThermalCheck is using the '%s' state builder." % args.state_builder)
+
+        if args.backstop_file is None:
+            self.bsdir = None
+        else:
+            if os.path.isdir(args.backstop_file):
+                self.bsdir = args.backstop_file
+            else:
+                self.bsdir = os.path.dirname(args.backstop_file)
+        return proc
+
+    def determine_times(self, run_start, backstop_file):
+        tnow = DateTime(run_start).secs
+        # Get tstart, tstop, commands from backstop file
+        # in args.backstop_file
+        if backstop_file is not None:
+            # If we are running a model for a particular load,
+            # get tstart, tstop, commands from backstop file
+            # in args.backstop_file
+            tstart = self.state_builder.tstart
+            tstop = self.state_builder.tstop
+        else:
+            # Otherwise, the start time for the run is whatever is in
+            # args.run_start
+            tstart = tnow
+            tstop = None
+
+        return tstart, tstop, tnow
+
+    def get_telem_values(self, tstart, days=14):
         """
-        Fetch last ``days`` of available ``msids`` telemetry values before
+        Fetch last ``days`` of available telemetry values before
         time ``tstart``.
 
         Parameters
         ----------
         tstart: float
             Start time for telemetry (secs)
-        msids: list of strings
-            List of MSIDs to fetch
         days: integer, optional
             Length of telemetry request before ``tstart`` in days. Default: 14
-        name_map: dict
-            A mapping of MSID names to column names in the record array.
         """
+        # Get temperature and other telemetry for 3 weeks prior to min(tstart, NOW)
+        telem_msids = [self.msid, 'sim_z', 'dp_pitch', 'dp_dpa_power', 'roll']
+
+        # If the calling program has other MSIDs it wishes us to check, add them
+        # to the list which is supposed to be grabbed from the engineering archive
+        if self.other_telem is not None:
+            telem_msids += self.other_telem
+
+        # This is a map of MSIDs
+        name_map = {'sim_z': 'tscpos', 'dp_pitch': 'pitch'}
+        if self.other_map is not None:
+            name_map.update(self.other_map)
+
         tstart = DateTime(tstart).secs
         start = DateTime(tstart - days * 86400).date
         stop = DateTime(tstart).date
         mylog.info('Fetching telemetry between %s and %s' % (start, stop))
-        msidset = fetch.MSIDset(msids, start, stop, stat='5min')
+        msidset = fetch.MSIDset(telem_msids, start, stop, stat='5min')
         start = max(x.times[0] for x in msidset.values())
         stop = min(x.times[-1] for x in msidset.values())
         # Interpolate the MSIDs to a common set of times, 5 mins apart (328 s)
@@ -820,9 +825,12 @@ class ACISThermalCheck(object):
         # for the different MSIDs (temperatures, pitch, etc).
         # In some cases we replace the MSID name with something
         # more human-readable.
-        outnames = ['date'] + [name_map.get(x, x) for x in msids]
-        vals = {name_map.get(x, x): msidset[x].vals for x in msids}
+        outnames = ['date'] + [name_map.get(x, x) for x in telem_msids]
+        vals = {name_map.get(x, x): msidset[x].vals for x in telem_msids}
         vals['date'] = msidset.times
         out = Ska.Numpy.structured_array(vals, colnames=outnames)
+
+        # tscpos needs to be converted to steps and must be in the right direction
+        out['tscpos'] *= -397.7225924607
 
         return out
