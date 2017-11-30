@@ -151,8 +151,15 @@ class ACISThermalCheck(object):
 
         # Write everything to the web page.
         # First, write the reStructuredText file.
-        self.write_index_rst(self.bsdir, args.outdir, proc, plots_validation, 
-                             pred, valid_viols=valid_viols)
+
+        # Set up the context for the reST file
+        context = {'bsdir': self.bsdir,
+                   'plots': pred["plots"],
+                   'viols': pred["viols"],
+                   'valid_viols': valid_viols,
+                   'proc': proc,
+                   'plots_validation': plots_validation}
+        self.write_index_rst(self.bsdir, args.outdir, context)
 
         # Second, convert reST to HTML
         self.rst_to_html(args.outdir, proc)
@@ -691,10 +698,9 @@ class ACISThermalCheck(object):
         outtext = del_colgroup.sub('', open(outfile).read())
         open(outfile, 'w').write(outtext)
 
-    def write_index_rst(self, bsdir, outdir, proc, plots_validation, 
-                        pred, valid_viols=None):
+    def write_index_rst(self, bsdir, outdir, context):
         """
-        Make output text (in reST format) in outdir, using jinja2
+        Make output text (in ReST format) in outdir, using jinja2
         to fill out the template. 
 
         Parameters
@@ -705,30 +711,13 @@ class ACISThermalCheck(object):
             the case.
         outdir : string
             Path to the location where the outputs will be written.
-        proc : dict
-            A dictionary of general information used in the output
-        plots_validation : dict
-            A dictionary of validation plots and their associated info
-        valid_viols : dict, optional
-            A dictionary of validation violations (if there were any)
-        plots : dict, optional
-            A dictionary of prediction plots and their associated info
-            (if there were any) 
-        viols : dict, optional
-            A dictionary of violations for the predicted temperatures
-            (if there were any)
+        context : dict
+            Dictionary of items which will be written to the ReST file.
         """
         import jinja2
 
         outfile = os.path.join(outdir, 'index.rst')
         mylog.info('Writing report file %s' % outfile)
-        # Set up the context for the reST file
-        context = {'bsdir': bsdir,
-                   'plots': pred["plots"],
-                   'viols': pred["viols"],
-                   'valid_viols': valid_viols,
-                   'proc': proc,
-                   'plots_validation': plots_validation}
         # Open up the reST template and send the context to it using jinja2
         index_template_file = ('index_template.rst'
                                if bsdir else
