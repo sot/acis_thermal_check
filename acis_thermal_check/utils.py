@@ -356,10 +356,12 @@ def get_acis_limits(msid):
         cols = (3, 5)
 
     if os.path.exists(file_root):
+        mylog.info("Obtaining limits from local file.")
         f = open(os.path.join(file_root, limits_file), "r")
         lines = f.readlines()
         f.close()
     else:
+        mylog.info("Obtaining limits from remote file.")
         url = "http://cxc.cfa.harvard.edu/acis/"+limits_file
         u = requests.get(url)
         lines = u.text.split("\n")
