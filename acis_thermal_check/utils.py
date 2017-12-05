@@ -343,17 +343,28 @@ def get_acis_limits(msid):
     yellow_hi = None
     red_hi = None
 
+    pmon_file = "PMON/pmon_limits.txt"
+    eng_file = "Thermal/MSID_Limits.txt"
+    file_root = "/proj/web-cxc-dmz/htdocs/acis/"
+
     if msid.startswith("tmp_"):
-        url = "http://cxc.cfa.harvard.edu/acis/PMON/pmon_limits.txt"
+        limits_file = pmon_file
         cols = (5, 6)
         msid = "ADC_"+msid.upper()
     else:
-        url = "http://cxc.cfa.harvard.edu/acis/Thermal/MSID_Limits.txt"
+        limits_file = eng_file
         cols = (3, 5)
 
-    u = requests.get(url)
+    if os.path.exists(file_root):
+        f = open(os.path.join(file_root, limits_file), "r")
+        lines = f.readlines()
+        f.close()
+    else:
+        url = "http://cxc.cfa.harvard.edu/acis/"+limits_file
+        u = requests.get(url)
+        lines = u.text.split("\n")
 
-    for line in u.text.split("\n"):
+    for line in lines:
         words = line.strip().split()
         if len(words) > 1 and words[0] == msid.upper():
             yellow_hi = float(words[cols[0]])
