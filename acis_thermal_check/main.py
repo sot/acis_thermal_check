@@ -14,7 +14,7 @@ import pickle
 import numpy as np
 import Ska.DBI
 import Ska.Numpy
-from Chandra.Time import DateTime
+from Chandra.Time import DateTime, date2secs
 import matplotlib.pyplot as plt
 from Ska.Matplotlib import cxctime2plotdate, \
     pointpair, plot_cxctime
@@ -25,6 +25,7 @@ version = acis_thermal_check.__version__
 from acis_thermal_check.utils import \
     config_logging, TASK_DATA, plot_two, \
     mylog
+from kadi import events
 
 class ACISThermalCheck(object):
     r"""
@@ -576,6 +577,9 @@ class ACISThermalCheck(object):
                     & (tlm['date'] < DateTime(interval[1]).secs))
                 good_mask[bad] = False
 
+        # find perigee passages
+        rzs = events.rad_zones.filter(start, stop)
+
         plots = []
         mylog.info('Making %s model validation plots and quantile table' % self.name.upper())
         quantiles = (1, 5, 16, 50, 84, 95, 99)
@@ -598,6 +602,14 @@ class ACISThermalCheck(object):
             ax.set_title(msid.upper() + ' validation')
             ax.set_ylabel(labels[msid])
             ax.grid()
+            # add lines for perigee passages
+            for rz in rzs:
+                rz_start = cxctime2plotdate(date2secs(rz.start))
+                perigee = cxctime2plotdate(date2secs(rz.perigee))
+                rz_stop = cxctime2plotdate(date2secs(rz.stop))
+                ax.axvline(rz_start, ls='--', lw=2, color='g')
+                ax.axvline(perigee, ls='--', lw=2, color='g')
+                ax.axvline(rz_stop, ls='--', lw=2, color='g')
             filename = msid + '_valid.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
