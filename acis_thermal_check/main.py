@@ -503,6 +503,16 @@ class ACISThermalCheck(object):
 
         return plots
 
+    def get_histogram_mask(self, msid, tlm, limit):
+        # Make quantiles. Use the histogram limits to decide 
+        # what temperature range will be included in the quantiles
+        # (we don't care about violations at low temperatures)
+        if msid == self.msid:
+            ok = (tlm[msid] > limit)
+        else:
+            ok = np.ones(len(tlm[msid]), dtype=bool)
+        return ok
+
     def make_validation_plots(self, tlm, model_spec, outdir, run_start):
         """
         Make validation output plots by running the thermal model from a
@@ -594,20 +604,16 @@ class ACISThermalCheck(object):
             fig.savefig(outfile)
             plot['lines'] = filename
 
-            # Make quantiles. Use the histogram limits to decide 
-            # what temperature range will be included in the quantiles
-            # (we don't care about violations at low temperatures)
+            # Figure out histogram masks
+            ok = self.get_histogram_mask(msid, tlm, self.hist_limit[0])
             if msid == self.msid:
-                ok = (tlm[msid] > self.hist_limit[0]) & good_mask
-            else:
-                ok = np.ones(len(tlm[msid]), dtype=bool)
+                ok = ok & good_mask
             diff = np.sort(tlm[msid][ok] - pred[msid][ok])
             # The PSMC model has a second histogram limit
             if len(self.hist_limit) == 2:
+                ok2 = self.get_histogram_mask(msid, tlm, self.hist_limit[1])
                 if msid == self.msid:
-                    ok2 = (tlm[msid] > self.hist_limit[1]) & good_mask
-                else:
-                    ok2 = np.ones(len(tlm[msid]), dtype=bool)
+                    ok2 = ok2 & good_mask
                 diff2 = np.sort(tlm[msid][ok2] - pred[msid][ok2])
             else:
                 ok2 = np.zeros(len(tlm[msid]), dtype=bool)
