@@ -134,7 +134,7 @@ class ACISThermalCheck(object):
 
         # make predictions on a backstop file if defined
         if args.backstop_file is not None:
-            pred = self.make_week_predict(tstart, tstop, tlm, args.T_init,
+            pred = self.make_week_predict(tstart, tstop, tlm, args.T_init, 
                                           args.model_spec, args.outdir)
         else:
             pred = defaultdict(lambda: None)
@@ -822,7 +822,12 @@ class ACISThermalCheck(object):
             Length of telemetry request before ``tstart`` in days. Default: 14
         """
         # Get temperature and other telemetry for 3 weeks prior to min(tstart, NOW)
-        telem_msids = [self.msid, 'sim_z', 'dp_pitch', 'dp_dpa_power', 'roll']
+        the_msid = self.msid
+        for key, value in self.other_map.items():
+            if value == self.msid:
+                the_msid = key
+                break
+        telem_msids = [the_msid, 'sim_z', 'dp_pitch', 'dp_dpa_power', 'roll']
 
         # If the calling program has other MSIDs it wishes us to check, add them
         # to the list which is supposed to be grabbed from the engineering archive
