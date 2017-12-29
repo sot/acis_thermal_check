@@ -704,7 +704,7 @@ class ACISThermalCheck(object):
         outtext = del_colgroup.sub('', open(outfile).read())
         open(outfile, 'w').write(outtext)
 
-    def write_index_rst(self, bsdir, outdir, context):
+    def write_index_rst(self, bsdir, outdir, context, template_path=None):
         """
         Make output text (in ReST format) in outdir, using jinja2
         to fill out the template. 
@@ -719,17 +719,22 @@ class ACISThermalCheck(object):
             Path to the location where the outputs will be written.
         context : dict
             Dictionary of items which will be written to the ReST file.
+        template_path : string, optional
+            Optional path to look for the ReST template. Default is to
+            use the one internal to acis_thermal_check.
         """
         import jinja2
-
+        if template_path is None:
+            template_path = os.path.join(TASK_DATA, 'acis_thermal_check',
+                                         'templates')
         outfile = os.path.join(outdir, 'index.rst')
         mylog.info('Writing report file %s' % outfile)
         # Open up the reST template and send the context to it using jinja2
         index_template_file = ('index_template.rst'
                                if bsdir else
                                'index_template_val_only.rst')
-        index_template = open(os.path.join(TASK_DATA, 'acis_thermal_check', 
-                                           'templates', index_template_file)).read()
+        index_template = open(os.path.join(template_path, 
+                                           index_template_file)).read()
         index_template = re.sub(r' %}\n', ' %}', index_template)
         template = jinja2.Template(index_template)
         # Render the template and write it to a file
