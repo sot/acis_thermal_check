@@ -606,7 +606,7 @@ class ACISThermalCheck(object):
             for rz in rzs:
                 ptimes = cxctime2plotdate(date2secs([rz.start, rz.stop]))
                 for ptime in ptimes:
-                    ax.axvline(ptime, ls='--', lw=2, color='g')
+                    ax.axvline(ptime, ls='--', color='g')
             filename = msid + '_valid.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
