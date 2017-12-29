@@ -604,7 +604,7 @@ class ACISThermalCheck(object):
             ax.grid()
             # add lines for perigee passages
             for rz in rzs:
-                ptimes = cxctime2plotdate(date2secs([rz.start, rz.perigee, rz.stop]))
+                ptimes = cxctime2plotdate(date2secs([rz.start, rz.stop]))
                 for ptime in ptimes:
                     ax.axvline(ptime, ls='--', lw=2, color='g')
             filename = msid + '_valid.png'
