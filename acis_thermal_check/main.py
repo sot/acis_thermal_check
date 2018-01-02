@@ -545,8 +545,9 @@ class ACISThermalCheck(object):
         # page to appear in this order
         pred = OrderedDict([(self.msid, model.comp[self.msid].mvals),
                             ('pitch', model.comp['pitch'].mvals),
-                            ('tscpos', model.comp['sim_z'].mvals),
-                            ('roll', model.comp['roll'].mvals)])
+                            ('tscpos', model.comp['sim_z'].mvals)])
+        if "roll" in model.comp:
+            pred["roll"] = model.comp['roll'].mvals
 
         # Interpolate the model and data to a consistent set of times
         idxs = Ska.Numpy.interpolate(np.arange(len(tlm)), tlm['date'], model.times,
