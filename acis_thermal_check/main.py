@@ -128,6 +128,10 @@ class ACISThermalCheck(object):
         is_weekly_load = args.backstop_file is not None
         tstart, tstop, tnow = self._determine_times(args.run_start,
                                                     is_weekly_load)
+        
+        proc["datestart"] = DateTime(tstart).date
+        if tstop is not None:
+            proc["datestop"] = DateTime(tstop).date
 
         # Get the telemetry values which will be used
         # for prediction and validation
