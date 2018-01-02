@@ -838,10 +838,11 @@ class ACISThermalCheck(object):
         """
         # Get temperature and other telemetry for 3 weeks prior to min(tstart, NOW)
         the_msid = self.msid
-        for key, value in self.other_map.items():
-            if value == self.msid:
-                the_msid = key
-                break
+        if self.other_map is not None:
+            for key, value in self.other_map.items():
+                if value == self.msid:
+                    the_msid = key
+                    break
         telem_msids = [the_msid, 'sim_z', 'dp_pitch', 'dp_dpa_power', 'roll']
 
         # If the calling program has other MSIDs it wishes us to check, add them
