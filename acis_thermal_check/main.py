@@ -128,7 +128,7 @@ class ACISThermalCheck(object):
         is_weekly_load = args.backstop_file is not None
         tstart, tstop, tnow = self._determine_times(args.run_start,
                                                     is_weekly_load)
-        
+
         proc["datestart"] = DateTime(tstart).date
         if tstop is not None:
             proc["datestop"] = DateTime(tstop).date
@@ -508,15 +508,24 @@ class ACISThermalCheck(object):
 
         return plots
 
-    def get_histogram_mask(self, msid, tlm, limit):
-        # Make quantiles. Use the histogram limits to decide 
-        # what temperature range will be included in the quantiles
-        # (we don't care about violations at low temperatures)
-        if msid == self.msid:
-            ok = (tlm[msid] > limit)
-        else:
-            ok = np.ones(len(tlm[msid]), dtype=bool)
-        return ok
+    def get_histogram_mask(self, tlm, limit):
+        """
+        This method determines which values of telemetry
+        should be used to construct the temperature 
+        histogram plots, using limits provided by the 
+        calling program to mask the array via a logical
+        operation. The default implementation is to plot 
+        values above a certain limit. This method may be 
+        overriden by subclasses of ACISThermalCheck.
+
+        Parameters
+        ----------
+        tlm : NumPy record array
+            NumPy record array of telemetry
+        limit : array of floats
+            The limit or limits to use in the masking.
+        """
+        return tlm[self.msid] > limit
 
     def make_validation_plots(self, tlm, model_spec, outdir, run_start):
         """
@@ -619,15 +628,19 @@ class ACISThermalCheck(object):
             plot['lines'] = filename
 
             # Figure out histogram masks
-            ok = self.get_histogram_mask(msid, tlm, self.hist_limit[0])
             if msid == self.msid:
+                ok = self.get_histogram_mask(tlm, self.hist_limit[0]) 
                 ok = ok & good_mask
+            else:
+                ok = slice(None, None, None)
             diff = np.sort(tlm[msid][ok] - pred[msid][ok])
             # The PSMC model has a second histogram limit
             if len(self.hist_limit) == 2:
-                ok2 = self.get_histogram_mask(msid, tlm, self.hist_limit[1])
                 if msid == self.msid:
+                    ok2 = self.get_histogram_mask(tlm, self.hist_limit[1])
                     ok2 = ok2 & good_mask
+                else:
+                    ok2 = slice(None, None, None)
                 diff2 = np.sort(tlm[msid][ok2] - pred[msid][ok2])
             else:
                 ok2 = np.zeros(len(tlm[msid]), dtype=bool)
