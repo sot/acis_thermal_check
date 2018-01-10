@@ -14,7 +14,7 @@ import pickle
 import numpy as np
 import Ska.DBI
 import Ska.Numpy
-from Chandra.Time import DateTime, date2secs
+from Chandra.Time import DateTime
 import matplotlib.pyplot as plt
 from Ska.Matplotlib import cxctime2plotdate, \
     pointpair, plot_cxctime
@@ -618,7 +618,7 @@ class ACISThermalCheck(object):
             ax.grid()
             # add lines for perigee passages
             for rz in rzs:
-                ptimes = cxctime2plotdate(date2secs([rz.start, rz.stop]))
+                ptimes = cxctime2plotdate([rz.tstart, rz.tstop])
                 for ptime in ptimes:
                     ax.axvline(ptime, ls='--', color='g')
             filename = msid + '_valid.png'
