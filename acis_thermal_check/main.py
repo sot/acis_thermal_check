@@ -7,7 +7,7 @@ matplotlib.use('Agg')
 
 import os
 from pprint import pformat
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import re
 import time
 import pickle
@@ -25,6 +25,7 @@ version = acis_thermal_check.__version__
 from acis_thermal_check.utils import \
     config_logging, TASK_DATA, plot_two, \
     mylog
+from kadi import events
 
 class ACISThermalCheck(object):
     r"""
@@ -122,88 +123,32 @@ class ACISThermalCheck(object):
         """
         self.state_builder = state_builder
 
-        if not os.path.exists(args.outdir):
-            os.mkdir(args.outdir)
+        proc = self._setup_proc_and_logger(args)
 
-        # Configure the logger so that it knows which model
-        # we are using and how verbose it is supposed to be
-        config_logging(args.outdir, args.verbose)
+        is_weekly_load = args.backstop_file is not None
+        tstart, tstop, tnow = self._determine_times(args.run_start,
+                                                    is_weekly_load)
 
-        # Store info relevant to processing for use in outputs
-        proc = dict(run_user=os.environ['USER'],
-                    run_time=time.ctime(),
-                    errors=[],
-                    msid=self.msid.upper(),
-                    name=self.name.upper(),
-                    hist_limit=self.hist_limit)
-        proc["msid_limit"] = self.yellow[self.name] - self.margin[self.name]
-        mylog.info('##############################'
-                   '#######################################')
-        mylog.info('# %s_check run at %s by %s'
-                   % (self.name, proc['run_time'], proc['run_user']))
-        mylog.info('# acis_thermal_check version = %s' % version)
-        mylog.info('# model_spec file = %s' % os.path.abspath(args.model_spec))
-        mylog.info('###############################'
-                   '######################################\n')
-        mylog.info('Command line options:\n%s\n' % pformat(args.__dict__))
+        proc["datestart"] = DateTime(tstart).date
+        if tstop is not None:
+            proc["datestop"] = DateTime(tstop).date
 
-        mylog.info("ACISThermalCheck is using the '%s' state builder." % args.state_builder)
-
-        if args.backstop_file is None:
-            self.bsdir = None
-        else:
-            if os.path.isdir(args.backstop_file):
-                self.bsdir = args.backstop_file
-            else:
-                self.bsdir = os.path.dirname(args.backstop_file)
-
-        tnow = DateTime(args.run_start).secs
-        # Get tstart, tstop, commands from backstop file
-        # in args.backstop_file
-        if args.backstop_file is not None:
-            # If we are running a model for a particular load,
-            # get tstart, tstop, commands from backstop file
-            # in args.backstop_file
-            tstart = self.state_builder.tstart
-            tstop = self.state_builder.tstop
-
-            proc.update(dict(datestart=DateTime(tstart).date,
-                             datestop=DateTime(tstop).date))
-        else:
-            # Otherwise, the start time for the run is whatever is in
-            # args.run_start
-            tstart = tnow
-
-        # Get temperature and other telemetry for 3 weeks prior to min(tstart, NOW)
-        telem_msids = [self.msid, 'sim_z', 'dp_pitch', 'dp_dpa_power', 'roll']
-        # If the calling program has other MSIDs it wishes us to check, add them
-        # to the list which is supposed to be grabbed from the engineering archive
-        if self.other_telem is not None:
-            telem_msids += self.other_telem
-        # This is a map of MSIDs
-        name_map = {'sim_z': 'tscpos', 'dp_pitch': 'pitch'}
-        if self.other_map is not None:
-            name_map.update(self.other_map)
-        # Get the telemetry values which will be used for prediction and validation
-        tlm = self.get_telem_values(min(tstart, tnow),
-                                    telem_msids,
-                                    days=args.days,
-                                    name_map=name_map)
-        # tscpos needs to be converted to steps and must be in the right direction
-        tlm['tscpos'] *= -397.7225924607
+        # Get the telemetry values which will be used
+        # for prediction and validation
+        tlm = self.get_telem_values(min(tstart, tnow), days=args.days)
 
         # make predictions on a backstop file if defined
         if args.backstop_file is not None:
-            pred = self.make_week_predict(tstart, tstop, tlm, args.T_init,
+            pred = self.make_week_predict(tstart, tstop, tlm, args.T_init, 
                                           args.model_spec, args.outdir)
         else:
-            pred = dict(plots=None, viols=None, times=None, states=None,
-                        temps=None)
+            pred = defaultdict(lambda: None)
 
         # Validation
         # Make the validation plots
-        plots_validation = self.make_validation_plots(tlm, args.model_spec, 
+        plots_validation = self.make_validation_plots(tlm, args.model_spec,
                                                       args.outdir, args.run_start)
+
         # Determine violations of temperature validation
         valid_viols = self.make_validation_viols(plots_validation)
         if len(valid_viols) > 0:
@@ -212,16 +157,51 @@ class ACISThermalCheck(object):
         # Write everything to the web page.
         # First, write the reStructuredText file.
 
-        self.write_index_rst(self.bsdir, args.outdir, proc, plots_validation, 
-                             valid_viols=valid_viols, plots=pred['plots'], 
-                             viols=pred['viols'])
+        # Set up the context for the reST file
+        context = {'bsdir': self.bsdir,
+                   'plots': pred["plots"],
+                   'viols': pred["viols"],
+                   'valid_viols': valid_viols,
+                   'proc': proc,
+                   'plots_validation': plots_validation}
+        self.write_index_rst(self.bsdir, args.outdir, context)
+
         # Second, convert reST to HTML
         self.rst_to_html(args.outdir, proc)
 
-        return dict(args=args, states=pred['states'], times=pred['times'],
-                    temps=pred['temps'], plots=pred['plots'],
-                    viols=pred['viols'], proc=proc,
-                    plots_validation=plots_validation)
+        return
+
+    def get_states(self, tlm, T_init):
+        """
+        Call the state builder to get the commanded states and
+        determine the initial temperature.
+
+        Parameters
+        ----------
+        tlm : NumPy structured array
+            Telemetry which will be used to construct the initial temperature
+        T_init : float
+            The initial temperature of the model prediction. If None, an
+            initial value will be constructed from telemetry.
+        """
+
+        # The -5 here has us back off from the last telemetry reading just a bit
+        tbegin = DateTime(tlm['date'][-5]).date
+        states, state0 = self.state_builder.get_prediction_states(tbegin)
+
+        # We now determine the initial temperature.
+
+        # If we have an initial temperature input from the
+        # command line, use it, otherwise construct T_init 
+        # from an average of telemetry values around state0
+        if T_init is None:
+            ok = ((tlm['date'] >= state0['tstart'] - 700) &
+                  (tlm['date'] <= state0['tstart'] + 700))
+            T_init = np.mean(tlm[self.msid][ok])
+
+        state0.update({self.msid: T_init})
+
+        return states, state0
 
     def make_week_predict(self, tstart, tstop, tlm, T_init, model_spec,
                           outdir):
@@ -246,23 +226,8 @@ class ACISThermalCheck(object):
         """
         mylog.info('Calculating %s thermal model' % self.name.upper())
 
-        # Call the state builder to get the commanded states.
-
-        # The -5 here has us back off from the last telemetry reading just a bit
-        tbegin = DateTime(tlm['date'][-5]).date
-        states, state0 = self.state_builder.get_prediction_states(tbegin)
-
-        # We now determine the initial temperature.
-
-        # If we have an initial temperature input from the
-        # command line, use it, otherwise construct T_init 
-        # from an average of telemetry values around state0
-        if T_init is None:
-            ok = ((tlm['date'] >= state0['tstart'] - 700) &
-                  (tlm['date'] <= state0['tstart'] + 700))
-            T_init = np.mean(tlm[self.msid][ok])
-
-        state0.update({self.msid: T_init})
+        # Get commanded states and set initial temperature
+        states, state0 = self.get_states(tlm, T_init)
 
         # calc_model_wrapper actually does the model calculation by running
         # model-specific code.
@@ -543,6 +508,25 @@ class ACISThermalCheck(object):
 
         return plots
 
+    def get_histogram_mask(self, tlm, limit):
+        """
+        This method determines which values of telemetry
+        should be used to construct the temperature 
+        histogram plots, using limits provided by the 
+        calling program to mask the array via a logical
+        operation. The default implementation is to plot 
+        values above a certain limit. This method may be 
+        overriden by subclasses of ACISThermalCheck.
+
+        Parameters
+        ----------
+        tlm : NumPy record array
+            NumPy record array of telemetry
+        limit : array of floats
+            The limit or limits to use in the masking.
+        """
+        return tlm[self.msid] > limit
+
     def make_validation_plots(self, tlm, model_spec, outdir, run_start):
         """
         Make validation output plots by running the thermal model from a
@@ -574,8 +558,9 @@ class ACISThermalCheck(object):
         # page to appear in this order
         pred = OrderedDict([(self.msid, model.comp[self.msid].mvals),
                             ('pitch', model.comp['pitch'].mvals),
-                            ('tscpos', model.comp['sim_z'].mvals),
-                            ('roll', model.comp['roll'].mvals)])
+                            ('tscpos', model.comp['sim_z'].mvals)])
+        if "roll" in model.comp:
+            pred["roll"] = model.comp['roll'].mvals
 
         # Interpolate the model and data to a consistent set of times
         idxs = Ska.Numpy.interpolate(np.arange(len(tlm)), tlm['date'], model.times,
@@ -606,6 +591,9 @@ class ACISThermalCheck(object):
                     & (tlm['date'] < DateTime(interval[1]).secs))
                 good_mask[bad] = False
 
+        # find perigee passages
+        rzs = events.rad_zones.filter(start, stop)
+
         plots = []
         mylog.info('Making %s model validation plots and quantile table' % self.name.upper())
         quantiles = (1, 5, 16, 50, 84, 95, 99)
@@ -628,26 +616,31 @@ class ACISThermalCheck(object):
             ax.set_title(msid.upper() + ' validation')
             ax.set_ylabel(labels[msid])
             ax.grid()
+            # add lines for perigee passages
+            for rz in rzs:
+                ptimes = cxctime2plotdate([rz.tstart, rz.tstop])
+                for ptime in ptimes:
+                    ax.axvline(ptime, ls='--', color='g')
             filename = msid + '_valid.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
             fig.savefig(outfile)
             plot['lines'] = filename
 
-            # Make quantiles. Use the histogram limits to decide 
-            # what temperature range will be included in the quantiles
-            # (we don't care about violations at low temperatures)
+            # Figure out histogram masks
             if msid == self.msid:
-                ok = (tlm[msid] > self.hist_limit[0]) & good_mask
+                ok = self.get_histogram_mask(tlm, self.hist_limit[0]) 
+                ok = ok & good_mask
             else:
-                ok = np.ones(len(tlm[msid]), dtype=bool)
+                ok = slice(None, None, None)
             diff = np.sort(tlm[msid][ok] - pred[msid][ok])
             # The PSMC model has a second histogram limit
             if len(self.hist_limit) == 2:
                 if msid == self.msid:
-                    ok2 = (tlm[msid] > self.hist_limit[1]) & good_mask
+                    ok2 = self.get_histogram_mask(tlm, self.hist_limit[1])
+                    ok2 = ok2 & good_mask
                 else:
-                    ok2 = np.ones(len(tlm[msid]), dtype=bool)
+                    ok2 = slice(None, None, None)
                 diff2 = np.sort(tlm[msid][ok2] - pred[msid][ok2])
             else:
                 ok2 = np.zeros(len(tlm[msid]), dtype=bool)
@@ -738,10 +731,9 @@ class ACISThermalCheck(object):
         outtext = del_colgroup.sub('', open(outfile).read())
         open(outfile, 'w').write(outtext)
 
-    def write_index_rst(self, bsdir, outdir, proc, plots_validation, 
-                        valid_viols=None, plots=None, viols=None):
+    def write_index_rst(self, bsdir, outdir, context, template_path=None):
         """
-        Make output text (in reST format) in outdir, using jinja2
+        Make output text (in ReST format) in outdir, using jinja2
         to fill out the template. 
 
         Parameters
@@ -752,62 +744,139 @@ class ACISThermalCheck(object):
             the case.
         outdir : string
             Path to the location where the outputs will be written.
-        proc : dict
-            A dictionary of general information used in the output
-        plots_validation : dict
-            A dictionary of validation plots and their associated info
-        valid_viols : dict, optional
-            A dictionary of validation violations (if there were any)
-        plots : dict, optional
-            A dictionary of prediction plots and their associated info
-            (if there were any) 
-        viols : dict, optional
-            A dictionary of violations for the predicted temperatures
-            (if there were any)
+        context : dict
+            Dictionary of items which will be written to the ReST file.
+        template_path : string, optional
+            Optional path to look for the ReST template. Default is to
+            use the one internal to acis_thermal_check.
         """
         import jinja2
-
+        if template_path is None:
+            template_path = os.path.join(TASK_DATA, 'acis_thermal_check',
+                                         'templates')
         outfile = os.path.join(outdir, 'index.rst')
         mylog.info('Writing report file %s' % outfile)
-        # Set up the context for the reST file
-        context = {'bsdir': bsdir,
-                   'plots': plots,
-                   'viols': viols,
-                   'valid_viols': valid_viols,
-                   'proc': proc,
-                   'plots_validation': plots_validation}
         # Open up the reST template and send the context to it using jinja2
         index_template_file = ('index_template.rst'
                                if bsdir else
                                'index_template_val_only.rst')
-        index_template = open(os.path.join(TASK_DATA, 'acis_thermal_check', 
-                                           'templates', index_template_file)).read()
+        index_template = open(os.path.join(template_path, 
+                                           index_template_file)).read()
         index_template = re.sub(r' %}\n', ' %}', index_template)
         template = jinja2.Template(index_template)
         # Render the template and write it to a file
         open(outfile, 'w').write(template.render(**context))
 
-    def get_telem_values(self, tstart, msids, days=14, name_map={}):
+    def _setup_proc_and_logger(self, args):
         """
-        Fetch last ``days`` of available ``msids`` telemetry values before
+        This method does some initial setup and logs important
+        information.
+
+        Parameters
+        ----------
+        args : ArgumentParser arguments
+            The command-line options object, which has the options
+            attached to it as attributes
+        """
+        if not os.path.exists(args.outdir):
+            os.mkdir(args.outdir)
+
+        # Configure the logger so that it knows which model
+        # we are using and how verbose it is supposed to be
+        config_logging(args.outdir, args.verbose)
+
+        # Store info relevant to processing for use in outputs
+        proc = dict(run_user=os.environ['USER'],
+                    run_time=time.ctime(),
+                    errors=[],
+                    msid=self.msid.upper(),
+                    name=self.name.upper(),
+                    hist_limit=self.hist_limit)
+        proc["msid_limit"] = self.yellow[self.name] - self.margin[self.name]
+        mylog.info('##############################'
+                   '#######################################')
+        mylog.info('# %s_check run at %s by %s'
+                   % (self.name, proc['run_time'], proc['run_user']))
+        mylog.info('# acis_thermal_check version = %s' % version)
+        mylog.info('# model_spec file = %s' % os.path.abspath(args.model_spec))
+        mylog.info('###############################'
+                   '######################################\n')
+        mylog.info('Command line options:\n%s\n' % pformat(args.__dict__))
+
+        mylog.info("ACISThermalCheck is using the '%s' state builder." % args.state_builder)
+
+        if args.backstop_file is None:
+            self.bsdir = None
+        else:
+            if os.path.isdir(args.backstop_file):
+                self.bsdir = args.backstop_file
+            else:
+                self.bsdir = os.path.dirname(args.backstop_file)
+        return proc
+
+    def _determine_times(self, run_start, is_weekly_load):
+        """
+        Determine the start and stop times
+
+        Parameters
+        ----------
+        run_start : string
+            The starting date/time of the run.
+        is_weekly_load : boolean
+            Whether or not this is a weekly load.
+        """
+        tnow = DateTime(run_start).secs
+        # Get tstart, tstop, commands from state builder
+        if is_weekly_load:
+            # If we are running a model for a particular load,
+            # get tstart, tstop, commands from backstop file
+            # in args.backstop_file
+            tstart = self.state_builder.tstart
+            tstop = self.state_builder.tstop
+        else:
+            # Otherwise, the start time for the run is whatever is in
+            # args.run_start
+            tstart = tnow
+            tstop = None
+
+        return tstart, tstop, tnow
+
+    def get_telem_values(self, tstart, days=14):
+        """
+        Fetch last ``days`` of available telemetry values before
         time ``tstart``.
 
         Parameters
         ----------
         tstart: float
             Start time for telemetry (secs)
-        msids: list of strings
-            List of MSIDs to fetch
         days: integer, optional
             Length of telemetry request before ``tstart`` in days. Default: 14
-        name_map: dict
-            A mapping of MSID names to column names in the record array.
         """
+        # Get temperature and other telemetry for 3 weeks prior to min(tstart, NOW)
+        the_msid = self.msid
+        if self.other_map is not None:
+            for key, value in self.other_map.items():
+                if value == self.msid:
+                    the_msid = key
+                    break
+        telem_msids = [the_msid, 'sim_z', 'dp_pitch', 'dp_dpa_power', 'roll']
+
+        # If the calling program has other MSIDs it wishes us to check, add them
+        # to the list which is supposed to be grabbed from the engineering archive
+        if self.other_telem is not None:
+            telem_msids += self.other_telem
+
+        # This is a map of MSIDs
+        name_map = {'sim_z': 'tscpos', 'dp_pitch': 'pitch'}
+        if self.other_map is not None:
+            name_map.update(self.other_map)
+
         tstart = DateTime(tstart).secs
         start = DateTime(tstart - days * 86400).date
         stop = DateTime(tstart).date
         mylog.info('Fetching telemetry between %s and %s' % (start, stop))
-        msidset = fetch.MSIDset(msids, start, stop, stat='5min')
+        msidset = fetch.MSIDset(telem_msids, start, stop, stat='5min')
         start = max(x.times[0] for x in msidset.values())
         stop = min(x.times[-1] for x in msidset.values())
         # Interpolate the MSIDs to a common set of times, 5 mins apart (328 s)
@@ -822,9 +891,12 @@ class ACISThermalCheck(object):
         # for the different MSIDs (temperatures, pitch, etc).
         # In some cases we replace the MSID name with something
         # more human-readable.
-        outnames = ['date'] + [name_map.get(x, x) for x in msids]
-        vals = {name_map.get(x, x): msidset[x].vals for x in msids}
+        outnames = ['date'] + [name_map.get(x, x) for x in telem_msids]
+        vals = {name_map.get(x, x): msidset[x].vals for x in telem_msids}
         vals['date'] = msidset.times
         out = Ska.Numpy.structured_array(vals, colnames=outnames)
+
+        # tscpos needs to be converted to steps and must be in the right direction
+        out['tscpos'] *= -397.7225924607
 
         return out
