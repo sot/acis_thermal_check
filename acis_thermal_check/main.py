@@ -14,13 +14,14 @@ import pickle
 import numpy as np
 import Ska.DBI
 import Ska.Numpy
-from Chandra.Time import DateTime
+from Chandra.Time import DateTime, date2secs
 import matplotlib.pyplot as plt
 from Ska.Matplotlib import cxctime2plotdate, \
     pointpair, plot_cxctime
 import Ska.engarchive.fetch_sci as fetch
 import shutil
 import acis_thermal_check
+from astropy.io import ascii
 version = acis_thermal_check.__version__
 from acis_thermal_check.utils import \
     config_logging, TASK_DATA, plot_two, \
@@ -225,7 +226,7 @@ class ACISThermalCheck(object):
 
         # calc_model_wrapper actually does the model calculation by running
         # model-specific code.
-        model = self.calc_model_wrapper(model_spec, states, state0['tstart'], 
+        model = self.calc_model_wrapper(model_spec, states, state0['tstart'],
                                         tstop, state0=state0)
 
         # Make the limit check plots and data files
@@ -265,9 +266,17 @@ class ACISThermalCheck(object):
         """
         if state0 is None:
             start_msid = None
+            dh_heater = None
+            dh_heater_times = None
         else:
             start_msid = state0[self.msid]
-        return self.calc_model(model_spec, states, tstart, tstop, start_msid)
+            htrbfn = os.path.join(self.bsdir, 'dahtbon_history.rdb')
+            mylog.info('Reading file of dahtrb commands from file %s' % htrbfn)
+            htrb = ascii.read(htrbfn, format='rdb')
+            dh_heater_times = date2secs(htrb['time'])
+            dh_heater = htrb['dahtbon'].astype(bool)
+        return self.calc_model(model_spec, states, tstart, tstop, start_msid,
+                               dh_heater=dh_heater, dh_heater_times=dh_heater_times)
 
     def make_validation_viols(self, plots_validation):
         """
