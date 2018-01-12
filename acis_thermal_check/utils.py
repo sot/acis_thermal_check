@@ -330,9 +330,9 @@ def make_state_builder(name, args):
 
 def get_acis_limits(msid):
     """
-    Get the current red and yellow hi limits for a given 
-    ACIS-related MSID, or the various limits for the 
-    focal plane temperature.
+    Get the current yellow hi limit and margin for a 
+    given ACIS-related MSID, or the various limits 
+    for the focal plane temperature.
 
     Parameters
     ----------
@@ -348,7 +348,13 @@ def get_acis_limits(msid):
         return fp_sens, acis_i, acis_s
 
     yellow_hi = None
-    red_hi = None
+
+    margin = {"1dpamzt": 2.0, 
+              "1deamzt": 2.0,
+              "1pdeaat": 4.5,
+              "tmp_fep1_mong": 2.0,
+              "tmp_fep1_actel": 2.0,
+              "tmp_bep_pcb": 2.0}
 
     pmon_file = "PMON/pmon_limits.txt"
     eng_file = "Thermal/MSID_Limits.txt"
@@ -379,7 +385,6 @@ def get_acis_limits(msid):
         words = line.strip().split()
         if len(words) > 1 and words[0] == msid.upper():
             yellow_hi = float(words[cols[0]])
-            red_hi = float(words[cols[1]])
             break
 
-    return yellow_hi, red_hi
+    return yellow_hi, margin[msid]
