@@ -24,7 +24,8 @@ import acis_thermal_check
 version = acis_thermal_check.__version__
 from acis_thermal_check.utils import \
     config_logging, TASK_DATA, plot_two, \
-    mylog, plot_one, calc_off_nom_rolls
+    mylog, plot_one, calc_off_nom_rolls, \
+    get_acis_limits, make_state_builder
 from kadi import events
 
 class ACISThermalCheck(object):
@@ -53,13 +54,6 @@ class ACISThermalCheck(object):
         A dictionary mapping between names (e.g., "dea") and
         MSIDs (e.g., "1DEAMZT") for components that will be
         modeled or used in the model.
-    yellow : dictionary of float values
-        A dictionary mapping between names (e.g., "dea") and
-        the yellow limits for the corresponding components.
-    margin : dictionary of float values
-        A dictionary mapping between names (e.g., "dea") and
-        the margin between the yellow limit and the planning
-        limit for the corresponding components.
     validation_limits : dictionary of lists of tuples
         A dictionary mapping between names (e.g., "dea") and
         the validation limits for each component in the form
@@ -84,6 +78,9 @@ class ACISThermalCheck(object):
         "T_comp": The initial temperature values of the components
         "T_comp_times": The times at which the components of the
         temperature are defined
+    args : ArgumentParser arguments
+        The command-line options object, which has the options
+        attached to it as attributes
     other_telem : list of strings, optional
         A list of other MSIDs that may need to be obtained from
         the engineering archive for validation purposes. The
@@ -93,40 +90,36 @@ class ACISThermalCheck(object):
         {'sim_z': 'tscpos', 'dp_pitch': 'pitch'}. Used to map
         names understood by Xija to MSIDs.
     """
-    def __init__(self, msid, name, MSIDs, yellow, margin, 
-                 validation_limits, hist_limit, calc_model,
-                 other_telem=None, other_map=None):
+    def __init__(self, msid, name, MSIDs, validation_limits,
+                 hist_limit, calc_model, args, other_telem=None, 
+                 other_map=None):
         self.msid = msid
         self.name = name
         self.MSIDs = MSIDs
-        self.yellow = yellow
-        self.margin = margin
+        if self.msid == "fptemp":
+            self.yellow = None
+            self.margin = None
+        else:
+            self.yellow, self.margin = get_acis_limits(self.msid)
         self.validation_limits = validation_limits
         self.hist_limit = hist_limit
         self.calc_model = calc_model
         self.other_telem = other_telem
         self.other_map = other_map
+        self.args = args
+        self.state_builder = make_state_builder(args.state_builder, args)
 
-    def driver(self, args, state_builder):
+    def driver(self):
         """
         The main interface to all of ACISThermalCheck's functions.
         This method must be called by the particular thermal model
         implementation to actually run the code and make the webpage.
-
-        Parameters
-        ----------
-        args : ArgumentParser arguments
-            The command-line options object, which has the options
-            attached to it as attributes
-        state_builder : StateBuilder object
-            The StateBuilder object used to construct commanded states
         """
-        self.state_builder = state_builder
 
-        proc = self._setup_proc_and_logger(args)
+        proc = self._setup_proc_and_logger(self.args)
 
-        is_weekly_load = args.backstop_file is not None
-        tstart, tstop, tnow = self._determine_times(args.run_start,
+        is_weekly_load = self.args.backstop_file is not None
+        tstart, tstop, tnow = self._determine_times(self.args.run_start,
                                                     is_weekly_load)
 
         proc["datestart"] = DateTime(tstart).date
@@ -135,24 +128,24 @@ class ACISThermalCheck(object):
 
         # Get the telemetry values which will be used
         # for prediction and validation
-        tlm = self.get_telem_values(min(tstart, tnow), days=args.days)
+        tlm = self.get_telem_values(min(tstart, tnow), days=self.args.days)
 
         # make predictions on a backstop file if defined
-        if args.backstop_file is not None:
-            pred = self.make_week_predict(tstart, tstop, tlm, args.T_init, 
-                                          args.model_spec, args.outdir)
+        if self.args.backstop_file is not None:
+            pred = self.make_week_predict(tstart, tstop, tlm, self.args.T_init,
+                                          self.args.model_spec, self.args.outdir)
         else:
             pred = defaultdict(lambda: None)
 
         # Validation
         # Make the validation plots
-        plots_validation = self.make_validation_plots(tlm, args.model_spec,
-                                                      args.outdir, args.run_start)
+        plots_validation = self.make_validation_plots(tlm, self.args.model_spec,
+                                                      self.args.outdir, self.args.run_start)
 
         # Determine violations of temperature validation
         valid_viols = self.make_validation_viols(plots_validation)
         if len(valid_viols) > 0:
-            mylog.info('validation warning(s) in output at %s' % args.outdir)
+            mylog.info('validation warning(s) in output at %s' % self.args.outdir)
 
         # Write everything to the web page.
         # First, write the reStructuredText file.
@@ -164,10 +157,10 @@ class ACISThermalCheck(object):
                    'valid_viols': valid_viols,
                    'proc': proc,
                    'plots_validation': plots_validation}
-        self.write_index_rst(self.bsdir, args.outdir, context)
+        self.write_index_rst(self.bsdir, self.args.outdir, context)
 
         # Second, convert reST to HTML
-        self.rst_to_html(args.outdir, proc)
+        self.rst_to_html(self.args.outdir, proc)
 
         return
 
@@ -185,14 +178,15 @@ class ACISThermalCheck(object):
             initial value will be constructed from telemetry.
         """
 
-        # The -5 here has us back off from the last telemetry reading just a bit
+        # The -5 here has us back off from the last telemetry 
+        # reading just a bit
         tbegin = DateTime(tlm['date'][-5]).date
         states, state0 = self.state_builder.get_prediction_states(tbegin)
 
         # We now determine the initial temperature.
 
         # If we have an initial temperature input from the
-        # command line, use it, otherwise construct T_init 
+        # command line, use it, otherwise construct T_init
         # from an average of telemetry values around state0
         if T_init is None:
             ok = ((tlm['date'] >= state0['tstart'] - 700) &
