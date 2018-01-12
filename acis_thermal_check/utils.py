@@ -331,7 +331,8 @@ def make_state_builder(name, args):
 def get_acis_limits(msid):
     """
     Get the current red and yellow hi limits for a given 
-    ACIS-related MSID. 
+    ACIS-related MSID, or the various limits for the 
+    focal plane temperature.
 
     Parameters
     ----------
@@ -339,6 +340,12 @@ def get_acis_limits(msid):
         The MSID to get the limits for, e.g. "1deamzt".
     """
     import requests
+
+    if msid == "fptemp":
+        fp_sens = -118.7
+        acis_i = -114.0
+        acis_s = -112.0
+        return fp_sens, acis_i, acis_s
 
     yellow_hi = None
     red_hi = None
