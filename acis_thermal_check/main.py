@@ -639,7 +639,8 @@ class ACISThermalCheck(object):
             ticklocs, fig, ax = plot_cxctime(model.times, pred[msid] / scale,
                                              fig=fig, fmt='-b')
             if np.any(~good_mask):
-                ticklocs, fig, ax = plot_cxctime(model.times[~good_mask], tlm[msid][~good_mask] / scale,
+                ticklocs, fig, ax = plot_cxctime(model.times[~good_mask], 
+                                                 tlm[msid][~good_mask] / scale,
                                                  fig=fig, fmt='.c')
             ax.set_title(msid.upper() + ' validation')
             ax.set_ylabel(labels[msid])
@@ -649,6 +650,16 @@ class ACISThermalCheck(object):
                 ptimes = cxctime2plotdate([rz.tstart, rz.tstop])
                 for ptime in ptimes:
                     ax.axvline(ptime, ls='--', color='g')
+            # Add horizontal lines for the planning and caution limits
+            # or the limits for the focal plane model
+            if self.msid == msid:
+                if msid == "fptemp":
+                    pass
+                else:
+                    ax.axhline(self.yellow[self.name], linestyle='-', color='y',
+                               linewidth=2.0)
+                    ax.axhline(self.yellow[self.name] - self.margin[self.name], 
+                               linestyle='--', color='y', linewidth=2.0)
             filename = msid + '_valid.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
@@ -688,7 +699,7 @@ class ACISThermalCheck(object):
                 ax.hist(diff / scale, bins=50, log=(histscale == 'log'))
                 if msid == self.msid and len(self.hist_limit) == 2 and ok2.any():
                     ax.hist(diff2 / scale, bins=50, log=(histscale == 'log'),
-                            color = 'red')
+                            color='red')
                 ax.set_title(msid.upper() + ' residuals: data - model')
                 ax.set_xlabel(labels[msid])
                 fig.subplots_adjust(bottom=0.18)
