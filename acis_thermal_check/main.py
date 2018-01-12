@@ -654,7 +654,9 @@ class ACISThermalCheck(object):
             # or the limits for the focal plane model
             if self.msid == msid:
                 if msid == "fptemp":
-                    pass
+                    fp_sens, acis_s, acis_i = get_acis_limits("fptemp")
+                    ax.axhline(acis_i, linestyle='-.', color='purple')
+                    ax.axhline(acis_s, linestyle='-.', color='blue')
                 else:
                     ax.axhline(self.yellow[self.name], linestyle='-', color='y')
                     ax.axhline(self.yellow[self.name] - self.margin[self.name],
