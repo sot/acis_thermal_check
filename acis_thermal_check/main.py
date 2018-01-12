@@ -656,10 +656,9 @@ class ACISThermalCheck(object):
                 if msid == "fptemp":
                     pass
                 else:
-                    ax.axhline(self.yellow[self.name], linestyle='-', color='y',
-                               linewidth=2.0)
-                    ax.axhline(self.yellow[self.name] - self.margin[self.name], 
-                               linestyle='--', color='y', linewidth=2.0)
+                    ax.axhline(self.yellow[self.name], linestyle='-', color='y')
+                    ax.axhline(self.yellow[self.name] - self.margin[self.name],
+                               linestyle='--', color='y')
             filename = msid + '_valid.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
