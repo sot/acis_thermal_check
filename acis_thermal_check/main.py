@@ -826,7 +826,8 @@ class ACISThermalCheck(object):
                     msid=self.msid.upper(),
                     name=self.name.upper(),
                     hist_limit=self.hist_limit)
-        proc["msid_limit"] = self.yellow[self.name] - self.margin[self.name]
+        if self.msid != "fptemp":
+            proc["msid_limit"] = self.yellow[self.name] - self.margin[self.name]
         mylog.info('##############################'
                    '#######################################')
         mylog.info('# %s_check run at %s by %s'
