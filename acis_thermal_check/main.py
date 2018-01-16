@@ -443,7 +443,8 @@ class ACISThermalCheck(object):
 
         # Start time of loads being reviewed expressed in units for plotdate()
         load_start = cxctime2plotdate([load_start])[0]
-
+        # Value for left side of plots
+        plot_start = max(load_start-2.0*86400.0, cxctime2plotdate([times[0]])[0])
         # Make the plots for the temperature prediction. This loop allows us
         # to make a plot for more than one temperature, but we currently only 
         # do one. Plots are of temperature on the left axis and pitch on the
@@ -469,7 +470,7 @@ class ACISThermalCheck(object):
             plots[msid]['ax'].axvline(load_start, linestyle='-', color='g',
                                       linewidth=2.0)
             # Set the left limit of the plot to be -2 days before the load start
-            plots[msid]['ax'].set_xlim(load_start-2.0*86400.0, None)
+            plots[msid]['ax'].set_xlim(plot_start, None)
             filename = self.MSIDs[self.name].lower() + '.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
@@ -494,7 +495,7 @@ class ACISThermalCheck(object):
         plots['pow_sim']['ax'].axvline(load_start, linestyle='-', color='g',
                                        linewidth=2.0)
         # Set the left limit of the plot to be -2 days before the load start
-        plots['pow_sim']['ax'].set_xlim(load_start-2.0*86400.0, None)
+        plots['pow_sim']['ax'].set_xlim(plot_start, None)
         # The next several lines ensure that the width of the axes
         # of all the weekly prediction plots are the same.
         w1, h1 = plots[self.name]['fig'].get_size_inches()
