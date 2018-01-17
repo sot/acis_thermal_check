@@ -24,7 +24,7 @@ import acis_thermal_check
 version = acis_thermal_check.__version__
 from acis_thermal_check.utils import \
     config_logging, TASK_DATA, plot_two, \
-    mylog
+    mylog, plot_one, calc_off_nom_rolls
 from kadi import events
 
 class ACISThermalCheck(object):
@@ -508,6 +508,34 @@ class ACISThermalCheck(object):
         mylog.info('Writing plot file %s' % outfile)
         plots['pow_sim']['fig'].savefig(outfile)
         plots['pow_sim']['filename'] = filename
+
+        # Make a plot of off-nominal roll
+        plots['roll'] = plot_one(
+            fig_id=4,
+            title='Off-Nominal Roll (deg)',
+            xlabel='Date',
+            x=pointpair(states['tstart'], states['tstop']),
+            y=pointpair(calc_off_nom_rolls(states)),
+            ylabel='Roll Angle (deg)',
+            ylim=(-20.0, 20.0),
+            figsize=(7.5, 3.5))
+        # Add a vertical line to mark the start time of the load
+        plots['roll']['ax'].axvline(load_start, linestyle='-', color='g',
+                                    linewidth=2.0)
+        # Set the left limit of the plot to be -2 days before the load start
+        plots['roll']['ax'].set_xlim(plot_start, None)
+        # The next several lines ensure that the width of the axes
+        # of all the weekly prediction plots are the same.
+        w1, h1 = plots[self.name]['fig'].get_size_inches()
+        w2, h2 = plots['roll']['fig'].get_size_inches()
+        lm = plots[self.name]['fig'].subplotpars.left*w1/w2
+        rm = plots[self.name]['fig'].subplotpars.right*w1/w2
+        plots['roll']['fig'].subplots_adjust(left=lm, right=rm)
+        filename = 'roll.png'
+        outfile = os.path.join(outdir, filename)
+        mylog.info('Writing plot file %s' % outfile)
+        plots['roll']['fig'].savefig(outfile)
+        plots['roll']['filename'] = filename
 
         plots['default'] = plots[self.name]
 
