@@ -42,6 +42,7 @@ No {{proc.msid}} Violations
 
 .. image:: {{plots.default.filename}}
 .. image:: {{plots.pow_sim.filename}}
+.. image:: {{plots.roll.filename}}
 
 ==============================
 {{proc.name}} Model Validation
