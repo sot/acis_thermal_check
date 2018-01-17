@@ -444,7 +444,7 @@ class ACISThermalCheck(object):
         # Start time of loads being reviewed expressed in units for plotdate()
         load_start = cxctime2plotdate([load_start])[0]
         # Value for left side of plots
-        plot_start = max(load_start-2.0*86400.0, cxctime2plotdate([times[0]])[0])
+        plot_start = max(load_start-2.0, cxctime2plotdate([times[0]])[0])
         # Make the plots for the temperature prediction. This loop allows us
         # to make a plot for more than one temperature, but we currently only 
         # do one. Plots are of temperature on the left axis and pitch on the
