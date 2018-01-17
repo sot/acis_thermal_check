@@ -78,6 +78,53 @@ def config_logging(outdir, verbose):
         filehandler.setLevel(logging.DEBUG)
     logger.addHandler(filehandler)
 
+def plot_one(fig_id, x, y, linestyle='-', 
+             color='blue', ylim=None, 
+             xlabel='', ylabel='', title='',
+             figsize=(7, 3.5)):
+    """
+    Plot one quantities with a date x-axis and a left
+    y-axis.
+
+    Parameters
+    ----------
+    fig_id : integer
+        The ID for this particular figure.
+    x : NumPy array
+        Times in seconds since the beginning of the mission for
+        the left y-axis quantity.
+    y : NumPy array
+        Quantity to plot against the times on the left x-axis.
+    linestyle : string, optional
+        The style of the line for the left y-axis.
+    color : string, optional
+        The color of the line for the left y-axis.
+    xlabel : string, optional
+        The label of the x-axis.
+    ylabel : string, optional
+        The label for the left y-axis.
+    title : string, optional
+        The title for the plot.
+    figsize : 2-tuple of floats
+        Size of plot in width and height in inches.
+    """
+    # Convert times to dates
+    xt = cxctime2plotdate(x)
+    fig = plt.figure(fig_id, figsize=figsize)
+    fig.clf()
+    ax = fig.add_subplot(1, 1, 1)
+    # Plot left y-axis
+    ax.plot_date(xt, y, fmt='-', linestyle=linestyle, color=color)
+    ax.set_xlim(min(xt), max(xt))
+    if ylim:
+        ax.set_ylim(*ylim)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.grid()
+
+    return {'fig': fig, 'ax': ax}
+
 def plot_two(fig_id, x, y, x2, y2,
              linestyle='-', linestyle2='-',
              color='blue', color2='magenta',
