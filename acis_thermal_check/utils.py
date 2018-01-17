@@ -123,6 +123,11 @@ def plot_one(fig_id, x, y, linestyle='-',
     ax.set_title(title)
     ax.grid()
 
+    Ska.Matplotlib.set_time_ticks(ax)
+    [label.set_rotation(30) for label in ax.xaxis.get_ticklabels()]
+
+    fig.subplots_adjust(bottom=0.22)
+
     return {'fig': fig, 'ax': ax}
 
 def plot_two(fig_id, x, y, x2, y2,
