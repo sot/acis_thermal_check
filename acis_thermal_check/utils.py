@@ -51,24 +51,31 @@ def config_logging(outdir, verbose):
     rootlogger = logging.getLogger()
     rootlogger.addHandler(NullHandler())
 
+    logger = logging.getLogger('acis_thermal_check')
+    logger.setLevel(logging.DEBUG)
+
     # Set numerical values for the different log levels
     loglevel = {0: logging.CRITICAL,
                 1: logging.INFO,
                 2: logging.DEBUG}.get(verbose, logging.INFO)
 
-    logger = logging.getLogger('acis_thermal_check')
-    logger.setLevel(loglevel)
-
     formatter = logging.Formatter('%(message)s')
 
     console = logging.StreamHandler()
     console.setFormatter(formatter)
+    console.setLevel(loglevel)
     logger.addHandler(console)
 
     logfile = os.path.join(outdir, 'run.dat')
 
     filehandler = logging.FileHandler(filename=logfile, mode='w')
     filehandler.setFormatter(formatter)
+    # Set the file loglevel to be at least INFO,
+    # but override to DEBUG if that is requested at the
+    # command line
+    filehandler.setLevel(logging.INFO)
+    if loglevel == logging.DEBUG:
+        filehandler.setLevel(logging.DEBUG)
     logger.addHandler(filehandler)
 
 def plot_two(fig_id, x, y, x2, y2,
