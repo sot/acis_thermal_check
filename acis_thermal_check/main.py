@@ -498,7 +498,6 @@ class ACISThermalCheck(object):
         plots['pow_sim']['ax'].set_xlim(plot_start, None)
         # The next several lines ensure that the width of the axes
         # of all the weekly prediction plots are the same.
-        w1, h1 = plots[self.name]['fig'].get_size_inches()
         w2, h2 = plots['pow_sim']['fig'].get_size_inches()
         lm = plots[self.name]['fig'].subplotpars.left*w1/w2
         rm = plots[self.name]['fig'].subplotpars.right*w1/w2
