@@ -492,7 +492,7 @@ class ACISThermalCheck(object):
             y2=pointpair(states['simpos']),
             ylabel2='SIM-Z (steps)',
             ylim2=(-105000, 105000),
-            figsize=(7.5, 3.5))
+            figsize=(7.5, 3.6))
         # Add a vertical line to mark the start time of the load
         plots['pow_sim']['ax'].axvline(load_start, linestyle='-', color='g',
                                        linewidth=2.0)
@@ -522,7 +522,7 @@ class ACISThermalCheck(object):
             y=pointpair(calc_off_nom_rolls(states)),
             ylabel='Roll Angle (deg)',
             ylim=(-20.0, 20.0),
-            figsize=(7.5, 3.5))
+            figsize=(7.5, 3.6))
         # Add a vertical line to mark the start time of the load
         plots['roll']['ax'].axvline(load_start, linestyle='-', color='g',
                                     linewidth=2.0)
