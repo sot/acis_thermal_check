@@ -100,6 +100,12 @@ def plot_one(fig_id, x, y, linestyle='-',
         The style of the line for the left y-axis.
     color : string, optional
         The color of the line for the left y-axis.
+    xmin : float, optional
+        The left-most value of the x-axis.
+    xmax : float, optional
+        The right-most value of the x-axis.
+    ylim : 2-tuple, optional
+        The limits for the left y-axis.
     xlabel : string, optional
         The label of the x-axis.
     ylabel : string, optional
@@ -167,6 +173,14 @@ def plot_two(fig_id, x, y, x2, y2,
         The color of the line for the left y-axis.
     color2 : string, optional
         The color of the line for the right y-axis.
+    xmin : float, optional
+        The left-most value of the x-axis.
+    xmax : float, optional
+        The right-most value of the x-axis.
+    ylim : 2-tuple, optional
+        The limits for the left y-axis.
+    ylim2 : 2-tuple, optional
+        The limits for the right y-axis.
     xlabel : string, optional
         The label of the x-axis.
     ylabel : string, optional
