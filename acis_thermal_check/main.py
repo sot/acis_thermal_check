@@ -457,10 +457,12 @@ class ACISThermalCheck(object):
                                    x2=pointpair(states['tstart'], states['tstop']),
                                    y2=pointpair(states['pitch']),
                                    title=self.MSIDs[msid],
+                                   xmin=plot_start,
                                    xlabel='Date',
                                    ylabel='Temperature (C)',
                                    ylabel2='Pitch (deg)',
-                                   ylim2=(40, 180))
+                                   ylim2=(40, 180),
+                                   figsize=(8.0, 4.0))
             # Add horizontal lines for the planning and caution limits
             plots[msid]['ax'].axhline(self.yellow[msid], linestyle='-', color='y',
                                       linewidth=2.0)
@@ -469,8 +471,6 @@ class ACISThermalCheck(object):
             # Add a vertical line to mark the start of the load
             plots[msid]['ax'].axvline(load_start, linestyle='-', color='g',
                                       linewidth=2.0)
-            # Set the left limit of the plot to be -2 days before the load start
-            plots[msid]['ax'].set_xlim(plot_start, None)
             filename = self.MSIDs[self.name].lower() + '.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
@@ -488,16 +488,15 @@ class ACISThermalCheck(object):
             y=pointpair(states['ccd_count']),
             ylabel='CCD_COUNT',
             ylim=(-0.1, 6.1),
+            xmin=plot_start,
             x2=pointpair(states['tstart'], states['tstop']),
             y2=pointpair(states['simpos']),
             ylabel2='SIM-Z (steps)',
             ylim2=(-105000, 105000),
-            figsize=(7.5, 3.6))
+            figsize=(8.5, 4.0))
         # Add a vertical line to mark the start time of the load
         plots['pow_sim']['ax'].axvline(load_start, linestyle='-', color='g',
                                        linewidth=2.0)
-        # Set the left limit of the plot to be -2 days before the load start
-        plots['pow_sim']['ax'].set_xlim(plot_start, None)
         # The next several lines ensure that the width of the axes
         # of all the weekly prediction plots are the same.
         w1, h1 = plots[self.name]['fig'].get_size_inches()
@@ -520,14 +519,13 @@ class ACISThermalCheck(object):
             xlabel='Date',
             x=pointpair(states['tstart'], states['tstop']),
             y=pointpair(calc_off_nom_rolls(states)),
+            xmin=plot_start,
             ylabel='Roll Angle (deg)',
             ylim=(-20.0, 20.0),
-            figsize=(7.5, 3.6))
+            figsize=(8.5, 4.0))
         # Add a vertical line to mark the start time of the load
         plots['roll']['ax'].axvline(load_start, linestyle='-', color='g',
                                     linewidth=2.0)
-        # Set the left limit of the plot to be -2 days before the load start
-        plots['roll']['ax'].set_xlim(plot_start, None)
         # The next several lines ensure that the width of the axes
         # of all the weekly prediction plots are the same.
         w2, h2 = plots['roll']['fig'].get_size_inches()
