@@ -514,7 +514,7 @@ class ACISThermalCheck(object):
 
         # Make a plot of off-nominal roll
         plots['roll'] = plot_one(
-            fig_id=4,
+            fig_id=fig_id,
             title='Off-Nominal Roll',
             xlabel='Date',
             x=pointpair(states['tstart'], states['tstop']),
