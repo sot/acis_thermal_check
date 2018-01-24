@@ -51,30 +51,100 @@ def config_logging(outdir, verbose):
     rootlogger = logging.getLogger()
     rootlogger.addHandler(NullHandler())
 
+    logger = logging.getLogger('acis_thermal_check')
+    logger.setLevel(logging.DEBUG)
+
     # Set numerical values for the different log levels
     loglevel = {0: logging.CRITICAL,
                 1: logging.INFO,
                 2: logging.DEBUG}.get(verbose, logging.INFO)
 
-    logger = logging.getLogger('acis_thermal_check')
-    logger.setLevel(loglevel)
-
     formatter = logging.Formatter('%(message)s')
 
     console = logging.StreamHandler()
     console.setFormatter(formatter)
+    console.setLevel(loglevel)
     logger.addHandler(console)
 
     logfile = os.path.join(outdir, 'run.dat')
 
     filehandler = logging.FileHandler(filename=logfile, mode='w')
     filehandler.setFormatter(formatter)
+    # Set the file loglevel to be at least INFO,
+    # but override to DEBUG if that is requested at the
+    # command line
+    filehandler.setLevel(logging.INFO)
+    if loglevel == logging.DEBUG:
+        filehandler.setLevel(logging.DEBUG)
     logger.addHandler(filehandler)
+
+def plot_one(fig_id, x, y, linestyle='-', 
+             color='blue', xmin=None,
+             xmax=None, ylim=None, 
+             xlabel='', ylabel='', title='',
+             figsize=(7, 3.5)):
+    """
+    Plot one quantities with a date x-axis and a left
+    y-axis.
+
+    Parameters
+    ----------
+    fig_id : integer
+        The ID for this particular figure.
+    x : NumPy array
+        Times in seconds since the beginning of the mission for
+        the left y-axis quantity.
+    y : NumPy array
+        Quantity to plot against the times on the left x-axis.
+    linestyle : string, optional
+        The style of the line for the left y-axis.
+    color : string, optional
+        The color of the line for the left y-axis.
+    xmin : float, optional
+        The left-most value of the x-axis.
+    xmax : float, optional
+        The right-most value of the x-axis.
+    ylim : 2-tuple, optional
+        The limits for the left y-axis.
+    xlabel : string, optional
+        The label of the x-axis.
+    ylabel : string, optional
+        The label for the left y-axis.
+    title : string, optional
+        The title for the plot.
+    figsize : 2-tuple of floats
+        Size of plot in width and height in inches.
+    """
+    # Convert times to dates
+    xt = cxctime2plotdate(x)
+    fig = plt.figure(fig_id, figsize=figsize)
+    fig.clf()
+    ax = fig.add_subplot(1, 1, 1)
+    # Plot left y-axis
+    ax.plot_date(xt, y, fmt='-', linestyle=linestyle, color=color)
+    if xmin is None:
+        xmin = min(xt)
+    if xmax is None:
+        xmax = max(xt)
+    ax.set_xlim(xmin, xmax)
+    if ylim:
+        ax.set_ylim(*ylim)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.grid()
+
+    Ska.Matplotlib.set_time_ticks(ax)
+    [label.set_rotation(30) for label in ax.xaxis.get_ticklabels()]
+
+    fig.subplots_adjust(bottom=0.22, right=0.87)
+
+    return {'fig': fig, 'ax': ax}
 
 def plot_two(fig_id, x, y, x2, y2,
              linestyle='-', linestyle2='-',
              color='blue', color2='magenta',
-             ylim=None, ylim2=None,
+             xmin=None, xmax=None, ylim=None, ylim2=None,
              xlabel='', ylabel='', ylabel2='', title='',
              figsize=(7, 3.5)):
     """
@@ -103,6 +173,14 @@ def plot_two(fig_id, x, y, x2, y2,
         The color of the line for the left y-axis.
     color2 : string, optional
         The color of the line for the right y-axis.
+    xmin : float, optional
+        The left-most value of the x-axis.
+    xmax : float, optional
+        The right-most value of the x-axis.
+    ylim : 2-tuple, optional
+        The limits for the left y-axis.
+    ylim2 : 2-tuple, optional
+        The limits for the right y-axis.
     xlabel : string, optional
         The label of the x-axis.
     ylabel : string, optional
@@ -121,7 +199,11 @@ def plot_two(fig_id, x, y, x2, y2,
     ax = fig.add_subplot(1, 1, 1)
     # Plot left y-axis
     ax.plot_date(xt, y, fmt='-', linestyle=linestyle, color=color)
-    ax.set_xlim(min(xt), max(xt))
+    if xmin is None:
+        xmin = min(xt)
+    if xmax is None:
+        xmax = max(xt)
+    ax.set_xlim(xmin, xmax)
     if ylim:
         ax.set_ylim(*ylim)
     ax.set_xlabel(xlabel)
@@ -134,7 +216,7 @@ def plot_two(fig_id, x, y, x2, y2,
     ax2 = ax.twinx()
     xt2 = cxctime2plotdate(x2)
     ax2.plot_date(xt2, y2, fmt='-', linestyle=linestyle2, color=color2)
-    ax2.set_xlim(min(xt), max(xt))
+    ax2.set_xlim(xmin, xmax)
     if ylim2:
         ax2.set_ylim(*ylim2)
     ax2.set_ylabel(ylabel2, color=color2)
@@ -144,7 +226,7 @@ def plot_two(fig_id, x, y, x2, y2,
     [label.set_rotation(30) for label in ax.xaxis.get_ticklabels()]
     [label.set_color(color2) for label in ax2.yaxis.get_ticklabels()]
 
-    fig.subplots_adjust(bottom=0.22)
+    fig.subplots_adjust(bottom=0.22, right=0.87)
 
     return {'fig': fig, 'ax': ax, 'ax2': ax2}
 

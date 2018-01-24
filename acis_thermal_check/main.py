@@ -24,7 +24,7 @@ import acis_thermal_check
 version = acis_thermal_check.__version__
 from acis_thermal_check.utils import \
     config_logging, TASK_DATA, plot_two, \
-    mylog
+    mylog, plot_one, calc_off_nom_rolls
 from kadi import events
 
 class ACISThermalCheck(object):
@@ -443,7 +443,8 @@ class ACISThermalCheck(object):
 
         # Start time of loads being reviewed expressed in units for plotdate()
         load_start = cxctime2plotdate([load_start])[0]
-
+        # Value for left side of plots
+        plot_start = max(load_start-2.0, cxctime2plotdate([times[0]])[0])
         # Make the plots for the temperature prediction. This loop allows us
         # to make a plot for more than one temperature, but we currently only 
         # do one. Plots are of temperature on the left axis and pitch on the
@@ -456,10 +457,12 @@ class ACISThermalCheck(object):
                                    x2=pointpair(states['tstart'], states['tstop']),
                                    y2=pointpair(states['pitch']),
                                    title=self.MSIDs[msid],
+                                   xmin=plot_start,
                                    xlabel='Date',
                                    ylabel='Temperature (C)',
                                    ylabel2='Pitch (deg)',
-                                   ylim2=(40, 180))
+                                   ylim2=(40, 180),
+                                   figsize=(8.0, 4.0))
             # Add horizontal lines for the planning and caution limits
             plots[msid]['ax'].axhline(self.yellow[msid], linestyle='-', color='y',
                                       linewidth=2.0)
@@ -474,20 +477,23 @@ class ACISThermalCheck(object):
             plots[msid]['fig'].savefig(outfile)
             plots[msid]['filename'] = filename
 
+        fig_id += 1
+
         # Make a plot of ACIS CCDs and SIM-Z position
         plots['pow_sim'] = plot_two(
-            fig_id=3,
+            fig_id=fig_id,
             title='ACIS CCDs and SIM-Z position',
             xlabel='Date',
             x=pointpair(states['tstart'], states['tstop']),
             y=pointpair(states['ccd_count']),
             ylabel='CCD_COUNT',
             ylim=(-0.1, 6.1),
+            xmin=plot_start,
             x2=pointpair(states['tstart'], states['tstop']),
             y2=pointpair(states['simpos']),
             ylabel2='SIM-Z (steps)',
             ylim2=(-105000, 105000),
-            figsize=(7.5, 3.5))
+            figsize=(8.5, 4.0))
         # Add a vertical line to mark the start time of the load
         plots['pow_sim']['ax'].axvline(load_start, linestyle='-', color='g',
                                        linewidth=2.0)
@@ -503,6 +509,34 @@ class ACISThermalCheck(object):
         mylog.info('Writing plot file %s' % outfile)
         plots['pow_sim']['fig'].savefig(outfile)
         plots['pow_sim']['filename'] = filename
+
+        fig_id += 1
+
+        # Make a plot of off-nominal roll
+        plots['roll'] = plot_one(
+            fig_id=fig_id,
+            title='Off-Nominal Roll',
+            xlabel='Date',
+            x=pointpair(states['tstart'], states['tstop']),
+            y=pointpair(calc_off_nom_rolls(states)),
+            xmin=plot_start,
+            ylabel='Roll Angle (deg)',
+            ylim=(-20.0, 20.0),
+            figsize=(8.5, 4.0))
+        # Add a vertical line to mark the start time of the load
+        plots['roll']['ax'].axvline(load_start, linestyle='-', color='g',
+                                    linewidth=2.0)
+        # The next several lines ensure that the width of the axes
+        # of all the weekly prediction plots are the same.
+        w2, h2 = plots['roll']['fig'].get_size_inches()
+        lm = plots[self.name]['fig'].subplotpars.left*w1/w2
+        rm = plots[self.name]['fig'].subplotpars.right*w1/w2
+        plots['roll']['fig'].subplots_adjust(left=lm, right=rm)
+        filename = 'roll.png'
+        outfile = os.path.join(outdir, filename)
+        mylog.info('Writing plot file %s' % outfile)
+        plots['roll']['fig'].savefig(outfile)
+        plots['roll']['filename'] = filename
 
         plots['default'] = plots[self.name]
 
