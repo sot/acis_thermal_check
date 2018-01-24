@@ -110,7 +110,7 @@ class ACISThermalCheck(object):
         self.args = args
         self.state_builder = make_state_builder(args.state_builder, args)
 
-    def driver(self):
+    def run(self):
         """
         The main interface to all of ACISThermalCheck's functions.
         This method must be called by the particular thermal model
