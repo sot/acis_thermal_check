@@ -116,7 +116,6 @@ class ACISThermalCheck(object):
         This method must be called by the particular thermal model
         implementation to actually run the code and make the webpage.
         """
-
         proc = self._setup_proc_and_logger(self.args)
 
         is_weekly_load = self.args.backstop_file is not None
@@ -154,10 +153,15 @@ class ACISThermalCheck(object):
         # Set up the context for the reST file
         context = {'bsdir': self.bsdir,
                    'plots': pred["plots"],
-                   'viols': pred["viols"],
                    'valid_viols': valid_viols,
                    'proc': proc,
                    'plots_validation': plots_validation}
+        if self.msid == "fptemp":
+            for viol in ["ACIS_I", "ACIS_S", "fp_sens", "cti"]:
+                key = "%s_viols" % viol
+                context[key] = pred[key]
+        else:
+            context["viols"] = pred["viols"]
         self.write_index_rst(self.bsdir, self.args.outdir, context)
 
         # Second, convert reST to HTML
@@ -780,7 +784,7 @@ class ACISThermalCheck(object):
         outtext = del_colgroup.sub('', open(outfile).read())
         open(outfile, 'w').write(outtext)
 
-    def write_index_rst(self, bsdir, outdir, context, template_path=None):
+    def write_index_rst(self, bsdir, outdir, context):
         """
         Make output text (in ReST format) in outdir, using jinja2
         to fill out the template. 
@@ -795,12 +799,12 @@ class ACISThermalCheck(object):
             Path to the location where the outputs will be written.
         context : dict
             Dictionary of items which will be written to the ReST file.
-        template_path : string, optional
-            Optional path to look for the ReST template. Default is to
-            use the one internal to acis_thermal_check.
         """
         import jinja2
-        if template_path is None:
+        if self.msid == "fptemp":
+            import acisfp_check
+            template_path = os.path.join(os.path.dirname(acisfp_check.__file__), 'templates')
+        else:
             template_path = os.path.join(TASK_DATA, 'acis_thermal_check',
                                          'templates')
         outfile = os.path.join(outdir, 'index.rst')
