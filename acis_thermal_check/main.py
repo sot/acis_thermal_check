@@ -152,16 +152,11 @@ class ACISThermalCheck(object):
 
         # Set up the context for the reST file
         context = {'bsdir': self.bsdir,
+                   'viols': pred["viols"],
                    'plots': pred["plots"],
                    'valid_viols': valid_viols,
                    'proc': proc,
                    'plots_validation': plots_validation}
-        if self.msid == "fptemp":
-            for viol in ["ACIS_I", "ACIS_S", "fp_sens", "cti"]:
-                key = "%s_viols" % viol
-                context[key] = pred[key]
-        else:
-            context["viols"] = pred["viols"]
         self.write_index_rst(self.bsdir, self.args.outdir, context)
 
         # Second, convert reST to HTML
