@@ -421,6 +421,46 @@ class ACISThermalCheck(object):
         Ska.Numpy.pprint(temp_array, fmt, out)
         out.close()
 
+    def _make_state_plots(self, plots, num_figs, w1, plot_start,
+                          outdir, states, load_start):
+        # Make a plot of ACIS CCDs and SIM-Z position
+        plots['pow_sim'] = plot_two(
+            fig_id=num_figs+1,
+            title='ACIS CCDs and SIM-Z position',
+            xlabel='Date',
+            x=pointpair(states['tstart'], states['tstop']),
+            y=pointpair(states['ccd_count']),
+            ylabel='CCD_COUNT',
+            ylim=(-0.1, 6.1),
+            xmin=plot_start,
+            x2=pointpair(states['tstart'], states['tstop']),
+            y2=pointpair(states['simpos']),
+            ylabel2='SIM-Z (steps)',
+            ylim2=(-105000, 105000),
+            figsize=(8.5, 4.0), width=w1, load_start=load_start)
+        filename = 'pow_sim.png'
+        outfile = os.path.join(outdir, filename)
+        mylog.info('Writing plot file %s' % outfile)
+        plots['pow_sim']['fig'].savefig(outfile)
+        plots['pow_sim']['filename'] = filename
+
+        # Make a plot of off-nominal roll
+        plots['roll'] = plot_one(
+            fig_id=num_figs+2,
+            title='Off-Nominal Roll',
+            xlabel='Date',
+            x=pointpair(states['tstart'], states['tstop']),
+            y=pointpair(calc_off_nom_rolls(states)),
+            xmin=plot_start,
+            ylabel='Roll Angle (deg)',
+            ylim=(-20.0, 20.0),
+            figsize=(8.5, 4.0), width=w1, load_start=load_start)
+        filename = 'roll.png'
+        outfile = os.path.join(outdir, filename)
+        mylog.info('Writing plot file %s' % outfile)
+        plots['roll']['fig'].savefig(outfile)
+        plots['roll']['filename'] = filename
+
     def make_prediction_plots(self, outdir, states, times, temps, load_start):
         """
         Make plots of the thermal prediction as well as associated 
@@ -472,43 +512,8 @@ class ACISThermalCheck(object):
         # of all the weekly prediction plots are the same.
         w1, _ = plots[self.name]['fig'].get_size_inches()
 
-        # Make a plot of ACIS CCDs and SIM-Z position
-        plots['pow_sim'] = plot_two(
-            fig_id=2,
-            title='ACIS CCDs and SIM-Z position',
-            xlabel='Date',
-            x=pointpair(states['tstart'], states['tstop']),
-            y=pointpair(states['ccd_count']),
-            ylabel='CCD_COUNT',
-            ylim=(-0.1, 6.1),
-            xmin=plot_start,
-            x2=pointpair(states['tstart'], states['tstop']),
-            y2=pointpair(states['simpos']),
-            ylabel2='SIM-Z (steps)',
-            ylim2=(-105000, 105000),
-            figsize=(8.5, 4.0), width=w1, load_start=load_start)
-        filename = 'pow_sim.png'
-        outfile = os.path.join(outdir, filename)
-        mylog.info('Writing plot file %s' % outfile)
-        plots['pow_sim']['fig'].savefig(outfile)
-        plots['pow_sim']['filename'] = filename
-
-        # Make a plot of off-nominal roll
-        plots['roll'] = plot_one(
-            fig_id=3,
-            title='Off-Nominal Roll',
-            xlabel='Date',
-            x=pointpair(states['tstart'], states['tstop']),
-            y=pointpair(calc_off_nom_rolls(states)),
-            xmin=plot_start,
-            ylabel='Roll Angle (deg)',
-            ylim=(-20.0, 20.0),
-            figsize=(8.5, 4.0), width=w1, load_start=load_start)
-        filename = 'roll.png'
-        outfile = os.path.join(outdir, filename)
-        mylog.info('Writing plot file %s' % outfile)
-        plots['roll']['fig'].savefig(outfile)
-        plots['roll']['filename'] = filename
+        self._make_state_plots(plots, 1, w1, plot_start,
+                               outdir, states, load_start)
 
         plots['default'] = plots[self.name]
 
