@@ -82,7 +82,8 @@ def plot_one(fig_id, x, y, linestyle='-',
              color='blue', xmin=None,
              xmax=None, ylim=None, 
              xlabel='', ylabel='', title='',
-             figsize=(7, 3.5)):
+             figsize=(7, 3.5), load_start=None,
+             width=None):
     """
     Plot one quantities with a date x-axis and a left
     y-axis.
@@ -134,10 +135,21 @@ def plot_one(fig_id, x, y, linestyle='-',
     ax.set_title(title)
     ax.grid()
 
+    if load_start is not None:
+        # Add a vertical line to mark the start time of the load
+        ax.axvline(load_start, linestyle='-', color='g', linewidth=2.0)
+
     Ska.Matplotlib.set_time_ticks(ax)
     [label.set_rotation(30) for label in ax.xaxis.get_ticklabels()]
 
     fig.subplots_adjust(bottom=0.22, right=0.87)
+    # The next several lines ensure that the width of the axes
+    # of all the weekly prediction plots are the same
+    if width is not None:
+        w2, _ = fig.get_size_inches()
+        lm = fig.subplotpars.left * width / w2
+        rm = fig.subplotpars.right * width / w2
+        fig.subplots_adjust(left=lm, right=rm)
 
     return {'fig': fig, 'ax': ax}
 
@@ -146,7 +158,7 @@ def plot_two(fig_id, x, y, x2, y2,
              color='blue', color2='magenta',
              xmin=None, xmax=None, ylim=None, ylim2=None,
              xlabel='', ylabel='', ylabel2='', title='',
-             figsize=(7, 3.5)):
+             figsize=(7, 3.5), load_start=None, width=None):
     """
     Plot two quantities with a date x-axis, one on the left
     y-axis and the other on the right y-axis.
@@ -222,11 +234,23 @@ def plot_two(fig_id, x, y, x2, y2,
     ax2.set_ylabel(ylabel2, color=color2)
     ax2.xaxis.set_visible(False)
 
+    if load_start is not None:
+        # Add a vertical line to mark the start time of the load
+        ax.axvline(load_start, linestyle='-', color='g', linewidth=2.0)
+
     Ska.Matplotlib.set_time_ticks(ax)
     [label.set_rotation(30) for label in ax.xaxis.get_ticklabels()]
     [label.set_color(color2) for label in ax2.yaxis.get_ticklabels()]
 
     fig.subplots_adjust(bottom=0.22, right=0.87)
+    # The next several lines ensure that the width of the axes
+    # of all the weekly prediction plots are the same
+    if width is not None:
+        w2, _ = fig.get_size_inches()
+        lm = fig.subplotpars.left * width / w2
+        rm = fig.subplotpars.right * width / w2
+        fig.subplots_adjust(left=lm, right=rm)
+
 
     return {'fig': fig, 'ax': ax, 'ax2': ax2}
 
