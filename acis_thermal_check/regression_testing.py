@@ -170,12 +170,26 @@ def compare_results(name, load_week, out_dir):
     # Compare predictions
     new_pred = new_results["pred"]
     old_pred = old_results["pred"]
-    for k in new_pred:
+    pred_keys = set(list(new_pred.keys())+list(old_pred.keys()))
+    for k in pred_keys:
+        if k not in new_pred:
+            print("WARNING : '%s' in old answer but not new. Answers should be updated." % k)
+            continue
+        if k not in old_pred:
+            print("WARNING : '%s' in new answer but not old. Answers should be updated." % k)
+            continue
         assert_array_equal(new_pred[k], old_pred[k])
     # Compare telemetry
     new_tlm = new_results['tlm']
     old_tlm = old_results['tlm']
-    for k in new_tlm.dtype.names:
+    tlm_keys = set(list(new_tlm.dtype.names)+list(old_tlm.dtype.names))
+    for k in tlm_keys:
+        if k not in new_pred:
+            print("WARNING : '%s' in old answer but not new. Answers should be updated." % k)
+            continue
+        if k not in old_pred:
+            print("WARNING : '%s' in new answer but not old. Answers should be updated." % k)
+            continue
         assert_array_equal(new_tlm[k], old_tlm[k])
     # Compare
     for prefix in ("temperatures", "states"):
@@ -269,8 +283,16 @@ def compare_images(msid, name, load_week, out_dir):
     """
     images = build_image_list(msid)
     for image in images:
-        new_image = misc.imread(os.path.join(out_dir, image))
-        old_image = misc.imread(os.path.join(test_data_dir, name, load_week, image))
+        new_path = os.path.join(out_dir, image)
+        old_path = os.path.join(test_data_dir, name, load_week, image)
+        if not os.path.exists(old_path):
+            print("WARNING: Image %s has new answer but not old. Answers should be updated." % image)
+            continue
+        if not os.path.exists(new_path):
+            print("WARNING: Image %s has old answer but not new. Answers should be updated." % image)
+            continue
+        new_image = misc.imread(new_path)
+        old_image = misc.imread(old_path)
         assert_array_equal(new_image, old_image)
 
 def copy_new_images(msid, name, out_dir, answer_dir):
