@@ -21,7 +21,7 @@ test_loads = [
          "MAR0817B", "MAR1117A", "APR0217B", "SEP0917C"
 ]
 
-class TestOpts(object):
+class TestArgs(object):
     """
     A mock-up of a command-line parser object to be used with
     ACISThermalCheck testing.
@@ -109,9 +109,14 @@ def run_model(name, msid_check, model_spec, load_week, run_start=None,
         "sybase" or "sqlite". Default: "sybase"
     """
     out_dir = name+"_test"
-    msid_opts = TestOpts(name, run_start, out_dir, model_spec=model_spec,
-                         load_week=load_week, cmd_states_db=cmd_states_db)
-    msid_check.driver(msid_opts)
+    args = TestArgs(name, run_start, out_dir, model_spec=model_spec,
+                    load_week=load_week, cmd_states_db=cmd_states_db)
+    state_builder = make_state_builder(args.state_builder, args)
+    msid_check = ACISThermalCheck("1deamzt", "dea", MSID, YELLOW,
+                                   MARGIN, VALIDATION_LIMITS,
+                                   HIST_LIMIT, calc_model)
+
+    msid_check.driver(args, state_builder)
     return msid_check.msid, out_dir
 
 # Large, multi-layer dictionary which encodes the datatypes for the
