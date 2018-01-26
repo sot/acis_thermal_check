@@ -6,6 +6,7 @@ import shutil
 import numpy as np
 from scipy import misc
 import tempfile
+from .main import ACISThermalCheck
 
 # This directory is currently where the thermal model
 # "gold standard" answers live.
@@ -71,18 +72,18 @@ class TestArgs(object):
         self.model_spec = model_spec
         self.version = None
 
-def load_test_template(name, msid_check, model_spec, load_week,
+def load_test_template(name, msid, model_spec, load_week,
                        generate_answers):
     tmpdir = tempfile.mkdtemp()
     curdir = os.getcwd()
     os.chdir(tmpdir)
-    msid, out_dir = run_model(name, msid_check, model_spec, load_week)
+    msid, out_dir = run_model(name, msid, model_spec, load_week)
     run_answer_test(name, load_week, out_dir, generate_answers)
     run_image_test(msid, name, load_week, out_dir, generate_answers)
     os.chdir(curdir)
     shutil.rmtree(tmpdir)
 
-def run_model(name, msid_check, model_spec, load_week, run_start=None,
+def run_model(name, msid, model_spec, load_week, run_start=None,
               cmd_states_db='sybase'):
     """
     Function to run a thermal model for a test.
@@ -111,8 +112,7 @@ def run_model(name, msid_check, model_spec, load_week, run_start=None,
     out_dir = name+"_test"
     args = TestArgs(name, run_start, out_dir, model_spec=model_spec,
                     load_week=load_week, cmd_states_db=cmd_states_db)
-    state_builder = make_state_builder(args.state_builder, args)
-    msid_check = ACISThermalCheck("1deamzt", "dea", MSID, YELLOW,
+    msid_check = ACISThermalCheck(msid, name, MSID, YELLOW,
                                    MARGIN, VALIDATION_LIMITS,
                                    HIST_LIMIT, calc_model)
 
