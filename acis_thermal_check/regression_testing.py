@@ -8,6 +8,9 @@ from scipy import misc
 import tempfile
 from .main import ACISThermalCheck
 
+months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+          "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+
 # This directory is currently where the thermal model
 # "gold standard" answers live.
 test_data_dir = "/data/acis/thermal_model_tests"
@@ -32,10 +35,11 @@ class TestArgs(object):
     name : string
         The "short" name of the model, referring to the component
         it models the temperature for, e.g. "dea", "dpa", "psmc".
-    run_start : string
-        The run start time in YYYY:DOY:HH:MM:SS.SSS format.
     outdir : string
         The path to the output directory.
+    run_start : string, optional
+        The run start time in YYYY:DOY:HH:MM:SS.SSS format. If not
+        specified, one will be created 3 days prior to the model run.
     model_spec : string, optional
         The path to the model specification JSON file. If not provided,
         the default one will be used.
@@ -52,10 +56,16 @@ class TestArgs(object):
         The mode of database access for the commanded states database.
         "sybase" or "sqlite". Default: "sybase"
     """
-    def __init__(self, name, run_start, outdir, model_spec=None,
-                 load_week=None, days=21.0, T_init=None, 
+    def __init__(self, name, outdir, run_start=None, model_spec=None,
+                 load_week=None, days=21.0, T_init=None,
                  cmd_states_db='sybase'):
+        from datetime import datetime
         self.load_week = load_week
+        if run_start is None:
+            year = 2000 + int(load_week[5:7])
+            month = months.index(load_week[:3])+1
+            day = int(load_week[3:5])
+            run_start = datetime.datetime(year, month, day).strftime("%Y:%j:%H:%M:%S")
         self.run_start = run_start
         self.outdir = outdir
         # load_week sets the bsdir
