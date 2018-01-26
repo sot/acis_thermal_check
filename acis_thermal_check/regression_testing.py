@@ -65,7 +65,7 @@ class TestArgs(object):
             year = 2000 + int(load_week[5:7])
             month = months.index(load_week[:3])+1
             day = int(load_week[3:5])
-            run_start = datetime.datetime(year, month, day).strftime("%Y:%j:%H:%M:%S")
+            run_start = datetime(year, month, day).strftime("%Y:%j:%H:%M:%S")
         self.run_start = run_start
         self.outdir = outdir
         # load_week sets the bsdir
