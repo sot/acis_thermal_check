@@ -10,6 +10,16 @@ from scipy import misc
 # "gold standard" answers live.
 test_data_dir = "/data/acis/thermal_model_tests"
 
+# Loads for regression testing
+test_loads = [
+# normal loads
+         "MAR0617A", "MAR2017E", "JUL3117B", "SEP0417A",
+# TOOs
+         "MAR1517B", "JUL2717A", "AUG2517C", "AUG3017A",
+# STOPs
+         "MAR0817B", "MAR1117A", "APR0217B", "SEP0917C"
+]
+
 class TestOpts(object):
     """
     A mock-up of a command-line parser object to be used with
