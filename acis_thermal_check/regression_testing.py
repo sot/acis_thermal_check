@@ -5,6 +5,7 @@ from numpy.testing import assert_array_equal, \
 import shutil
 import numpy as np
 from scipy import misc
+import tempfile
 
 # This directory is currently where the thermal model
 # "gold standard" answers live.
@@ -70,7 +71,19 @@ class TestOpts(object):
         self.model_spec = model_spec
         self.version = None
 
-def run_model(name, msid_check, model_spec, run_start, load_week, cmd_states_db):
+def load_test_template(name, msid_check, model_spec, load_week,
+                       generate_answers):
+    tmpdir = tempfile.mkdtemp()
+    curdir = os.getcwd()
+    os.chdir(tmpdir)
+    msid, out_dir = run_model(name, msid_check, model_spec, load_week)
+    run_answer_test(name, load_week, out_dir, generate_answers)
+    run_image_test(msid, name, load_week, out_dir, generate_answers)
+    os.chdir(curdir)
+    shutil.rmtree(tmpdir)
+
+def run_model(name, msid_check, model_spec, load_week, run_start=None,
+              cmd_states_db='sybase'):
     """
     Function to run a thermal model for a test.
 
@@ -85,13 +98,13 @@ def run_model(name, msid_check, model_spec, run_start, load_week, cmd_states_db)
     model_spec : string, optional
         The path to the model specification JSON file. If not provided,
         the default one will be used.
-    run_start : string
-        The run start time in YYYY:DOY:HH:MM:SS.SSS format.
-    load_week : string, optional
+    load_week : string
         The load week to be tested, in a format like "MAY2016". If not
         provided, it is assumed that a full set of initial states will
         be supplied.
-    cmd_states_db : string
+    run_start : string, optional
+        The run start time in YYYY:DOY:HH:MM:SS.SSS format. Default: None
+    cmd_states_db : string, optional
         The mode of database access for the commanded states database.
         "sybase" or "sqlite". Default: "sybase"
     """
@@ -99,7 +112,7 @@ def run_model(name, msid_check, model_spec, run_start, load_week, cmd_states_db)
     msid_opts = TestOpts(name, run_start, out_dir, model_spec=model_spec,
                          load_week=load_week, cmd_states_db=cmd_states_db)
     msid_check.driver(msid_opts)
-    return out_dir
+    return msid_check.msid, out_dir
 
 # Large, multi-layer dictionary which encodes the datatypes for the
 # different quantities that are being checked against.
