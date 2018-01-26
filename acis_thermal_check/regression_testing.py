@@ -73,18 +73,18 @@ class TestArgs(object):
         self.version = None
 
 def load_test_template(name, msid, model_spec, load_week,
-                       generate_answers):
+                       atc_args, generate_answers):
     tmpdir = tempfile.mkdtemp()
     curdir = os.getcwd()
     os.chdir(tmpdir)
-    msid, out_dir = run_model(name, msid, model_spec, load_week)
+    out_dir = run_model(name, msid, model_spec, load_week, atc_args)
     run_answer_test(name, load_week, out_dir, generate_answers)
     run_image_test(msid, name, load_week, out_dir, generate_answers)
     os.chdir(curdir)
     shutil.rmtree(tmpdir)
 
-def run_model(name, msid, model_spec, load_week, run_start=None,
-              cmd_states_db='sybase'):
+def run_model(name, msid, model_spec, load_week, atc_args,
+              run_start=None, cmd_states_db='sybase'):
     """
     Function to run a thermal model for a test.
 
@@ -103,6 +103,8 @@ def run_model(name, msid, model_spec, load_week, run_start=None,
         The load week to be tested, in a format like "MAY2016". If not
         provided, it is assumed that a full set of initial states will
         be supplied.
+    atc_args : list
+        A list of objects to be passed as arguments to ACISThermalCheck.
     run_start : string, optional
         The run start time in YYYY:DOY:HH:MM:SS.SSS format. Default: None
     cmd_states_db : string, optional
@@ -112,12 +114,11 @@ def run_model(name, msid, model_spec, load_week, run_start=None,
     out_dir = name+"_test"
     args = TestArgs(name, run_start, out_dir, model_spec=model_spec,
                     load_week=load_week, cmd_states_db=cmd_states_db)
-    msid_check = ACISThermalCheck(msid, name, MSID, YELLOW,
-                                   MARGIN, VALIDATION_LIMITS,
-                                   HIST_LIMIT, calc_model)
+    msid_check = ACISThermalCheck(msid, name, atc_args[0], atc_args[1],
+                                  atc_args[2], atc_args[3], args)
 
-    msid_check.driver(args, state_builder)
-    return msid_check.msid, out_dir
+    msid_check.run()
+    return out_dir
 
 # Large, multi-layer dictionary which encodes the datatypes for the
 # different quantities that are being checked against.
