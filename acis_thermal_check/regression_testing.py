@@ -87,10 +87,26 @@ class TestArgs(object):
         self.model_spec = model_spec
         self.version = None
 
-def load_test_template(msid, name, model_spec, load_week,
+def run_test_arrays(msid, name, model_path, atc_args, generate_answers,
+                    exclude_images=None):
+    for load_week in normal_loads:
+        load_test_template(msid, name, model_path, load_week, atc_args,
+                           generate_answers, interrupt=False,
+                           exclude_images=exclude_images)
+    for load_week in too_loads:
+        load_test_template(msid, name, model_path, load_week, atc_args,
+                           generate_answers, interrupt=True,
+                           exclude_images=exclude_images)
+    for load_week in stop_loads:
+        load_test_template(msid, name, model_path, load_week, atc_args,
+                           generate_answers, interrupt=True, 
+                           exclude_images=exclude_images)
+
+def load_test_template(msid, name, model_path, load_week,
                        atc_args, generate_answers, run_start=None,
                        state_builder='sql', interrupt=False,
                        cmd_states_db="sybase", exclude_images=None):
+    model_spec = os.path.join(model_path, "%s_model_spec.json" % name)
     if generate_answers is not None:
         generate_answers = os.path.join(os.path.abspath(generate_answers), 
                                         name, load_week)
