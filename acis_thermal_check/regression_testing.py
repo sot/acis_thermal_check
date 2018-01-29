@@ -202,10 +202,10 @@ def compare_results(name, load_week, out_dir):
     old_tlm = old_results['tlm']
     tlm_keys = set(list(new_tlm.dtype.names)+list(old_tlm.dtype.names))
     for k in tlm_keys:
-        if k not in new_pred:
+        if k not in new_tlm:
             print("WARNING in tlm: '%s' in old answer but not new. Answers should be updated." % k)
             continue
-        if k not in old_pred:
+        if k not in old_tlm:
             print("WARNING in tlm: '%s' in new answer but not old. Answers should be updated." % k)
             continue
         assert_array_equal(new_tlm[k], old_tlm[k])
