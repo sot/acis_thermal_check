@@ -308,7 +308,13 @@ def build_image_list(msid):
     A simple function to build the list of images that will
     be compared for a particular ``msid``.
     """
-    images = ["%s.png" % msid, "pow_sim.png"]
+    images = ["pow_sim.png", "roll.png"]
+    if msid == "fptemp":
+        images += ["fptempM120toM112.png",
+                   "fptempM120toM119.png",
+                   "fptempM120toM90.png"]
+    else:
+        images.append("%s.png" % msid)
     for prefix in (msid, "pitch", "roll", "tscpos"):
         images += ["%s_valid.png" % prefix,
                    "%s_valid_hist_lin.png" % prefix,
