@@ -16,14 +16,9 @@ months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
 test_data_dir = "/data/acis/thermal_model_tests"
 
 # Loads for regression testing
-test_loads = [
-# normal loads
-         "MAR0617A", "MAR2017E", "JUL3117B", "SEP0417A",
-# TOOs
-         "MAR1517B", "JUL2717A", "AUG2517C", "AUG3017A",
-# STOPs
-         "MAR0817B", "MAR1117A", "APR0217B", "SEP0917C"
-]
+normal_loads = ["MAR0617A", "MAR2017E", "JUL3117B", "SEP0417A"]
+too_loads = ["MAR1517B", "JUL2717A", "AUG2517C", "AUG3017A"]
+stop_loads = ["MAR0817B", "MAR1117A", "APR0217B", "SEP0917C"]
 
 class TestArgs(object):
     """
@@ -52,13 +47,20 @@ class TestArgs(object):
     T_init : float, optional
         The starting temperature for the run. If not set, it will be
         determined from telemetry.
-    cmd_states_db : string
+    interrupt : boolean, optional
+        Whether or not this is an interrupt load. Default: False
+    state_builder string, optional
+        The mode used to create the list of commanded states. "sql" or
+        "acis", default "sql".
+    cmd_states_db : string, optional
         The mode of database access for the commanded states database.
         "sybase" or "sqlite". Default: "sybase"
+    verbose : integer, optional
+        The verbosity of the output. Default: 0
     """
     def __init__(self, name, outdir, run_start=None, model_spec=None,
-                 load_week=None, days=21.0, T_init=None,
-                 cmd_states_db='sybase'):
+                 load_week=None, days=21.0, T_init=None, interrupt=False,
+                 state_builder='sql', cmd_states_db='sybase', verbose=0):
         from datetime import datetime
         self.load_week = load_week
         if run_start is None:
@@ -70,65 +72,42 @@ class TestArgs(object):
         self.outdir = outdir
         # load_week sets the bsdir
         if load_week is None:
-            self.bsdir = None
+            self.backstop_file = None
         else:
-            load_year = "20%s" % load_week[-2:]
-            self.bsdir = "/data/acis/LoadReviews/%s/%s/ofls" % (load_year, load_week)
+            load_year = "20%s" % load_week[-3:-1]
+            load_letter = load_week[-1].lower()
+            self.backstop_file = "/data/acis/LoadReviews/%s/%s/ofls%s" % (load_year, load_week[:-1], load_letter)
         self.days = days
+        self.interrupt = interrupt
+        self.state_builder = state_builder
         self.cmd_states_db = cmd_states_db
-        setattr(self, "T_%s" % name, T_init)
+        self.T_init = T_init
         self.traceback = True
-        self.verbose = 1
+        self.verbose = verbose
         self.model_spec = model_spec
         self.version = None
 
-def load_test_template(name, msid, model_spec, load_week,
-                       atc_args, generate_answers):
+def load_test_template(msid, name, model_spec, load_week,
+                       atc_args, generate_answers, run_start=None,
+                       state_builder='sql', interrupt=False,
+                       cmd_states_db="sybase", exclude_images=None):
+    if generate_answers is not None:
+        generate_answers = os.path.abspath(generate_answers)
     tmpdir = tempfile.mkdtemp()
     curdir = os.getcwd()
     os.chdir(tmpdir)
-    out_dir = run_model(name, msid, model_spec, load_week, atc_args)
+    out_dir = name+"_test"
+    args = TestArgs(name, out_dir, run_start=run_start, model_spec=model_spec,
+                    load_week=load_week, interrupt=interrupt, 
+                    cmd_states_db=cmd_states_db, state_builder=state_builder)
+    msid_check = ACISThermalCheck(msid, name, atc_args[0], atc_args[1],
+                                  atc_args[2], args)
+    msid_check.run()
     run_answer_test(name, load_week, out_dir, generate_answers)
-    run_image_test(msid, name, load_week, out_dir, generate_answers)
+    run_image_test(msid, name, load_week, out_dir, generate_answers, 
+                   exclude_images)
     os.chdir(curdir)
     shutil.rmtree(tmpdir)
-
-def run_model(name, msid, model_spec, load_week, atc_args,
-              run_start=None, cmd_states_db='sybase'):
-    """
-    Function to run a thermal model for a test.
-
-    Parameters
-    ----------
-    name : string
-        The "short" name of the model, referring to the component
-        it models the temperature for, e.g. "dea", "dpa", "psmc".
-    msid_check : :class:`~acis_thermal_check.main.ACISThermalCheck` instance
-        The ACISThermalCheck instance supplied by the specific thermal
-        model to be used in the test run.
-    model_spec : string, optional
-        The path to the model specification JSON file. If not provided,
-        the default one will be used.
-    load_week : string
-        The load week to be tested, in a format like "MAY2016". If not
-        provided, it is assumed that a full set of initial states will
-        be supplied.
-    atc_args : list
-        A list of objects to be passed as arguments to ACISThermalCheck.
-    run_start : string, optional
-        The run start time in YYYY:DOY:HH:MM:SS.SSS format. Default: None
-    cmd_states_db : string, optional
-        The mode of database access for the commanded states database.
-        "sybase" or "sqlite". Default: "sybase"
-    """
-    out_dir = name+"_test"
-    args = TestArgs(name, run_start, out_dir, model_spec=model_spec,
-                    load_week=load_week, cmd_states_db=cmd_states_db)
-    msid_check = ACISThermalCheck(msid, name, atc_args[0], atc_args[1],
-                                  atc_args[2], atc_args[3], args)
-
-    msid_check.run()
-    return out_dir
 
 # Large, multi-layer dictionary which encodes the datatypes for the
 # different quantities that are being checked against.
@@ -212,10 +191,10 @@ def compare_results(name, load_week, out_dir):
     pred_keys = set(list(new_pred.keys())+list(old_pred.keys()))
     for k in pred_keys:
         if k not in new_pred:
-            print("WARNING : '%s' in old answer but not new. Answers should be updated." % k)
+            print("WARNING in pred: '%s' in old answer but not new. Answers should be updated." % k)
             continue
         if k not in old_pred:
-            print("WARNING : '%s' in new answer but not old. Answers should be updated." % k)
+            print("WARNING in pred: '%s' in new answer but not old. Answers should be updated." % k)
             continue
         assert_array_equal(new_pred[k], old_pred[k])
     # Compare telemetry
@@ -224,10 +203,10 @@ def compare_results(name, load_week, out_dir):
     tlm_keys = set(list(new_tlm.dtype.names)+list(old_tlm.dtype.names))
     for k in tlm_keys:
         if k not in new_pred:
-            print("WARNING : '%s' in old answer but not new. Answers should be updated." % k)
+            print("WARNING in tlm: '%s' in old answer but not new. Answers should be updated." % k)
             continue
         if k not in old_pred:
-            print("WARNING : '%s' in new answer but not old. Answers should be updated." % k)
+            print("WARNING in tlm: '%s' in new answer but not old. Answers should be updated." % k)
             continue
         assert_array_equal(new_tlm[k], old_tlm[k])
     # Compare
@@ -251,11 +230,13 @@ def copy_new_results(name, out_dir, answer_dir):
     answer_dir : string
         The path to the directory to which to copy the files.
     """
+    if not os.path.exists(answer_dir):
+        os.mkdir(answer_dir)
+    adir = os.path.join(answer_dir, name)
+    if not os.path.exists(adir):
+        os.mkdir(adir)
     for fn in ('validation_data.pkl', 'states.dat', 'temperatures.dat'):
         fromfile = os.path.join(out_dir, fn)
-        adir = os.path.join(answer_dir, name)
-        if not os.path.exists(adir):
-            os.mkdir(adir)
         tofile = os.path.join(adir, fn)
         shutil.copyfile(fromfile, tofile)
 
@@ -291,7 +272,7 @@ def run_answer_test(name, load_week, out_dir, answer_dir):
 def build_image_list(msid):
     """
     A simple function to build the list of images that will
-    be compared for a particular ``msid``.
+    be compared for a particular ``msid``. 
     """
     images = ["%s.png" % msid, "pow_sim.png"]
     for prefix in (msid, "pitch", "roll", "tscpos"):
@@ -300,7 +281,7 @@ def build_image_list(msid):
                    "%s_valid_hist_log.png" % prefix]
     return images
 
-def compare_images(msid, name, load_week, out_dir):
+def compare_images(msid, name, load_week, out_dir, exclude_images):
     """
     This function compares two images using SciPy's
     ``imread`` function to convert images to NumPy
@@ -319,9 +300,13 @@ def compare_images(msid, name, load_week, out_dir):
         be supplied.
     out_dir : string
         The path to the output directory.
+    exclude_images : list of strings                                                                                                                                                                        
+        A list of images to be excluded from the comparison tests. Default: None                                                                                                                                    
     """
     images = build_image_list(msid)
     for image in images:
+        if image in exclude_images:
+            continue
         new_path = os.path.join(out_dir, image)
         old_path = os.path.join(test_data_dir, name, load_week, image)
         if not os.path.exists(old_path):
@@ -362,7 +347,8 @@ def copy_new_images(msid, name, out_dir, answer_dir):
         tofile = os.path.join(adir, image)
         shutil.copyfile(fromfile, tofile)
 
-def run_image_test(msid, name, load_week, out_dir, answer_dir):
+def run_image_test(msid, name, load_week, out_dir, answer_dir, 
+                   exclude_images):
     """
     This function runs the image answer test in one of two modes:
     either comparing the image answers from this test to the "gold
@@ -386,9 +372,13 @@ def run_image_test(msid, name, load_week, out_dir, answer_dir):
         The path to the directory to which to copy the files. Is None
         if this is a test run, is an actual directory if we are simply
         generating answers. 
+    exclude_images : list of strings
+        A list of images to be excluded from the comparison tests. Default: None
     """
+    if exclude_images is None:
+        exclude_images = []
     out_dir = os.path.abspath(out_dir)
     if not answer_dir:
-        compare_images(msid, name, load_week, out_dir)
+        compare_images(msid, name, load_week, out_dir, exclude_images)
     else:
         copy_new_images(msid, name, out_dir, answer_dir)

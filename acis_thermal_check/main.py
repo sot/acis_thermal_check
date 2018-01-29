@@ -51,10 +51,6 @@ class ACISThermalCheck(object):
     name : string
         The name of the ACIS component whose temperature is
         being modeled.
-    MSIDs : dictionary of string values
-        A dictionary mapping between names (e.g., "dea") and
-        MSIDs (e.g., "1DEAMZT") for components that will be
-        modeled or used in the model.
     validation_limits : dictionary of lists of tuples
         A dictionary mapping between names (e.g., "dea") and
         the validation limits for each component in the form
@@ -91,12 +87,10 @@ class ACISThermalCheck(object):
         {'sim_z': 'tscpos', 'dp_pitch': 'pitch'}. Used to map
         names understood by Xija to MSIDs.
     """
-    def __init__(self, msid, name, MSIDs, validation_limits,
-                 hist_limit, calc_model, args, other_telem=None, 
-                 other_map=None):
+    def __init__(self, msid, name, validation_limits, hist_limit, 
+                 calc_model, args, other_telem=None, other_map=None):
         self.msid = msid
         self.name = name
-        self.MSIDs = MSIDs
         if self.msid == "fptemp":
             self.yellow = None
             self.margin = None
@@ -340,34 +334,34 @@ class ACISThermalCheck(object):
         """
         mylog.info('Checking for limit violations')
 
-        viols = dict((x, []) for x in self.MSIDs)
-        for msid in self.MSIDs:
-            temp = temps[msid]
-            plan_limit = self.yellow[msid] - self.margin[msid]
-            # The NumPy black magic of the next two lines is to figure 
-            # out which time periods have planning limit violations and 
-            # to find the bounding indexes of these times. This will also
-            # find violations which happen for one discrete time value also.
-            bad = np.concatenate(([False], temp >= plan_limit, [False]))
-            changes = np.flatnonzero(bad[1:] != bad[:-1]).reshape(-1, 2)
-            # Now go through the periods where the temperature violates
-            # the planning limit and flag the duration and maximum of
-            # the violation
-            for change in changes:
-                # Only report violations which occur after the load being
-                # reviewed starts.
-                in_load = times[change[0]] > load_start or \
-                          (times[change[0]] < load_start < times[change[1]])
-                if in_load:
-                    viol = {'datestart': DateTime(times[change[0]]).date,
-                            'datestop': DateTime(times[change[1] - 1]).date,
-                            'maxtemp': temp[change[0]:change[1]].max()}
-                    mylog.info('WARNING: %s exceeds planning limit of %.2f '
-                               'degC from %s to %s' % (self.MSIDs[msid],
-                                                       plan_limit,
-                                                       viol['datestart'],
-                                                       viol['datestop']))
-                    viols[msid].append(viol)
+        viols = {self.name: []}
+
+        temp = temps[self.name]
+        plan_limit = self.yellow - self.margin
+        # The NumPy black magic of the next two lines is to figure 
+        # out which time periods have planning limit violations and 
+        # to find the bounding indexes of these times. This will also
+        # find violations which happen for one discrete time value also.
+        bad = np.concatenate(([False], temp >= plan_limit, [False]))
+        changes = np.flatnonzero(bad[1:] != bad[:-1]).reshape(-1, 2)
+        # Now go through the periods where the temperature violates
+        # the planning limit and flag the duration and maximum of
+        # the violation
+        for change in changes:
+            # Only report violations which occur after the load being
+            # reviewed starts.
+            in_load = times[change[0]] > load_start or \
+                (times[change[0]] < load_start < times[change[1]])
+            if in_load:
+                viol = {'datestart': DateTime(times[change[0]]).date,
+                        'datestop': DateTime(times[change[1] - 1]).date,
+                        'maxtemp': temp[change[0]:change[1]].max()}
+                mylog.info('WARNING: %s exceeds planning limit of %.2f '
+                           'degC from %s to %s' % (self.msid,
+                                                   plan_limit,
+                                                   viol['datestart'],
+                                                   viol['datestop']))
+                viols[self.name].append(viol)
 
         viols["default"] = viols[self.name]
 
@@ -493,16 +487,16 @@ class ACISThermalCheck(object):
         plots[self.name] = plot_two(fig_id=1, x=times, y=temps[self.name],
                                     x2=pointpair(states['tstart'], states['tstop']),
                                     y2=pointpair(states['pitch']),
-                                    title=self.MSIDs[self.name], xmin=plot_start,
+                                    title=self.msid, xmin=plot_start,
                                     xlabel='Date', ylabel='Temperature (C)',
                                     ylabel2='Pitch (deg)', ylim2=(40, 180),
                                     figsize=(8.0, 4.0), width=w1, load_start=load_start)
         # Add horizontal lines for the planning and caution limits
-        plots[self.name]['ax'].axhline(self.yellow[self.name], linestyle='-', color='y',
+        plots[self.name]['ax'].axhline(self.yellow, linestyle='-', color='y',
                                        linewidth=2.0)
-        plots[self.name]['ax'].axhline(self.yellow[self.name]-self.margin[self.name], 
-                                       linestyle='--', color='y', linewidth=2.0)
-        filename = self.MSIDs[self.name].lower() + '.png'
+        plots[self.name]['ax'].axhline(self.yellow-self.margin, linestyle='--', 
+                                       color='y', linewidth=2.0)
+        filename = self.msid.lower() + '.png'
         outfile = os.path.join(outdir, filename)
         mylog.info('Writing plot file %s' % outfile)
         plots[self.name]['fig'].savefig(outfile)
@@ -641,9 +635,8 @@ class ACISThermalCheck(object):
                     ax.axhline(acis_i, linestyle='-.', color='purple')
                     ax.axhline(acis_s, linestyle='-.', color='blue')
                 else:
-                    ax.axhline(self.yellow[self.name], linestyle='-', color='y')
-                    ax.axhline(self.yellow[self.name] - self.margin[self.name],
-                               linestyle='--', color='y')
+                    ax.axhline(self.yellow, linestyle='-', color='y')
+                    ax.axhline(self.yellow - self.margin, linestyle='--', color='y')
             filename = msid + '_valid.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
@@ -816,7 +809,7 @@ class ACISThermalCheck(object):
                     name=self.name.upper(),
                     hist_limit=self.hist_limit)
         if self.msid != "fptemp":
-            proc["msid_limit"] = self.yellow[self.name] - self.margin[self.name]
+            proc["msid_limit"] = self.yellow - self.margin
         mylog.info('##############################'
                    '#######################################')
         mylog.info('# %s_check run at %s by %s'
