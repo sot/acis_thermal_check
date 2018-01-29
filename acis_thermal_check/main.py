@@ -487,7 +487,7 @@ class ACISThermalCheck(object):
         plots[self.name] = plot_two(fig_id=1, x=times, y=temps[self.name],
                                     x2=pointpair(states['tstart'], states['tstop']),
                                     y2=pointpair(states['pitch']),
-                                    title=self.msid, xmin=plot_start,
+                                    title=self.msid.upper(), xmin=plot_start,
                                     xlabel='Date', ylabel='Temperature (C)',
                                     ylabel2='Pitch (deg)', ylim2=(40, 180),
                                     figsize=(8.0, 4.0), width=w1, load_start=load_start)

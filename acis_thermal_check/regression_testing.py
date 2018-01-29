@@ -92,7 +92,10 @@ def load_test_template(msid, name, model_spec, load_week,
                        state_builder='sql', interrupt=False,
                        cmd_states_db="sybase", exclude_images=None):
     if generate_answers is not None:
-        generate_answers = os.path.abspath(generate_answers)
+        generate_answers = os.path.join(os.path.abspath(generate_answers), 
+                                        name, load_week)
+        if not os.path.exists(generate_answers):
+            os.makedirs(generate_answers)
     tmpdir = tempfile.mkdtemp()
     curdir = os.getcwd()
     os.chdir(tmpdir)
@@ -230,14 +233,9 @@ def copy_new_results(name, out_dir, answer_dir):
     answer_dir : string
         The path to the directory to which to copy the files.
     """
-    if not os.path.exists(answer_dir):
-        os.mkdir(answer_dir)
-    adir = os.path.join(answer_dir, name)
-    if not os.path.exists(adir):
-        os.mkdir(adir)
     for fn in ('validation_data.pkl', 'states.dat', 'temperatures.dat'):
         fromfile = os.path.join(out_dir, fn)
-        tofile = os.path.join(adir, fn)
+        tofile = os.path.join(answer_dir, fn)
         shutil.copyfile(fromfile, tofile)
 
 def run_answer_test(name, load_week, out_dir, answer_dir):
@@ -307,6 +305,7 @@ def compare_images(msid, name, load_week, out_dir, exclude_images):
     for image in images:
         if image in exclude_images:
             continue
+        print(image)
         new_path = os.path.join(out_dir, image)
         old_path = os.path.join(test_data_dir, name, load_week, image)
         if not os.path.exists(old_path):
@@ -341,10 +340,7 @@ def copy_new_images(msid, name, out_dir, answer_dir):
     images = build_image_list(msid)
     for image in images:
         fromfile = os.path.join(out_dir, image)
-        adir = os.path.join(answer_dir, name)
-        if not os.path.exists(adir):
-            os.mkdir(adir)
-        tofile = os.path.join(adir, image)
+        tofile = os.path.join(answer_dir, image)
         shutil.copyfile(fromfile, tofile)
 
 def run_image_test(msid, name, load_week, out_dir, answer_dir, 
