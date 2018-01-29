@@ -156,6 +156,12 @@ data_dtype = {'temperatures': {'names': ('time', 'date', 'temperature'),
                         }
              }
 
+def exception_catcher(test, old, new, data_type):
+    try:
+        test(old, new)
+    except:
+        raise AssertionError("%s are not the same!" % data_type)
+
 def compare_data_files(prefix, name, load_week, out_dir):
     """
     This function compares the "gold standard" data with the current
@@ -186,9 +192,11 @@ def compare_data_files(prefix, name, load_week, out_dir):
     # at machine precision, others will be exact.
     for k, dt in new_data.dtype.descr:
         if 'f' in dt:
-            assert_allclose(new_data[k], old_data[k])
+            exception_catcher(assert_allclose, new_data[k], old_data[k],
+                              "Prediction arrays for %s" % k)
         else:
-            assert_array_equal(new_data[k], old_data[k])
+            exception_catcher(assert_array_equal, new_data[k], old_data[k],
+                              "Prediction arrays for %s" % k)
 
 def compare_results(name, load_week, out_dir):
     """
@@ -225,7 +233,8 @@ def compare_results(name, load_week, out_dir):
         if k not in old_pred:
             print("WARNING in pred: '%s' in new answer but not old. Answers should be updated." % k)
             continue
-        assert_array_equal(new_pred[k], old_pred[k])
+        exception_catcher(assert_array_equal, new_pred[k], old_pred[k],
+                          "Validation model arrays for %s" % k)
     # Compare telemetry
     new_tlm = new_results['tlm']
     old_tlm = old_results['tlm']
@@ -237,12 +246,13 @@ def compare_results(name, load_week, out_dir):
         if k not in old_tlm.dtype.names:
             print("WARNING in tlm: '%s' in new answer but not old. Answers should be updated." % k)
             continue
-        assert_array_equal(new_tlm[k], old_tlm[k])
+        exception_catcher(assert_array_equal, new_tlm[k], old_tlm[k], 
+                          "Validation telemetry arrays for %s" % k)
     # Compare
     for prefix in ("temperatures", "states"):
         compare_data_files(prefix, name, load_week, out_dir)
 
-def copy_new_results(name, out_dir, answer_dir):
+def copy_new_results(out_dir, answer_dir):
     """
     This function copies the pickle files and the .dat files
     generated in this test run to a directory specified by the
@@ -291,16 +301,16 @@ def run_answer_test(name, load_week, out_dir, answer_dir):
     if not answer_dir:
         compare_results(name, load_week, out_dir)
     else:
-        copy_new_results(name, out_dir, answer_dir)
+        copy_new_results(out_dir, answer_dir)
 
 def build_image_list(msid):
     """
     A simple function to build the list of images that will
-    be compared for a particular ``msid``. 
+    be compared for a particular ``msid``.
     """
     images = ["%s.png" % msid, "pow_sim.png"]
     for prefix in (msid, "pitch", "roll", "tscpos"):
-        images += ["%s_valid.png" % prefix, 
+        images += ["%s_valid.png" % prefix,
                    "%s_valid_hist_lin.png" % prefix,
                    "%s_valid_hist_log.png" % prefix]
     return images
@@ -324,14 +334,13 @@ def compare_images(msid, name, load_week, out_dir, exclude_images):
         be supplied.
     out_dir : string
         The path to the output directory.
-    exclude_images : list of strings                                                                                                                                                                        
-        A list of images to be excluded from the comparison tests. Default: None                                                                                                                                    
+    exclude_images : list of strings
+        A list of images to be excluded from the comparison tests. Default: None
     """
     images = build_image_list(msid)
     for image in images:
         if image in exclude_images:
             continue
-        print(image)
         new_path = os.path.join(out_dir, image)
         old_path = os.path.join(test_data_dir, name, load_week, image)
         if not os.path.exists(old_path):
@@ -342,9 +351,10 @@ def compare_images(msid, name, load_week, out_dir, exclude_images):
             continue
         new_image = misc.imread(new_path)
         old_image = misc.imread(old_path)
-        assert_array_equal(new_image, old_image)
+        exception_catcher(assert_array_equal, new_image, old_image,
+                          "Images for %s" % image)
 
-def copy_new_images(msid, name, out_dir, answer_dir):
+def copy_new_images(msid, out_dir, answer_dir):
     """
     This function copies the image files generated in this test
     run to a directory specified by the user, typically for
@@ -403,4 +413,4 @@ def run_image_test(msid, name, load_week, out_dir, answer_dir,
     if not answer_dir:
         compare_images(msid, name, load_week, out_dir, exclude_images)
     else:
-        copy_new_images(msid, name, out_dir, answer_dir)
+        copy_new_images(msid, out_dir, answer_dir)
