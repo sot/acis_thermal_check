@@ -132,17 +132,16 @@ class RegressionTester(object):
             atc_kwargs = {}
         self.atc_kwargs = atc_kwargs
 
-    def run_test_arrays(self, atc_args, generate_answers,
-                        exclude_images=None):
+    def run_test_arrays(self, generate_answers, exclude_images=None):
         for load_week in normal_loads:
-            self.load_test_template(load_week, atc_args, generate_answers,
-                                    interrupt=False, exclude_images=exclude_images)
+            self.load_test_template(load_week, generate_answers, interrupt=False, 
+                                    exclude_images=exclude_images)
         for load_week in too_loads:
-            self.load_test_template(load_week, atc_args, generate_answers,
-                                    interrupt=True, exclude_images=exclude_images)
+            self.load_test_template(load_week, generate_answers, interrupt=True, 
+                                    exclude_images=exclude_images)
         for load_week in stop_loads:
-            self.load_test_template(load_week, atc_args, generate_answers,
-                                    interrupt=True, exclude_images=exclude_images)
+            self.load_test_template(load_week, generate_answers, interrupt=True, 
+                                    exclude_images=exclude_images)
 
     def load_test_template(self, load_week, generate_answers, run_start=None,
                            state_builder='sql', interrupt=False, cmd_states_db="sybase",
