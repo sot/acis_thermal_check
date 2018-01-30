@@ -160,8 +160,6 @@ def exception_catcher(test, old, new, data_type):
     try:
         test(old, new)
     except AssertionError:
-        import traceback
-        traceback.print_exc()
         raise AssertionError("%s are not the same!" % data_type)
 
 def compare_data_files(prefix, name, load_week, out_dir):
