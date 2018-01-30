@@ -119,37 +119,39 @@ def exception_catcher(test, old, new, data_type):
         raise AssertionError("%s are not the same!" % data_type)
 
 class RegressionTester(object):
-    def __init__(self, msid, name, model_path):
+    def __init__(self, msid, name, model_path, valid_limits,
+                 hist_limit, calc_model, atc_kwargs=None):
         self.msid = msid
         self.name = name
         self.model_path = model_path
         self.model_spec = os.path.join(self.model_path, "%s_model_spec.json" % self.name)
+        self.valid_limits = valid_limits
+        self.hist_limit = hist_limit
+        self.calc_model = calc_model
+        if atc_kwargs is None:
+            atc_kwargs = {}
+        self.atc_kwargs = atc_kwargs
 
     def run_test_arrays(self, atc_args, generate_answers,
-                        exclude_images=None, atc_kwargs=None):
+                        exclude_images=None):
         for load_week in normal_loads:
             self.load_test_template(load_week, atc_args, generate_answers,
-                                    interrupt=False, exclude_images=exclude_images,
-                                    atc_kwargs=atc_kwargs)
+                                    interrupt=False, exclude_images=exclude_images)
         for load_week in too_loads:
             self.load_test_template(load_week, atc_args, generate_answers,
-                                    interrupt=True, exclude_images=exclude_images,
-                                    atc_kwargs=atc_kwargs)
+                                    interrupt=True, exclude_images=exclude_images)
         for load_week in stop_loads:
             self.load_test_template(load_week, atc_args, generate_answers,
-                                    interrupt=True, exclude_images=exclude_images,
-                                    atc_kwargs=atc_kwargs)
+                                    interrupt=True, exclude_images=exclude_images)
 
-    def load_test_template(self, load_week, atc_args, generate_answers, run_start=None,
+    def load_test_template(self, load_week, generate_answers, run_start=None,
                            state_builder='sql', interrupt=False, cmd_states_db="sybase",
-                           exclude_images=None, atc_kwargs=None):
+                           exclude_images=None):
         if generate_answers is not None:
             generate_answers = os.path.join(os.path.abspath(generate_answers),
                                             self.name, load_week)
             if not os.path.exists(generate_answers):
                 os.makedirs(generate_answers)
-        if atc_kwargs is None:
-            atc_kwargs = {}
         tmpdir = tempfile.mkdtemp()
         curdir = os.getcwd()
         os.chdir(tmpdir)
@@ -157,8 +159,8 @@ class RegressionTester(object):
         args = TestArgs(out_dir, run_start=run_start, model_spec=self.model_spec,
                         load_week=load_week, interrupt=interrupt,
                         cmd_states_db=cmd_states_db, state_builder=state_builder)
-        msid_check = ACISThermalCheck(self.msid, self.name, atc_args[0], atc_args[1],
-                                      atc_args[2], args, **atc_kwargs)
+        msid_check = ACISThermalCheck(self.msid, self.name, self.valid_limits,
+                                      self.hist_limit, self.calc_model, args, **self.atc_kwargs)
         msid_check.run()
         self.run_answer_test(load_week, out_dir, generate_answers)
         self.run_image_test(load_week, out_dir, generate_answers,
