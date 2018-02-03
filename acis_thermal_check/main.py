@@ -416,7 +416,7 @@ class ACISThermalCheck(object):
         out.close()
 
     def _make_state_plots(self, plots, num_figs, w1, plot_start,
-                          outdir, states, load_start):
+                          outdir, states, load_start, figsize=(8.5, 4.0)):
         # Make a plot of ACIS CCDs and SIM-Z position
         plots['pow_sim'] = plot_two(
             fig_id=num_figs+1,
@@ -431,7 +431,7 @@ class ACISThermalCheck(object):
             y2=pointpair(states['simpos']),
             ylabel2='SIM-Z (steps)',
             ylim2=(-105000, 105000),
-            figsize=(8.5, 4.0), width=w1, load_start=load_start)
+            figsize=figsize, width=w1, load_start=load_start)
         filename = 'pow_sim.png'
         outfile = os.path.join(outdir, filename)
         mylog.info('Writing plot file %s' % outfile)
@@ -448,7 +448,7 @@ class ACISThermalCheck(object):
             xmin=plot_start,
             ylabel='Roll Angle (deg)',
             ylim=(-20.0, 20.0),
-            figsize=(8.5, 4.0), width=w1, load_start=load_start)
+            figsize=figsize, width=w1, load_start=load_start)
         filename = 'roll.png'
         outfile = os.path.join(outdir, filename)
         mylog.info('Writing plot file %s' % outfile)
