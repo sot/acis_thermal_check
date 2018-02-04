@@ -37,14 +37,15 @@ class TestArgs(object):
 
     Parameters
     ----------
+    name : string
+        The "short name" of the temperature to be modeled.
     outdir : string
         The path to the output directory.
+    model_path : string
+        The path to the model code itself.
     run_start : string, optional
         The run start time in YYYY:DOY:HH:MM:SS.SSS format. If not
         specified, one will be created 3 days prior to the model run.
-    model_spec : string, optional
-        The path to the model specification JSON file. If not provided,
-        the default one will be used.
     load_week : string, optional
         The load week to be tested, in a format like "MAY2016". If not
         provided, it is assumed that a full set of initial states will
@@ -65,7 +66,7 @@ class TestArgs(object):
     verbose : integer, optional
         The verbosity of the output. Default: 0
     """
-    def __init__(self, outdir, run_start=None, model_spec=None,
+    def __init__(self, name, outdir, model_path, run_start=None,
                  load_week=None, days=21.0, T_init=None, interrupt=False,
                  state_builder='sql', cmd_states_db='sybase', verbose=0):
         from datetime import datetime
@@ -91,8 +92,10 @@ class TestArgs(object):
         self.T_init = T_init
         self.traceback = True
         self.verbose = verbose
-        self.model_spec = model_spec
+        self.model_spec = os.path.join(model_path, "%s_model_spec.json" % name)
         self.version = None
+        if name == "acisfp":
+            self.fps_nopref = os.path.join(model_path, "FPS_NoPref.txt")
 
 # Large, multi-layer dictionary which encodes the datatypes for the
 # different quantities that are being checked against.
@@ -120,17 +123,20 @@ def exception_catcher(test, old, new, data_type):
 
 class RegressionTester(object):
     def __init__(self, msid, name, model_path, valid_limits,
-                 hist_limit, calc_model, atc_kwargs=None):
+                 hist_limit, calc_model, atc_class=None,
+                 atc_kwargs=None):
         self.msid = msid
         self.name = name
         self.model_path = model_path
-        self.model_spec = os.path.join(self.model_path, "%s_model_spec.json" % self.name)
         self.valid_limits = valid_limits
         self.hist_limit = hist_limit
         self.calc_model = calc_model
         if atc_kwargs is None:
             atc_kwargs = {}
         self.atc_kwargs = atc_kwargs
+        if atc_class is None:
+            atc_class = ACISThermalCheck
+        self.atc_class = atc_class
 
     def run_test_arrays(self, generate_answers, exclude_images=None):
         for load_week in normal_loads:
@@ -155,11 +161,12 @@ class RegressionTester(object):
         curdir = os.getcwd()
         os.chdir(tmpdir)
         out_dir = self.name+"_test"
-        args = TestArgs(out_dir, run_start=run_start, model_spec=self.model_spec,
+        args = TestArgs(self.name, out_dir, self.model_path, run_start=run_start,
                         load_week=load_week, interrupt=interrupt,
                         cmd_states_db=cmd_states_db, state_builder=state_builder)
-        msid_check = ACISThermalCheck(self.msid, self.name, self.valid_limits,
-                                      self.hist_limit, self.calc_model, args, **self.atc_kwargs)
+        msid_check = self.atc_class(self.msid, self.name, self.valid_limits,
+                                    self.hist_limit, self.calc_model, args,
+                                    **self.atc_kwargs)
         msid_check.run()
         self.run_answer_test(load_week, out_dir, generate_answers)
         self.run_image_test(load_week, out_dir, generate_answers,
