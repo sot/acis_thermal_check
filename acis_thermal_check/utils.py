@@ -82,7 +82,8 @@ def plot_one(fig_id, x, y, linestyle='-',
              color='blue', xmin=None,
              xmax=None, ylim=None, 
              xlabel='', ylabel='', title='',
-             figsize=(7, 3.5)):
+             figsize=(7, 3.5), load_start=None,
+             width=None):
     """
     Plot one quantities with a date x-axis and a left
     y-axis.
@@ -134,10 +135,21 @@ def plot_one(fig_id, x, y, linestyle='-',
     ax.set_title(title)
     ax.grid()
 
+    if load_start is not None:
+        # Add a vertical line to mark the start time of the load
+        ax.axvline(load_start, linestyle='-', color='g', linewidth=2.0)
+
     Ska.Matplotlib.set_time_ticks(ax)
     [label.set_rotation(30) for label in ax.xaxis.get_ticklabels()]
 
     fig.subplots_adjust(bottom=0.22, right=0.87)
+    # The next several lines ensure that the width of the axes
+    # of all the weekly prediction plots are the same
+    if width is not None:
+        w2, _ = fig.get_size_inches()
+        lm = fig.subplotpars.left * width / w2
+        rm = fig.subplotpars.right * width / w2
+        fig.subplots_adjust(left=lm, right=rm)
 
     return {'fig': fig, 'ax': ax}
 
@@ -146,7 +158,7 @@ def plot_two(fig_id, x, y, x2, y2,
              color='blue', color2='magenta',
              xmin=None, xmax=None, ylim=None, ylim2=None,
              xlabel='', ylabel='', ylabel2='', title='',
-             figsize=(7, 3.5)):
+             figsize=(7, 3.5), load_start=None, width=None):
     """
     Plot two quantities with a date x-axis, one on the left
     y-axis and the other on the right y-axis.
@@ -222,11 +234,23 @@ def plot_two(fig_id, x, y, x2, y2,
     ax2.set_ylabel(ylabel2, color=color2)
     ax2.xaxis.set_visible(False)
 
+    if load_start is not None:
+        # Add a vertical line to mark the start time of the load
+        ax.axvline(load_start, linestyle='-', color='g', linewidth=2.0)
+
     Ska.Matplotlib.set_time_ticks(ax)
     [label.set_rotation(30) for label in ax.xaxis.get_ticklabels()]
     [label.set_color(color2) for label in ax2.yaxis.get_ticklabels()]
 
     fig.subplots_adjust(bottom=0.22, right=0.87)
+    # The next several lines ensure that the width of the axes
+    # of all the weekly prediction plots are the same
+    if width is not None:
+        w2, _ = fig.get_size_inches()
+        lm = fig.subplotpars.left * width / w2
+        rm = fig.subplotpars.right * width / w2
+        fig.subplots_adjust(left=lm, right=rm)
+
 
     return {'fig': fig, 'ax': ax, 'ax2': ax2}
 
@@ -330,8 +354,9 @@ def make_state_builder(name, args):
 
 def get_acis_limits(msid):
     """
-    Get the current red and yellow hi limits for a given 
-    ACIS-related MSID. 
+    Get the current yellow hi limit and margin for a 
+    given ACIS-related MSID, or the various limits 
+    for the focal plane temperature.
 
     Parameters
     ----------
@@ -340,18 +365,50 @@ def get_acis_limits(msid):
     """
     import requests
 
+    if msid == "fptemp":
+        fp_sens = -118.7
+        acis_i = -114.0
+        acis_s = -112.0
+        return fp_sens, acis_i, acis_s
+
     yellow_hi = None
-    red_hi = None
 
-    url = "http://hea-www.cfa.harvard.edu/~acisweb/htdocs/acis/RT-ACIS60-V/limits.txt"
+    margin = {"1dpamzt": 2.0, 
+              "1deamzt": 2.0,
+              "1pdeaat": 4.5,
+              "tmp_fep1_mong": 2.0,
+              "tmp_fep1_actel": 2.0,
+              "tmp_bep_pcb": 2.0}
 
-    u = requests.get(url)
+    pmon_file = "PMON/pmon_limits.txt"
+    eng_file = "Thermal/MSID_Limits.txt"
+    file_root = "/proj/web-cxc-dmz/htdocs/acis/"
 
-    for line in u.text.split("\n"):
-        words = line.strip().split("\t")
+    if msid.startswith("tmp_"):
+        limits_file = pmon_file
+        cols = (5, 6)
+        msid = "ADC_"+msid.upper()
+    else:
+        limits_file = eng_file
+        cols = (3, 5)
+
+    if os.path.exists(file_root):
+        loc = "local"
+        f = open(os.path.join(file_root, limits_file), "r")
+        lines = f.readlines()
+        f.close()
+    else:
+        loc = "remote"
+        url = "http://cxc.cfa.harvard.edu/acis/"+limits_file
+        u = requests.get(url)
+        lines = u.text.split("\n")
+
+    mylog.info("Obtaining limits for %s from %s file." % (msid, loc))
+
+    for line in lines:
+        words = line.strip().split()
         if len(words) > 1 and words[0] == msid.upper():
-            yellow_hi = float(words[3])
-            red_hi = float(words[5])
+            yellow_hi = float(words[cols[0]])
             break
 
-    return yellow_hi, red_hi
+    return yellow_hi, margin[msid]
