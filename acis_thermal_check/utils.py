@@ -373,12 +373,14 @@ def get_acis_limits(msid):
 
     yellow_hi = None
 
-    margin = {"1dpamzt": 2.0, 
-              "1deamzt": 2.0,
-              "1pdeaat": 4.5,
-              "tmp_fep1_mong": 2.0,
-              "tmp_fep1_actel": 2.0,
-              "tmp_bep_pcb": 2.0}
+    margins = {"1dpamzt": 2.0, 
+               "1deamzt": 2.0,
+               "1pdeaat": 4.5,
+               "tmp_fep1_mong": 2.0,
+               "tmp_fep1_actel": 2.0,
+               "tmp_bep_pcb": 2.0}
+
+    margin = margins[msid]
 
     pmon_file = "PMON/pmon_limits.txt"
     eng_file = "Thermal/MSID_Limits.txt"
@@ -411,4 +413,4 @@ def get_acis_limits(msid):
             yellow_hi = float(words[cols[0]])
             break
 
-    return yellow_hi, margin[msid]
+    return yellow_hi, margin

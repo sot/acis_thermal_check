@@ -341,7 +341,7 @@ class RegressionTester(object):
         """
         images = ["pow_sim.png", "roll.png"]
         if self.msid == "fptemp":
-            images += ["fptempM120toM112.png",
+            images += ["fptempM120toM111.png",
                        "fptempM120toM119.png",
                        "fptempM120toM90.png"]
         else:
