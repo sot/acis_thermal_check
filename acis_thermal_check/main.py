@@ -92,8 +92,10 @@ class ACISThermalCheck(object):
         if self.msid == "fptemp":
             self.yellow = None
             self.margin = None
+            self.plan_limit = None
         else:
             self.yellow, self.margin = get_acis_limits(self.msid)
+            self.plan_limit = self.yellow-self.margin
         self.validation_limits = validation_limits
         self.hist_limit = hist_limit
         self.calc_model = calc_model
@@ -236,7 +238,8 @@ class ACISThermalCheck(object):
         # make_prediction_plots runs the validation of the model against previous telemetry
         plots = self.make_prediction_plots(outdir, states, model.times, temps, tstart)
         # make_prediction_viols determines the violations and prints them out
-        viols = self.make_prediction_viols(model.times, temps, tstart)
+        viols = self.make_prediction_viols(model.times, temps, tstart, self.plan_limit,
+                                           "planning")
         # write_states writes the commanded states to states.dat
         self.write_states(outdir, states)
         # write_temps writes the temperatures to temperatures.dat
@@ -322,7 +325,7 @@ class ACISThermalCheck(object):
 
         return viols
 
-    def make_prediction_viols(self, times, temps, load_start):
+    def make_prediction_viols(self, times, temps, load_start, limit, lim_name):
         """
         Find limit violations where predicted temperature is above the
         yellow limit minus margin.
@@ -337,18 +340,21 @@ class ACISThermalCheck(object):
             The start time of the load, used so that we only report
             violations for times later than this time for the model
             run.
+        limit : float
+            The limit to check the violations against.
+        lim_name : string
+            The name of the limit to be checked for violations. 
         """
         mylog.info('Checking for limit violations')
 
         viols = {self.name: []}
 
         temp = temps[self.name]
-        plan_limit = self.yellow - self.margin
         # The NumPy black magic of the next two lines is to figure 
         # out which time periods have planning limit violations and 
         # to find the bounding indexes of these times. This will also
         # find violations which happen for one discrete time value also.
-        bad = np.concatenate(([False], temp >= plan_limit, [False]))
+        bad = np.concatenate(([False], temp >= limit, [False]))
         changes = np.flatnonzero(bad[1:] != bad[:-1]).reshape(-1, 2)
         # Now go through the periods where the temperature violates
         # the planning limit and flag the duration and maximum of
@@ -362,11 +368,11 @@ class ACISThermalCheck(object):
                 viol = {'datestart': DateTime(times[change[0]]).date,
                         'datestop': DateTime(times[change[1] - 1]).date,
                         'maxtemp': temp[change[0]:change[1]].max()}
-                mylog.info('WARNING: %s exceeds planning limit of %.2f '
-                           'degC from %s to %s' % (self.msid,
-                                                   plan_limit,
-                                                   viol['datestart'],
-                                                   viol['datestop']))
+                mylog.info('WARNING: %s exceeds %s limit ' % (self.msid, 
+                                                              lim_name) +
+                           'of %.2f degC from %s to %s' % (limit,
+                                                           viol['datestart'],
+                                                           viol['datestop']))
                 viols[self.name].append(viol)
 
         viols["default"] = viols[self.name]
