@@ -238,8 +238,7 @@ class ACISThermalCheck(object):
         # make_prediction_plots runs the validation of the model against previous telemetry
         plots = self.make_prediction_plots(outdir, states, model.times, temps, tstart)
         # make_prediction_viols determines the violations and prints them out
-        viols = self.make_prediction_viols(model.times, temps, tstart, self.plan_limit,
-                                           "planning")
+        viols = self.make_prediction_viols(model.times, temps, tstart)
         # write_states writes the commanded states to states.dat
         self.write_states(outdir, states)
         # write_temps writes the temperatures to temperatures.dat
@@ -325,30 +324,8 @@ class ACISThermalCheck(object):
 
         return viols
 
-    def make_prediction_viols(self, times, temps, load_start, limit, lim_name):
-        """
-        Find limit violations where predicted temperature is above the
-        yellow limit minus margin.
-
-        Parameters
-        ----------
-        times : NumPy array
-            Times from the start of the mission in seconds.
-        temps : dict of NumPy arrays
-            NumPy arrays corresponding to the modeled temperatures
-        load_start : float
-            The start time of the load, used so that we only report
-            violations for times later than this time for the model
-            run.
-        limit : float
-            The limit to check the violations against.
-        lim_name : string
-            The name of the limit to be checked for violations. 
-        """
-        mylog.info('Checking for limit violations')
-
-        viols = {self.name: []}
-
+    def _make_prediction_viols(self, times, temps, load_start, limit, lim_name):
+        viols = []
         temp = temps[self.name]
         # The NumPy black magic of the next two lines is to figure 
         # out which time periods have planning limit violations and 
@@ -363,7 +340,7 @@ class ACISThermalCheck(object):
             # Only report violations which occur after the load being
             # reviewed starts.
             in_load = times[change[0]] > load_start or \
-                (times[change[0]] < load_start < times[change[1]])
+                      (times[change[0]] < load_start < times[change[1]])
             if in_load:
                 if times[change[0]] > load_start:
                     datestart = DateTime(times[change[0]]).date
@@ -377,8 +354,31 @@ class ACISThermalCheck(object):
                            'of %.2f degC from %s to %s' % (limit,
                                                            viol['datestart'],
                                                            viol['datestop']))
-                viols[self.name].append(viol)
+                viols.append(viol)
+        return viols
 
+    def make_prediction_viols(self, times, temps, load_start):
+        """
+        Find limit violations where predicted temperature is above the
+        yellow limit minus margin.
+
+        Parameters
+        ----------
+        times : NumPy array
+            Times from the start of the mission in seconds.
+        temps : dict of NumPy arrays
+            NumPy arrays corresponding to the modeled temperatures
+        load_start : float
+            The start time of the load, used so that we only report
+            violations for times later than this time for the model
+            run.
+        """
+        mylog.info('Checking for limit violations')
+
+        viols = {self.name: self._make_prediction_viols(times, temps,
+                                                        load_start,
+                                                        self.plan_limit,
+                                                        "planning")}
         viols["default"] = viols[self.name]
 
         return viols
