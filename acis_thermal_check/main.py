@@ -324,9 +324,8 @@ class ACISThermalCheck(object):
 
         return viols
 
-    def _make_prediction_viols(self, times, temps, load_start, limit, lim_name):
+    def _make_prediction_viols(self, times, temp, load_start, limit, lim_name):
         viols = []
-        temp = temps[self.name]
         # The NumPy black magic of the next two lines is to figure 
         # out which time periods have planning limit violations and 
         # to find the bounding indexes of these times. This will also
@@ -375,7 +374,9 @@ class ACISThermalCheck(object):
         """
         mylog.info('Checking for limit violations')
 
-        viols = {self.name: self._make_prediction_viols(times, temps,
+        temp = temps[self.name]
+
+        viols = {self.name: self._make_prediction_viols(times, temp,
                                                         load_start,
                                                         self.plan_limit,
                                                         "planning")}
