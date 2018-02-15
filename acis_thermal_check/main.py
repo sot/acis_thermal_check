@@ -365,10 +365,14 @@ class ACISThermalCheck(object):
             in_load = times[change[0]] > load_start or \
                 (times[change[0]] < load_start < times[change[1]])
             if in_load:
-                viol = {'datestart': DateTime(times[change[0]]).date,
+                if times[change[0]] > load_start:
+                    datestart = DateTime(times[change[0]]).date
+                else:
+                    datestart = DateTime(load_start).date
+                viol = {'datestart': datestart,
                         'datestop': DateTime(times[change[1] - 1]).date,
                         'maxtemp': temp[change[0]:change[1]].max()}
-                mylog.info('WARNING: %s exceeds %s limit ' % (self.msid, 
+                mylog.info('WARNING: %s exceeds %s limit ' % (self.msid,
                                                               lim_name) +
                            'of %.2f degC from %s to %s' % (limit,
                                                            viol['datestart'],
