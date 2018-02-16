@@ -277,7 +277,7 @@ class ACISThermalCheck(object):
         plt.rc("ytick", labelsize=10)
         temps = {self.name: model.comp[self.msid].mvals}
         # make_prediction_plots runs the validation of the model against previous telemetry
-        plots = self.make_prediction_plots(outdir, states, model.times, temps, tstart)
+        plots = self.make_prediction_plots(outdir, states, temps, tstart)
         # make_prediction_viols determines the violations and prints them out
         viols = self.make_prediction_viols(model.times, temps, tstart)
         # write_states writes the commanded states to states.dat
@@ -390,8 +390,9 @@ class ACISThermalCheck(object):
 
         return viols
 
-    def _make_prediction_viols(self, times, temp, load_start, limit, lim_name,
+    def _make_prediction_viols(self, temp, load_start, limit, lim_name,
                                lim_type):
+        times = self.predict_model.times
         viols = []
         if lim_type == "min":
             bad = temp <= limit
@@ -429,15 +430,13 @@ class ACISThermalCheck(object):
 
         return viols
 
-    def make_prediction_viols(self, times, temps, load_start):
+    def make_prediction_viols(self, temps, load_start):
         """
         Find limit violations where predicted temperature is above the
         yellow limit minus margin.
 
         Parameters
         ----------
-        times : NumPy array
-            Times from the start of the mission in seconds.
         temps : dict of NumPy arrays
             NumPy arrays corresponding to the modeled temperatures
         load_start : float
@@ -449,11 +448,11 @@ class ACISThermalCheck(object):
 
         temp = temps[self.name]
 
-        viols = {"hi": self._make_prediction_viols(times, temp, load_start,
+        viols = {"hi": self._make_prediction_viols(temp, load_start,
                                                    self.plan_limit_hi,
                                                    "planning", "max")}
         if self.flag_cold_viols:
-            viols["lo"] = self._make_prediction_viols(times, temp, load_start,
+            viols["lo"] = self._make_prediction_viols(temp, load_start,
                                                       self.plan_limit_lo,
                                                       "planning", "min")
         return viols
@@ -540,7 +539,7 @@ class ACISThermalCheck(object):
         plots['roll']['fig'].savefig(outfile)
         plots['roll']['filename'] = filename
 
-    def make_prediction_plots(self, outdir, states, times, temps, load_start):
+    def make_prediction_plots(self, outdir, states, temps, load_start):
         """
         Make plots of the thermal prediction as well as associated 
         commanded states.
@@ -562,15 +561,18 @@ class ACISThermalCheck(object):
         """
         plots = {}
 
+        times = self.predict_model.times
+
         # Start time of loads being reviewed expressed in units for plotdate()
         load_start = cxctime2plotdate([load_start])[0]
         # Value for left side of plots
-        plot_start = max(load_start-2.0, cxctime2plotdate([times[0]])[0])
+        plot_start = max(load_start-2.0, 
+                         cxctime2plotdate([times[0]])[0])
 
         w1 = None
         mylog.info('Making temperature prediction plots')
         plots[self.name] = plot_two(fig_id=1, x=times, y=temps[self.name],
-                                    x2=self.predict_model.times,
+                                    x2=times,
                                     y2=self.predict_model.comp["pitch"].mvals,
                                     title=self.msid.upper(), xmin=plot_start,
                                     xlabel='Date', ylabel='Temperature (C)',
