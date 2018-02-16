@@ -107,8 +107,8 @@ def config_logging(outdir, verbose):
     logger.addHandler(filehandler)
 
 
-def plot_one(fig_id, x, y, linestyle='-', 
-             color='blue', xmin=None,
+def plot_one(fig_id, x, y, yy=None, linestyle='-',
+             ll='--', color='blue', xmin=None,
              xmax=None, ylim=None, 
              xlabel='', ylabel='', title='',
              figsize=(7, 3.5), load_start=None,
@@ -126,8 +126,13 @@ def plot_one(fig_id, x, y, linestyle='-',
         the left y-axis quantity.
     y : NumPy array
         Quantity to plot against the times on the left x-axis.
+    yy : NumPy array, optional
+        A second quantity to plot against the times on the 
+        left x-axis. Default: None
     linestyle : string, optional
         The style of the line for the left y-axis.
+    ll : string, optional
+        The style of the second line for the left y-axis.
     color : string, optional
         The color of the line for the left y-axis.
     xmin : float, optional
@@ -152,6 +157,8 @@ def plot_one(fig_id, x, y, linestyle='-',
     ax = fig.add_subplot(1, 1, 1)
     # Plot left y-axis
     ax.plot_date(xt, y, fmt='-', linestyle=linestyle, color=color)
+    if yy is not None:
+        ax.plot_date(xt, yy, fmt='-', linestyle=ll, color=color)
     if xmin is None:
         xmin = min(xt)
     if xmax is None:
@@ -183,8 +190,8 @@ def plot_one(fig_id, x, y, linestyle='-',
     return {'fig': fig, 'ax': ax}
 
 
-def plot_two(fig_id, x, y, x2, y2,
-             linestyle='-', linestyle2='-',
+def plot_two(fig_id, x, y, x2, y2, yy=None,
+             linestyle='-', linestyle2='-', ll='--', 
              color='blue', color2='magenta',
              xmin=None, xmax=None, ylim=None, ylim2=None,
              xlabel='', ylabel='', ylabel2='', title='',
@@ -207,10 +214,15 @@ def plot_two(fig_id, x, y, x2, y2,
         the right y-axis quantity.
     y2 : NumPy array
         Quantity to plot against the times on the right y-axis.
+    yy : NumPy array, optional
+        A second quantity to plot against the times on the 
+        left x-axis. Default: None
     linestyle : string, optional
         The style of the line for the left y-axis.
     linestyle2 : string, optional
         The style of the line for the right y-axis.
+    ll : string, optional
+        The style of the second line for the left y-axis.
     color : string, optional
         The color of the line for the left y-axis.
     color2 : string, optional
@@ -241,6 +253,8 @@ def plot_two(fig_id, x, y, x2, y2,
     ax = fig.add_subplot(1, 1, 1)
     # Plot left y-axis
     ax.plot_date(xt, y, fmt='-', linestyle=linestyle, color=color)
+    if yy is not None:
+        ax.plot_date(xt, yy, fmt='-', linestyle=ll, color=color)
     if xmin is None:
         xmin = min(xt)
     if xmax is None:
