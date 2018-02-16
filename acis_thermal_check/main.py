@@ -504,11 +504,12 @@ class ACISThermalCheck(object):
         # Make a plot of ACIS CCDs and SIM-Z position
         plots['pow_sim'] = plot_two(
             fig_id=num_figs+1,
-            title='ACIS CCDs and SIM-Z position',
+            title='ACIS CCD/FEPs and SIM-Z position',
             xlabel='Date',
             x=pointpair(states['tstart'], states['tstop']),
             y=pointpair(states['ccd_count']),
-            ylabel='CCD_COUNT',
+            yy=pointpair(states['fep_count']),
+            ylabel='CCD/FEP Count',
             ylim=(-0.1, 6.1),
             xmin=plot_start,
             x2=pointpair(states['tstart'], states['tstop']),
