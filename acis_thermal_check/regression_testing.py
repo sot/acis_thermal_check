@@ -16,9 +16,9 @@ months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
 test_data_dir = "/data/acis/thermal_model_tests"
 
 # Loads for regression testing
-normal_loads = ["MAR0617A", "MAR2017E", "JUL3117B", "SEP0417A"]
-too_loads = ["MAR1517B", "JUL2717A", "AUG2517C", "AUG3017A"]
-stop_loads = ["MAR0817B", "MAR1117A", "APR0217B", "SEP0917C"]
+test_loads = {"normal": ["MAR0617A", "MAR2017E", "JUL3117B", "SEP0417A"],
+              "too": ["MAR1517B", "JUL2717A", "AUG2517C", "AUG3017A"],
+              "stop": ["MAR0817B", "MAR1117A", "APR0217B", "SEP0917C"]}
 
 
 class TestArgs(object):
@@ -138,47 +138,22 @@ class RegressionTester(object):
         if atc_class is None:
             atc_class = ACISThermalCheck
         self.atc_class = atc_class
+        self.curdir = os.getcwd()
+        self.tmpdir = tempfile.mkdtemp()
+        self.outdir = os.path.join(self.tmpdir, self.name+"_test")
 
-    def run_test_arrays(self, generate_answers, state_builder='acis',
-                        run_start=None):
-        for load_week in normal_loads:
-            self.load_test_template(load_week, generate_answers,
-                                    interrupt=False,
-                                    state_builder=state_builder,
-                                    run_start=run_start)
-        for load_week in too_loads:
-            self.load_test_template(load_week, generate_answers,
-                                    interrupt=True,
-                                    state_builder=state_builder,
-                                    run_start=run_start)
-        for load_week in stop_loads:
-            self.load_test_template(load_week, generate_answers,
-                                    interrupt=True,
-                                    state_builder=state_builder,
-                                    run_start=run_start)
-
-    def load_test_template(self, load_week, generate_answers, run_start=None,
-                           state_builder='acis', interrupt=False):
-        if generate_answers is not None:
-            generate_answers = os.path.join(os.path.abspath(generate_answers),
-                                            self.name, load_week)
-            if not os.path.exists(generate_answers):
-                os.makedirs(generate_answers)
-        tmpdir = tempfile.mkdtemp()
-        curdir = os.getcwd()
-        os.chdir(tmpdir)
-        out_dir = self.name+"_test"
-        args = TestArgs(self.name, out_dir, self.model_path,
-                        run_start=run_start, load_week=load_week,
-                        interrupt=interrupt, state_builder=state_builder)
+    def load_test_template(self, load_week, run_start=None, state_builder='acis',
+                           interrupt=False, cmd_states_db="sybase"):
+        args = TestArgs(self.name, self.outdir, self.model_path, run_start=run_start,
+                        load_week=load_week, interrupt=interrupt,
+                        state_builder=state_builder, cmd_states_db=cmd_states_db)
         msid_check = self.atc_class(self.msid, self.name, self.valid_limits,
-                                    self.hist_limit, **self.atc_kwargs)
-        msid_check.run(args)
-        self.run_answer_test(load_week, out_dir, generate_answers)
-        os.chdir(curdir)
-        shutil.rmtree(tmpdir)
+                                    self.hist_limit, self.calc_model, args,
+                                    **self.atc_kwargs)
+        msid_check.run()
+        #shutil.rmtree(self.tmpdir)
 
-    def run_answer_test(self, load_week, out_dir, answer_dir):
+    def run_answer_test(self, answer_dir, load_week):
         """
         This function runs the answer test in one of two modes:
         either comparing the answers from this test to the "gold
@@ -187,18 +162,21 @@ class RegressionTester(object):
 
         Parameters
         ----------
-        load_week : string, optional
-            The load week to be tested, in a format like "MAY2016". If not
-            provided, it is assumed that a full set of initial states will
-            be supplied.
-        out_dir : string
-            The path to the output directory.
         answer_dir : string
             The path to the directory to which to copy the files. Is None
             if this is a test run, is an actual directory if we are simply
             generating answers.
+        load_week : string, optional
+            The load week to be tested, in a format like "MAY2016". If not
+            provided, it is assumed that a full set of initial states will
+            be supplied.
         """
-        out_dir = os.path.abspath(out_dir)
+        if answer_dir is not None:
+            answer_dir = os.path.join(os.path.abspath(answer_dir),
+                                      self.name, load_week)
+            if not os.path.exists(answer_dir):
+                os.makedirs(answer_dir)
+        out_dir = os.path.abspath(self.outdir)
         if not answer_dir:
             self.compare_results(load_week, out_dir)
         else:
