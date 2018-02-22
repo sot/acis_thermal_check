@@ -304,8 +304,12 @@ def get_options(name, model_path, opts=None):
                         help="Commanded states database server (sybase|sqlite). "
                              "Only used if state-builder=sql. Default: sybase")
     parser.add_argument("--state-builder", default="sql",
-                        help="StateBuilder to use (sql|acis|hdf5). Default: sql")
+                        help="StateBuilder to use (sql|acis). Default: sql")
     parser.add_argument("--version", action='store_true', help="Print version")
+    # Argument pointing to the NLET file the model should use for this run
+    parser.add_argument("--nlet_file",
+                         default='/data/acis/LoadReviews/NonLoadTrackedEvents.txt',
+                        help="Full path to the Non-Load Event Tracking that should be used for this model run")    
 
     if opts is not None:
         for opt_name, opt in opts:
@@ -339,17 +343,35 @@ def make_state_builder(name, args):
     args : ArgumentParser arguments
         The arguments to pass to the StateBuilder subclass.
     """
+    # Import the dictionary of possible state builders. This
+    # dictionary is located in state_builder.py
     from acis_thermal_check.state_builder import state_builders
+
     builder_class = state_builders[name]
+
+
+    # Build the appropriate state_builder depending upon the 
+    # value of the passed in parameter "na,me" which was
+    # originally the --state-builder="sql"|"acis"" input argument
+    #
+    #  Instantiate the SQL History Builder: SQLStateBuilder
     if name == "sql":
         state_builder = builder_class(interrupt=args.interrupt,
                                       backstop_file=args.backstop_file,
                                       cmd_states_db=args.cmd_states_db,
                                       logger=mylog)
+
+    # Instantiate the ACIS OPS History Builder: ACISStateBuilder
     elif name == "acis":
-        raise NotImplementedError
-    elif name == "hdf5":
-        state_builder = builder_class(logger=mylog)
+        print ("mmmmm - make_state_builder - YOU WANT THE ACIS HISTORY BUILDER: ", builder_class)
+        state_builder = builder_class(interrupt=args.interrupt,
+                                      backstop_file=args.backstop_file,
+                                      nlet_file = args.nlet_file,
+                                      logger=mylog)
+        print "THE STATE BUILDER: ", state_builder        
+
+        #raise NotImplementedError
+
     return state_builder
 
 def get_acis_limits(msid):

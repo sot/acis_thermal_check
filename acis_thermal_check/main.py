@@ -102,6 +102,7 @@ class ACISThermalCheck(object):
         self.other_telem = other_telem
         self.other_map = other_map
         self.args = args
+        # Record the selected state builder in a class attribute
         self.state_builder = make_state_builder(args.state_builder, args)
 
     def run(self):
@@ -112,16 +113,21 @@ class ACISThermalCheck(object):
         """
         proc = self._setup_proc_and_logger(self.args)
 
+        # Determine the start and stop times either from whatever was
+        # stored in state_builder or punt by using NOW and None for
+        # tstart and tstop.
         is_weekly_load = self.args.backstop_file is not None
         tstart, tstop, tnow = self._determine_times(self.args.run_start,
                                                     is_weekly_load)
 
+        # Store off the start date, and, if yiou have it, the 
+        # stop date in proc
         proc["datestart"] = DateTime(tstart).date
         if tstop is not None:
             proc["datestop"] = DateTime(tstop).date
 
         # Get the telemetry values which will be used
-        # for prediction and validation
+        # for prediction and validation. Args default value is 21 days.
         tlm = self.get_telem_values(min(tstart, tnow), days=self.args.days)
 
         # make predictions on a backstop file if defined
@@ -175,6 +181,8 @@ class ACISThermalCheck(object):
         # The -5 here has us back off from the last telemetry 
         # reading just a bit
         tbegin = DateTime(tlm['date'][-5]).date
+        # Call the overloaded state_builder method to assemble states
+        # and define a state0
         states, state0 = self.state_builder.get_prediction_states(tbegin)
 
         # We now determine the initial temperature.
