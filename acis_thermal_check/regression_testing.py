@@ -17,8 +17,9 @@ test_data_dir = "/data/acis/thermal_model_tests"
 
 # Loads for regression testing
 test_loads = {"normal": ["MAR0617A", "MAR2017E", "JUL3117B", "SEP0417A"],
-              "too": ["MAR1517B", "JUL2717A", "AUG2517C", "AUG3017A"],
-              "stop": ["MAR0817B", "MAR1117A", "APR0217B", "SEP0917C"]}
+              "interrupt": ["MAR1517B", "JUL2717A", "AUG2517C", "AUG3017A",
+                            "MAR0817B", "MAR1117A", "APR0217B", "SEP0917C"]}
+all_loads = test_loads["normal"]+test_loads["interrupt"]
 
 
 class TestArgs(object):
