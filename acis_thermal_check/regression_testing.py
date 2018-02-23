@@ -140,59 +140,75 @@ class RegressionTester(object):
         self.atc_class = atc_class
         self.curdir = os.getcwd()
         self.tmpdir = tempfile.mkdtemp()
-        self.outdir = os.path.join(self.tmpdir, self.name+"_test")
+        self.outdir = os.path.abspath(os.path.join(self.tmpdir, self.name+"_test"))
+        if not os.path.exists(self.outdir):
+            os.mkdir(self.outdir)
 
-    def load_test_template(self, load_week, run_start=None, state_builder='acis',
-                           interrupt=False, cmd_states_db="sybase"):
-        args = TestArgs(self.name, self.outdir, self.model_path, run_start=run_start,
+    def run_model(self, load_week, run_start=None, state_builder='acis',
+                  interrupt=False, cmd_states_db="sybase"):
+        out_dir = os.path.join(self.outdir, load_week)
+        args = TestArgs(self.name, out_dir, self.model_path, run_start=run_start,
                         load_week=load_week, interrupt=interrupt,
                         state_builder=state_builder, cmd_states_db=cmd_states_db)
         msid_check = self.atc_class(self.msid, self.name, self.valid_limits,
                                     self.hist_limit, self.calc_model, args,
                                     **self.atc_kwargs)
         msid_check.run()
-        #shutil.rmtree(self.tmpdir)
 
-    def run_answer_test(self, answer_dir, load_week):
-        """
-        This function runs the answer test in one of two modes:
-        either comparing the answers from this test to the "gold
-        standard" answers or to simply run the model to generate
-        answers.
-
-        Parameters
-        ----------
-        answer_dir : string
-            The path to the directory to which to copy the files. Is None
-            if this is a test run, is an actual directory if we are simply
-            generating answers.
-        load_week : string, optional
-            The load week to be tested, in a format like "MAY2016". If not
-            provided, it is assumed that a full set of initial states will
-            be supplied.
-        """
+    def _set_answer_dir(self, answer_dir, load_week):
         if answer_dir is not None:
             answer_dir = os.path.join(os.path.abspath(answer_dir),
                                       self.name, load_week)
             if not os.path.exists(answer_dir):
                 os.makedirs(answer_dir)
-        out_dir = os.path.abspath(self.outdir)
-        if not answer_dir:
-            self.compare_results(load_week, out_dir)
-        else:
-            self.copy_new_results(out_dir, answer_dir)
+        return answer_dir
 
-    def compare_results(self, load_week, out_dir):
+    def run_test(self, test_name, answer_dir, load_week, image=None):
         """
-        This function compares the "gold standard" data with the current
-        test run's data.
+        This function runs the image answer test in one of two modes:
+        either comparing the image answers from this test to the "gold
+        standard" answers or to simply run the model to generate image
+        answers.
 
         Parameters
         ----------
-        load_week : string, optional
-            The load week to be tested, in a format like "MAY2016". If not
-            provided, it is assumed that a full set of initial states will
-            be supplied.
+        test_name : string
+            The name of the test to run. "prediction", "validation", or 
+            "image".
+        answer_dir : string
+            The path to the directory to which to copy the files. Is None
+            if this is a test run, is an actual directory if we are simply
+            generating answers.
+        load_week : string
+            The load week to be tested, in a format like "MAY2016A".
+        image : string, optional
+            The filename of the image to be compared, if running the image
+            test.
+        """
+        answer_dir = self._set_answer_dir(answer_dir, load_week)
+        out_dir = os.path.join(self.outdir, load_week)
+        if test_name == "prediction":
+            filenames = ["temperatures.dat", "states.dat"]
+        elif test_name == "validation":
+            filenames = ["validation_data.pkl"]
+        else:
+            raise RuntimeError("Invalid test specification! "
+                               "Test name = %s, image = %s." % (test_name, image))
+        if not answer_dir:
+            compare_test = getattr(self, "compare_"+test_name)
+            compare_test(load_week, out_dir)
+        else:
+            self.copy_new_files(out_dir, answer_dir, filenames)
+
+    def compare_validation(self, load_week, out_dir):
+        """
+        This function compares the "gold standard" validation data 
+        with the current test run's data.
+
+        Parameters
+        ----------
+        load_week : string
+            The load week to be tested, in a format like "MAY2016A".
         out_dir : string
             The path to the output directory.
         """
@@ -216,7 +232,7 @@ class RegressionTester(object):
                 print("WARNING in pred: '%s' in new answer but not old. Answers should be updated." % k)
                 continue
             exception_catcher(assert_allclose, new_pred[k], old_pred[k],
-                              "Validation model arrays for %s" % k)
+                              "Validation model arrays for %s" % k, rtol=1.0e-5)
         # Compare telemetry
         new_tlm = new_results['tlm']
         old_tlm = old_results['tlm']
@@ -230,49 +246,43 @@ class RegressionTester(object):
                 continue
             exception_catcher(assert_array_equal, new_tlm[k], old_tlm[k],
                               "Validation telemetry arrays for %s" % k)
-        # Compare
-        for prefix in ("temperatures", "states"):
-            self.compare_data_files(prefix, load_week, out_dir)
 
-    def compare_data_files(self, prefix, load_week, out_dir):
+    def compare_prediction(self, load_week, out_dir):
         """
-        This function compares the "gold standard" data with the current
-        test run's data for the .dat files produced in the thermal model
-        run. Called by ``compare_results``.
-
+        This function compares the "gold standard" prediction data with 
+        the current test run's data for the .dat files produced in the 
+        thermal model run.
+      
         Parameters
         ----------
-        prefix : string
-            The prefix of the file, "temperatures" or "states".
-        load_week : string, optional
-            The load week to be tested, in a format like "MAY2016". If not
-            provided, it is assumed that a full set of initial states will
-            be supplied.
+        load_week : string                                                                                                                                                                                           
+            The load week to be tested, in a format like "MAY2016A".                                                                                                                                                
         out_dir : string
             The path to the output directory.
         """
-        fn = prefix+".dat"
-        new_fn = os.path.join(out_dir, fn)
-        old_fn = os.path.join(test_data_dir, self.name, load_week, fn)
-        new_data = np.loadtxt(new_fn, skiprows=1, dtype=data_dtype[prefix])
-        old_data = np.loadtxt(old_fn, skiprows=1, dtype=data_dtype[prefix])
-        # Compare test run data to gold standard. Since we're loading from
-        # ASCII text files here, floating-point comparisons will be different
-        # at machine precision, others will be exact.
-        for k, dt in new_data.dtype.descr:
-            if 'f' in dt:
-                exception_catcher(assert_allclose, new_data[k], old_data[k],
-                                  "Prediction arrays for %s" % k, rtol=1.0e-5)
-            else:
-                exception_catcher(assert_array_equal, new_data[k], old_data[k],
-                                  "Prediction arrays for %s" % k)
-
-    def copy_new_results(self, out_dir, answer_dir):
+        for prefix in ("temperatures", "states"):
+            fn = prefix+".dat"
+            new_fn = os.path.join(out_dir, fn)
+            old_fn = os.path.join(test_data_dir, self.name, load_week, fn)
+            new_data = np.loadtxt(new_fn, skiprows=1, dtype=data_dtype[prefix])
+            old_data = np.loadtxt(old_fn, skiprows=1, dtype=data_dtype[prefix])
+            # Compare test run data to gold standard. Since we're loading from
+            # ASCII text files here, floating-point comparisons will be different
+            # at machine precision, others will be exact.
+            for k, dt in new_data.dtype.descr:
+                if 'f' in dt:
+                    exception_catcher(assert_allclose, new_data[k], old_data[k],
+                                      "Prediction arrays for %s" % k, rtol=1.0e-5)
+                else:
+                    exception_catcher(assert_array_equal, new_data[k], old_data[k],
+                                      "Prediction arrays for %s" % k)
+ 
+    def copy_new_files(self, out_dir, answer_dir, filenames):
         """
-        This function copies the pickle files and the .dat files
-        generated in this test run to a directory specified by the
-        user, typically for inspection and for possible updating of
-        the "gold standard" answers.
+        This function copies the files generated in this test
+        run to a directory specified by the user, typically for
+        inspection and for possible updating of the "gold standard"
+        answers.
 
         Parameters
         ----------
@@ -280,9 +290,10 @@ class RegressionTester(object):
             The path to the output directory.
         answer_dir : string
             The path to the directory to which to copy the files.
+        filenames : list of strings
+            The filenames to be copied.
         """
-        for fn in ('validation_data.pkl', 'states.dat', 'temperatures.dat'):
-            fromfile = os.path.join(out_dir, fn)
-            tofile = os.path.join(answer_dir, fn)
+        for filename in filenames:
+            fromfile = os.path.join(out_dir, filename)
+            tofile = os.path.join(answer_dir, filename)
             shutil.copyfile(fromfile, tofile)
-
