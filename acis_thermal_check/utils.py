@@ -363,14 +363,12 @@ def make_state_builder(name, args):
 
     # Instantiate the ACIS OPS History Builder: ACISStateBuilder
     elif name == "acis":
-        print ("mmmmm - make_state_builder - YOU WANT THE ACIS HISTORY BUILDER: ", builder_class)
+        # Create a state builder using the ACIS Ops backstop history
+        # modules
         state_builder = builder_class(interrupt=args.interrupt,
                                       backstop_file=args.backstop_file,
                                       nlet_file = args.nlet_file,
                                       logger=mylog)
-        print "THE STATE BUILDER: ", state_builder        
-
-        #raise NotImplementedError
 
     return state_builder
 

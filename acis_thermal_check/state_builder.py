@@ -1,4 +1,3 @@
-#from __future__ import print_function
 import os
 import Ska.DBI
 from Chandra.Time import DateTime
@@ -434,13 +433,6 @@ class ACISStateBuilder(StateBuilder):
                 # Now point the operative ofls directory to the Continuity directory
                 present_ofls_dir = cont_load_path
         
-
-#zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-        print"\nGET PREDICTION STATES: BACKSTOP HISTORY ASSEMBLED"
-        print'\nTBEGIN is: ', DateTime(tbegin).date
-        print'\n    BS_CMDS[0]: ', bs_cmds[0]
-        print'\n    BS_CMDS[-1]: ', bs_cmds[-1]
-        print'\n    FIRST STATE: ', state0
 
         # Convert the assembled backstop command history into commanded states
         # from state0 through the end of the Review Load backstop commands.

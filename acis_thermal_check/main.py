@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 # Matplotlib setup
 # Use Agg backend for command-line (non-interactive) operation
 import matplotlib
