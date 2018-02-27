@@ -249,7 +249,7 @@ class ACISStateBuilder(StateBuilder):
             The Python Logger object to be used when logging.
         """
         # Import the BackstopHistory class
-        import BackstopHistory
+        from backstop_history import BackstopHistory
 
         # Set the path to the Non-Load Event Tracking Events file
 #        self.nfp = '/data/acis/LoadReviews/NonLoadTrackedEvents.txt'
