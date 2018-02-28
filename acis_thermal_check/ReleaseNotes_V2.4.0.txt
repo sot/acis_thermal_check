@@ -1,0 +1,145 @@
+
+
+Change Description
+==================
+
+ These changes integrate the Non-Load Event Tracking (NLET) mechanism, and 
+ the ACIS Ops Backstop History Assembly modules into acis_thermal_check.
+
+ This integration is used for ACIS Ops thermal model execution. The
+ The NLET and Backstop History Assembly modules can also be used
+ independently to track and display load execution and load
+ interruptions of all sorts.
+
+
+Rationale
+==========
+
+ Using this update, ACIS Ops models will correctly assemble the backstop history
+ starting from, and including, the load week under consideration and working back to
+ the last spacecraft telemetry available. The assembly takes into
+ account Normal weekly load progression, TOO's, SCS-107 (where the
+ maneuver load is still running), and FULL Stops (where both the science
+ and maneuver load has been stopped - e.g. BSH/NSM). Using NLET, any
+ Long Term CTI (LTCTI measurements and other maneuver CAPs executed
+ are taken into account.
+ 
+ The assembly is done using the "Primary Products" and not derived
+ entities. Products that are contained in the load tarballs and which ACIS Ops has
+ always used for thermal models and load reviews: e.g. full backstop
+ files, maneuver-only backstop files. In addition, archived LTCTI .RTS files (e.g.
+ 1_CTI06.RTS) are used to factor in any LTCTI measurement which may
+ occur after a shutdown.
+ 
+ The Backstop History module can also be used outside of thermal
+ models if a user wishes to see and/or use within another program,
+ the load history of a particular time period of interest.
+ 
+ The old method of backstop history assembly is still available to the
+ user of ACIS Ops thermal models through the use of an argument change
+ to the model call.
+ 
+
+Files Changed:
+==============
+
+The changed and added files can be seen in these PR's:
+
+   https://github.com/acisops/acis_thermal_check/pull/16
+
+   https://github.com/acisops/backstop_history/pull/2
+
+
+
+Testing:
+======== 
+
+The change was tested, using the 1DPAMZT model on the following loads:
+
+ FEB2717
+ MAR0617
+ MAR1117
+ MAR1517
+ MAR2017
+ MAR2717
+ APR0217
+ APR1017
+ JUL2717
+ JUL3117 
+ AUG3017
+ AUG2817
+ SEP0417
+ SEP0917
+ SEP1317
+ SEP1817 
+
+
+ JAN0818
+ JAN1518
+ JAN1918
+ JAN2218
+ JAN2918
+ FEB1218
+ FEB1918 
+ FEB2618
+
+Test loads were selected such that loads which were Normal, TOO,
+SCS-107, and STOP loads were directly tested both with and without
+LTCTI runs. In addition, the normal load that came after TOO, SCS-107
+and STOP loads were also tested to be certain the history assembly took
+the TOO's, 107's and STOPs into account correctly.
+
+As acis_thermal_check was modified to now include the new history assembly
+mechanism, and the old mechanism was not deleted, he software was tested
+using the old system as well.
+
+The command line used to test the changes was as similar to the operational
+command line as possible (e.g. the path to the model to use, in the operational
+command line, had to be changed).
+
+Any difference in output was understood and acceptable.
+
+
+Interface impacts
+=================
+
+None at this time.
+
+The ACIS Ops Load Review program which runs all ACIS Ops models is:
+
+run_models.pl
+
+It is set up to point to the /proj/sot/ska/bin directory for model packages/software.
+
+One of it's arguments is --state-builder. 
+Presently, within run_models.pl,  --state-builder defaults
+to "sql" which utilizes the old method.
+
+When this change is approved and installed, all models will
+be tested, using run_models.pl,  using the old history assembly method.
+
+Then run_models.pl will be modified with two arguments (one new and one old):
+
+--state-builder="acis" 
+--nlet_file < the path to the NLET file to be used.>
+
+run_models.pl will then be tested on all models.
+
+This change to run_models.pl  will be presented at the next LR telecon. 
+When approved, all ACIS models will be using the ACIS Ops Backstop History
+Assembly mechanism presented here today.
+
+
+
+Review
+====== 
+
+Objective and Results by ACIS Ops
+
+TWG technical review and approval for ACIS Ops
+
+
+Deployment Plan
+===============
+
+Deploy as soon as approval in this telecon is given
