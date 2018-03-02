@@ -240,7 +240,7 @@ class ACISStateBuilder(StateBuilder):
         backstop_file : string
             Path to the backstop file. If a directory, the backstop 
             file will be searched for within this directory.
-        nlet_file: full path to the Non-Load Event Tracking file
+        nlet_file : full path to the Non-Load Event Tracking file
         cmd_states_db : string
             Commanded states database server (sybase|acisite). Default:
             sybase
@@ -249,9 +249,6 @@ class ACISStateBuilder(StateBuilder):
         """
         # Import the BackstopHistory class
         from backstop_history import BackstopHistory
-
-        # Set the path to the Non-Load Event Tracking Events file
-#        self.nfp = '/data/acis/LoadReviews/NonLoadTrackedEvents.txt'
 
         # Capture the full path to the NLET file to be used
         self.nlet_file = nlet_file
@@ -358,7 +355,7 @@ class ACISStateBuilder(StateBuilder):
         # WHILE
         # The big while loop that backchains through previous loads and concatenates the
         # proper load sections to the review load.
-        while(state0['tstart'] < bs_start_time):
+        while state0['tstart'] < bs_start_time:
     
             # Read the Continuity information of the present ofls directory
             cont_load_path, present_load_type, scs107_date = self.BSC.get_continuity_file_info(present_ofls_dir)

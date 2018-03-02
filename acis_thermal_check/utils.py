@@ -351,7 +351,7 @@ def make_state_builder(name, args):
 
 
     # Build the appropriate state_builder depending upon the 
-    # value of the passed in parameter "na,me" which was
+    # value of the passed in parameter "name" which was
     # originally the --state-builder="sql"|"acis"" input argument
     #
     #  Instantiate the SQL History Builder: SQLStateBuilder
