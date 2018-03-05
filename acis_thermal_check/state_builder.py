@@ -249,12 +249,14 @@ class ACISStateBuilder(StateBuilder):
         """
         # Import the BackstopHistory class
         from backstop_history import BackstopHistory
+#TTTTTTTTTTTTTTTTTTt
+        rts_dir = os.path.dirname(BackstopHistory.__file__)
 
         # Capture the full path to the NLET file to be used
         self.nlet_file = nlet_file
 
         # Create an instance of the Backstop Command class
-        self.BSC = BackstopHistory.BackstopHistory('ACIS-Continuity.txt', self.nlet_file)
+        self.BSC = BackstopHistory.BackstopHistory(rts_dir, 'ACIS-Continuity.txt', self.nlet_file)
 
         # The Review Load backstop name
         self.rev_bs_name = None

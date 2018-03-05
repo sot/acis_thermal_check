@@ -21,7 +21,7 @@ Rationale
  account Normal weekly load progression, TOO's, SCS-107 (where the
  maneuver load is still running), and FULL Stops (where both the science
  and maneuver load has been stopped - e.g. BSH/NSM). Using NLET, any
- Long Term CTI (LTCTI measurements and other maneuver CAPs executed
+ Long Term CTI (LTCTI) measurements and other maneuver CAPs executed
  are taken into account.
  
  The assembly is done using the "Primary Products" and not derived
@@ -33,7 +33,9 @@ Rationale
  
  The Backstop History module can also be used outside of thermal
  models if a user wishes to see and/or use within another program,
- the load history of a particular time period of interest.
+ the load history of a particular time period of interest. But
+ presently the main focus of Backstop History are those attributes of
+ the history pertinent to thermal models.
  
  The old method of backstop history assembly is still available to the
  user of ACIS Ops thermal models through the use of an argument change
@@ -49,6 +51,12 @@ The changed and added files can be seen in these PR's:
 
    https://github.com/acisops/backstop_history/pull/2
 
+ Once installed, anyone wishing to clone a single model will have to
+ clone the following packages:
+
+    dpa_check (for example)
+    acis_thermal_check
+    backstop_history
 
 
 Testing:
@@ -58,6 +66,7 @@ The change was tested, using the 1DPAMZT model on the following loads:
 
  FEB2717
  MAR0617
+ MAR0817
  MAR1117
  MAR1517
  MAR2017
@@ -84,14 +93,14 @@ The change was tested, using the 1DPAMZT model on the following loads:
  FEB2618
 
 Test loads were selected such that loads which were Normal, TOO,
-SCS-107, and STOP loads were directly tested both with and without
+SCS-107, and STOP loads were directly tested; both with and without
 LTCTI runs. In addition, the normal load that came after TOO, SCS-107
 and STOP loads were also tested to be certain the history assembly took
 the TOO's, 107's and STOPs into account correctly.
 
 As acis_thermal_check was modified to now include the new history assembly
-mechanism, and the old mechanism was not deleted, he software was tested
-using the old system as well.
+mechanism, and the old mechanism was not deleted, the software version
+was tested using the old system as well.
 
 The command line used to test the changes was as similar to the operational
 command line as possible (e.g. the path to the model to use, in the operational
@@ -134,7 +143,11 @@ Assembly mechanism presented here today.
 Review
 ====== 
 
-Objective and Results by ACIS Ops
+Several ACIS Ops team reviews of the design and implementation.
+
+Several ACIS Ops reviews of the Operational methods to be used.
+
+Test Results review by ACIS Ops
 
 TWG technical review and approval for ACIS Ops
 
