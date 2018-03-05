@@ -249,7 +249,8 @@ class ACISStateBuilder(StateBuilder):
         """
         # Import the BackstopHistory class
         from backstop_history import BackstopHistory
-#TTTTTTTTTTTTTTTTTTt
+
+        # Obtain the path to the RTS files in BackstopHistory
         rts_dir = os.path.dirname(BackstopHistory.__file__)
 
         # Capture the full path to the NLET file to be used
