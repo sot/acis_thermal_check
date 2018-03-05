@@ -33,3 +33,4 @@ Documentation Contents
    install
    running_models
    developing_models
+   test_suite
