@@ -86,16 +86,19 @@ class ACISThermalCheck(object):
         names understood by Xija to MSIDs.
     """
     def __init__(self, msid, name, validation_limits, hist_limit, 
-                 calc_model, args, other_telem=None, other_map=None):
+                 calc_model, args, other_telem=None, other_map=None,
+                 flag_cold_viols=False):
         self.msid = msid
         self.name = name
         if self.msid == "fptemp":
-            self.yellow = None
+            self.yellow_lo = None
+            self.yellow_hi = None
             self.margin = None
             self.plan_limit = None
         else:
-            self.yellow, self.margin = get_acis_limits(self.msid)
-            self.plan_limit = self.yellow-self.margin
+            self.yellow_lo, self.yellow_hi, self.margin = get_acis_limits(self.msid)
+            self.plan_limit_hi = self.yellow_hi-self.margin
+            self.plan_limit_lo = self.yellow_lo+self.margin
         self.validation_limits = validation_limits
         self.hist_limit = hist_limit
         self.calc_model = calc_model
@@ -104,6 +107,7 @@ class ACISThermalCheck(object):
         self.args = args
         # Record the selected state builder in a class attribute
         self.state_builder = make_state_builder(args.state_builder, args)
+        self.flag_cold_viols = flag_cold_viols
 
     def run(self):
         """
@@ -324,13 +328,19 @@ class ACISThermalCheck(object):
 
         return viols
 
-    def _make_prediction_viols(self, times, temp, load_start, limit, lim_name):
+    def _make_prediction_viols(self, times, temp, load_start, limit, lim_name,
+                               lim_type):
         viols = []
+        if lim_type == "min":
+            bad = temp <= limit
+        elif lim_type == "max":
+            bad = temp >= limit
+        reduce = getattr(np, lim_type)
         # The NumPy black magic of the next two lines is to figure 
         # out which time periods have planning limit violations and 
         # to find the bounding indexes of these times. This will also
         # find violations which happen for one discrete time value also.
-        bad = np.concatenate(([False], temp >= limit, [False]))
+        bad = np.concatenate(([False], bad, [False]))
         changes = np.flatnonzero(bad[1:] != bad[:-1]).reshape(-1, 2)
         # Now go through the periods where the temperature violates
         # the planning limit and flag the duration and maximum of
@@ -347,13 +357,14 @@ class ACISThermalCheck(object):
                     datestart = DateTime(load_start).date
                 viol = {'datestart': datestart,
                         'datestop': DateTime(times[change[1] - 1]).date,
-                        'maxtemp': temp[change[0]:change[1]].max()}
-                mylog.info('WARNING: %s exceeds %s limit ' % (self.msid,
+                        '%stemp' % lim_type: reduce(temp[change[0]:change[1]])}
+                mylog.info('WARNING: %s violates %s limit ' % (self.msid,
                                                               lim_name) +
                            'of %.2f degC from %s to %s' % (limit,
                                                            viol['datestart'],
                                                            viol['datestop']))
                 viols.append(viol)
+
         return viols
 
     def make_prediction_viols(self, times, temps, load_start):
@@ -376,11 +387,13 @@ class ACISThermalCheck(object):
 
         temp = temps[self.name]
 
-        viols = {self.name: self._make_prediction_viols(times, temp,
-                                                        load_start,
-                                                        self.plan_limit,
-                                                        "planning")}
-        viols["default"] = viols[self.name]
+        viols = {"hi": self._make_prediction_viols(times, temp, load_start,
+                                                   self.plan_limit_hi,
+                                                   "planning", "max")}
+        if self.flag_cold_viols:
+            viols["lo"] = self._make_prediction_viols(times, temp, load_start,
+                                                      self.plan_limit_lo,
+                                                      "planning", "min")
 
         return viols
 
@@ -509,10 +522,15 @@ class ACISThermalCheck(object):
                                     ylabel2='Pitch (deg)', ylim2=(40, 180),
                                     figsize=(8.0, 4.0), width=w1, load_start=load_start)
         # Add horizontal lines for the planning and caution limits
-        plots[self.name]['ax'].axhline(self.yellow, linestyle='-', color='y',
+        plots[self.name]['ax'].axhline(self.yellow_hi, linestyle='-', color='y',
                                        linewidth=2.0)
-        plots[self.name]['ax'].axhline(self.yellow-self.margin, linestyle='--', 
+        plots[self.name]['ax'].axhline(self.yellow_hi-self.margin, linestyle='--', 
                                        color='y', linewidth=2.0)
+        if self.flag_cold_viols:
+            plots[self.name]['ax'].axhline(self.yellow_lo, linestyle='-', color='y',
+                                           linewidth=2.0)
+            plots[self.name]['ax'].axhline(self.yellow_lo + self.margin, linestyle='--',
+                                           color='y', linewidth=2.0)
         filename = self.msid.lower() + '.png'
         outfile = os.path.join(outdir, filename)
         mylog.info('Writing plot file %s' % outfile)
@@ -655,9 +673,13 @@ class ACISThermalCheck(object):
                     ax.axhline(acis_s, linestyle='-.', color='blue')
                     ax.set_ylim(ymin, max(acis_i+1, ymax))
                 else:
-                    ax.axhline(self.yellow, linestyle='-', color='y')
-                    ax.axhline(self.yellow - self.margin, linestyle='--', color='y')
-                    ax.set_ylim(ymin, max(self.yellow+1, ymax))
+                    ax.axhline(self.yellow_hi, linestyle='-', color='y')
+                    ax.axhline(self.plan_limit_hi, linestyle='--', color='y')
+                    ax.set_ylim(ymin, max(self.yellow_hi+1, ymax))
+                    if self.flag_cold_viols:
+                        ax.axhline(self.yellow_lo, linestyle='-', color='y')
+                        ax.axhline(self.yellow_lo + self.margin, linestyle='--', color='y')
+                        ax.set_ylim(min(self.yellow_lo-1, ymin), None)
             filename = msid + '_valid.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
@@ -830,7 +852,7 @@ class ACISThermalCheck(object):
                     name=self.name.upper(),
                     hist_limit=self.hist_limit)
         if self.msid != "fptemp":
-            proc["msid_limit"] = self.yellow - self.margin
+            proc["msid_limit"] = self.yellow_hi - self.margin
         mylog.info('##############################'
                    '#######################################')
         mylog.info('# %s_check run at %s by %s'
