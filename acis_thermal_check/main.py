@@ -645,15 +645,19 @@ class ACISThermalCheck(object):
                 for ptime in ptimes:
                     ax.axvline(ptime, ls='--', color='g')
             # Add horizontal lines for the planning and caution limits
-            # or the limits for the focal plane model
+            # or the limits for the focal plane model. Make sure we can
+            # see all of the limits.
             if self.msid == msid:
+                ymin, ymax = ax.get_ylim()
                 if msid == "fptemp":
                     fp_sens, acis_s, acis_i = get_acis_limits("fptemp")
                     ax.axhline(acis_i, linestyle='-.', color='purple')
                     ax.axhline(acis_s, linestyle='-.', color='blue')
+                    ax.set_ylim(ymin, max(acis_i+1, ymax))
                 else:
                     ax.axhline(self.yellow, linestyle='-', color='y')
                     ax.axhline(self.yellow - self.margin, linestyle='--', color='y')
+                    ax.set_ylim(ymin, max(self.yellow+1, ymax))
             filename = msid + '_valid.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
