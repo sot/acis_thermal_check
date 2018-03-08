@@ -5,14 +5,111 @@ Developing a New Thermal Model for Use with ``acis_thermal_check``
 
 Developing a new thermal model to use with ``acis_thermal_check`` is fairly
 straightforward. What is typically only needed is to provide the model-specific 
-elements such as the limits for validation and the code which actually runs the 
-``xija`` model. Following this will be some mainly boilerplate driver code which 
-collects command line arguments and runs the model.
+elements such as the limits for validation, the JSON file containing the model
+specification, and the code which actually runs the ``xija`` model. There will
+also need to be some mainly boilerplate driver code which collects command line 
+arguments and runs the model. Finally, one will need to set up testing. 
 
-In the following, we will use the command-line runnable Python script for
-``dpa_check`` as a guide on how to create a model and run it with 
-``acis_thermal_check``. 
+In the following, we will use the Python package for ``dpa_check`` as a guide 
+on how to create a model and run it with ``acis_thermal_check``. 
 
+The Overall Design of the Package
+=================================
+
+The structure of the ``dpa_check`` package is designed to be a typical Python
+package and looks like this:
+
+.. code-block:: bash
+
+    dpa_check/
+        dpa_check/
+            __init__.py
+            dpa_check.py
+            dpa_model_spec.json
+            tests/
+                __init__.py
+                conftest.py
+                test_dpa.py
+    setup.py
+    MANIFEST.in
+    .gitignore
+
+At the top level, we have ``setup.py``, ``MANIFEST.in``, and ``.gitignore``. 
+
+``setup.py`` is the file that is used to determine how the package should be
+installed. It has a fairly boilerplate structure, but there are some items that
+should be noted. The ``setup.py`` for ``dpa_check`` looks like this:
+
+.. code-block:: python
+
+    #!/usr/bin/env python
+    from setuptools import setup
+    from dpa_check import __version__
+    
+    try:
+        from testr.setup_helper import cmdclass
+    except ImportError:
+        cmdclass = {}
+    
+    entry_points = {'console_scripts': 'dpa_check = dpa_check.dpa_check:main'}
+    
+    url = 'https://github.com/acisops/dpa_check/tarball/{}'.format(__version__)
+    
+    setup(name='dpa_check',
+          packages=["dpa_check"],
+          version=__version__,
+          description='ACIS Thermal Model for 1DPAMZT',
+          author='John ZuHone',
+          author_email='jzuhone@gmail.com',
+          url='http://github.com/acisops/dpa_check',
+          download_url=url,
+          include_package_data=True,
+          classifiers=[
+              'Intended Audience :: Science/Research',
+              'Operating System :: OS Independent',
+              'Programming Language :: Python :: 2.7',
+              'Programming Language :: Python :: 3.5',
+          ],
+          entry_points=entry_points,
+          zip_safe=False,
+          tests_require=["pytest"],
+          cmdclass=cmdclass,
+          )
+
+Your ``setup.py`` script should look essentially the same as this one, except that
+wherever there is a reference to ``dpa_check`` or 1DPAMZT you should change it to
+the appropriate name for your package. Note the ``entry_points`` dictionary: what it
+does is tell the installer that we want to make an executable wrapper for the 
+``dpa_check.py`` script that can be run from the command line. It does this for you, 
+you just need to make sure it points to the correct package name. 
+
+``MANIFEST.in`` contains a list of data files and file wildcards that need to be 
+installed along with the package. There is only one data file included with
+``dpa_check``: the model specification file ``dpa_model_spec.json``. So in this
+case ``MANIFEST.in`` is just one line:
+
+.. code-block:: none
+
+    include dpa_check/dpa_model_spec.json
+
+``.gitignore`` is simply a list of files and file wildcards that one wants git to
+ignore so they don't get accidentally committed to the repository. These include
+things like byte-compiled files (``*.pyc``) and other directories and files that
+are created when the package is installed. The ``.gitignore`` for ``dpa_check``
+looks like this:
+
+.. code-block:: none
+    
+    build
+    dist
+    *.pyc
+    dpa_check.egg-info
+
+The Main Script
+===============
+
+The following describes how one designs the script that uses ``acis_thermal_check``
+to 
 Set Up Limits
 +++++++++++++
 
