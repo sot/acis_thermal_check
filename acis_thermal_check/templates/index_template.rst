@@ -26,18 +26,32 @@ Temperatures           `<temperatures.dat>`_
 States                 `<states.dat>`_
 =====================  =============================================
 
-{% if viols.default  %}
-{{proc.msid}} Violations
+{% if viols.hi  %}
+{{proc.msid}} Hot Violations
 ------------------------
 =====================  =====================  ==================
 Date start             Date stop              Max temperature
 =====================  =====================  ==================
-{% for viol in viols.default %}
+{% for viol in viols.hi %}
 {{viol.datestart}}  {{viol.datestop}}  {{"%.2f"|format(viol.maxtemp)}}
 {% endfor %}
 =====================  =====================  ==================
 {% else %}
-No {{proc.msid}} Violations
+No {{proc.msid}} Hot Violations
+{% endif %}
+
+{% if viols.lo  %}
+{{proc.msid}} Cold Violations
+------------------------
+=====================  =====================  ==================
+Date start             Date stop              Min temperature
+=====================  =====================  ==================
+{% for viol in viols.lo %}
+{{viol.datestart}}  {{viol.datestop}}  {{"%.2f"|format(viol.mintemp)}}
+{% endfor %}
+=====================  =====================  ==================
+{% else %}
+No {{proc.msid}} Cold Violations
 {% endif %}
 
 .. image:: {{plots.default.filename}}

@@ -394,7 +394,6 @@ class ACISThermalCheck(object):
             viols["lo"] = self._make_prediction_viols(times, temp, load_start,
                                                       self.plan_limit_lo,
                                                       "planning", "min")
-
         return viols
 
     def write_states(self, outdir, states):
