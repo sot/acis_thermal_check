@@ -84,6 +84,9 @@ class ACISThermalCheck(object):
         A dictionary which maps names to MSIDs, e.g.:
         {'sim_z': 'tscpos', 'dp_pitch': 'pitch'}. Used to map
         names understood by Xija to MSIDs.
+    flag_cold_viols : boolean, optional
+        If set, violations for the lower planning limit will be
+        checked for and flagged, and 
     """
     def __init__(self, msid, name, validation_limits, hist_limit, 
                  calc_model, args, other_telem=None, other_map=None,
@@ -94,7 +97,8 @@ class ACISThermalCheck(object):
             self.yellow_lo = None
             self.yellow_hi = None
             self.margin = None
-            self.plan_limit = None
+            self.plan_limit_lo = None
+            self.plan_limit_hi = None
         else:
             self.yellow_lo, self.yellow_hi, self.margin = get_acis_limits(self.msid)
             self.plan_limit_hi = self.yellow_hi-self.margin
@@ -677,7 +681,7 @@ class ACISThermalCheck(object):
                     ax.set_ylim(ymin, max(self.yellow_hi+1, ymax))
                     if self.flag_cold_viols:
                         ax.axhline(self.yellow_lo, linestyle='-', color='y')
-                        ax.axhline(self.yellow_lo + self.margin, linestyle='--', color='y')
+                        ax.axhline(self.plan_limit_lo, linestyle='--', color='y')
                         ax.set_ylim(min(self.yellow_lo-1, ymin), None)
             filename = msid + '_valid.png'
             outfile = os.path.join(outdir, filename)
