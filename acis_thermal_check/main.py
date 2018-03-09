@@ -525,15 +525,19 @@ class ACISThermalCheck(object):
                                     ylabel2='Pitch (deg)', ylim2=(40, 180),
                                     figsize=(8.0, 4.0), width=w1, load_start=load_start)
         # Add horizontal lines for the planning and caution limits
+        ymin, ymax = plots[self.name]['ax'].get_ylim()
+        ymax = max(self.yellow_hi+1, ymax)
         plots[self.name]['ax'].axhline(self.yellow_hi, linestyle='-', color='y',
                                        linewidth=2.0)
-        plots[self.name]['ax'].axhline(self.yellow_hi-self.margin, linestyle='--', 
+        plots[self.name]['ax'].axhline(self.plan_limit_hi, linestyle='--', 
                                        color='y', linewidth=2.0)
         if self.flag_cold_viols:
+            ymin = min(self.yellow_lo-1, ymin)
             plots[self.name]['ax'].axhline(self.yellow_lo, linestyle='-', color='y',
                                            linewidth=2.0)
-            plots[self.name]['ax'].axhline(self.yellow_lo + self.margin, linestyle='--',
+            plots[self.name]['ax'].axhline(self.plan_limit_lo, linestyle='--',
                                            color='y', linewidth=2.0)
+        plots[self.name]['ax'].set_ylim(ymin, ymax)
         filename = self.msid.lower() + '.png'
         outfile = os.path.join(outdir, filename)
         mylog.info('Writing plot file %s' % outfile)
@@ -674,15 +678,16 @@ class ACISThermalCheck(object):
                     fp_sens, acis_s, acis_i = get_acis_limits("fptemp")
                     ax.axhline(acis_i, linestyle='-.', color='purple')
                     ax.axhline(acis_s, linestyle='-.', color='blue')
-                    ax.set_ylim(ymin, max(acis_i+1, ymax))
+                    ymax = max(acis_i+1, ymax)
                 else:
                     ax.axhline(self.yellow_hi, linestyle='-', color='y')
                     ax.axhline(self.plan_limit_hi, linestyle='--', color='y')
-                    ax.set_ylim(ymin, max(self.yellow_hi+1, ymax))
+                    ymax = max(self.yellow_hi+1, ymax)
                     if self.flag_cold_viols:
                         ax.axhline(self.yellow_lo, linestyle='-', color='y')
                         ax.axhline(self.plan_limit_lo, linestyle='--', color='y')
-                        ax.set_ylim(min(self.yellow_lo-1, ymin), None)
+                        ymin = min(self.yellow_lo-1, ymin)
+                ax.set_ylim(ymin, ymax)
             filename = msid + '_valid.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
