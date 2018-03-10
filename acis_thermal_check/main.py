@@ -339,7 +339,7 @@ class ACISThermalCheck(object):
             bad = temp <= limit
         elif lim_type == "max":
             bad = temp >= limit
-        reduce = getattr(np, lim_type)
+        op = getattr(np, lim_type)
         # The NumPy black magic of the next two lines is to figure 
         # out which time periods have planning limit violations and 
         # to find the bounding indexes of these times. This will also
@@ -361,7 +361,7 @@ class ACISThermalCheck(object):
                     datestart = DateTime(load_start).date
                 viol = {'datestart': datestart,
                         'datestop': DateTime(times[change[1] - 1]).date,
-                        '%stemp' % lim_type: reduce(temp[change[0]:change[1]])}
+                        '%stemp' % lim_type: op(temp[change[0]:change[1]])}
                 mylog.info('WARNING: %s violates %s limit ' % (self.msid,
                                                               lim_name) +
                            'of %.2f degC from %s to %s' % (limit,
