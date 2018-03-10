@@ -87,10 +87,19 @@ class ACISThermalCheck(object):
     flag_cold_viols : boolean, optional
         If set, violations for the lower planning limit will be
         checked for and flagged, and 
+    hist_ops : list of strings, optional
+        This sets the operations which will be used to create the
+        error histograms, e.g., including only temperatures above
+        or below a certain value. Should be a list equal to the
+        length of the *hist_limit* length. For example, 
+        ["greater_equal", "greater_equal"] for two histogram limits.
+        Options are "greater", "lesser", "greater_equal", 
+        "lesser_equal" Defaults to "greater_equal" for all values 
+        in *hist_limit*. 
     """
     def __init__(self, msid, name, validation_limits, hist_limit, 
                  calc_model, args, other_telem=None, other_map=None,
-                 flag_cold_viols=False):
+                 flag_cold_viols=False, hist_ops=None):
         self.msid = msid
         self.name = name
         if self.msid == "fptemp":
@@ -112,6 +121,9 @@ class ACISThermalCheck(object):
         # Record the selected state builder in a class attribute
         self.state_builder = make_state_builder(args.state_builder, args)
         self.flag_cold_viols = flag_cold_viols
+        if hist_ops is None:
+            hist_ops = ["greater_equal"]*len(hist_limit)
+        self.hist_ops = hist_ops
 
     def run(self):
         """
@@ -441,7 +453,6 @@ class ACISThermalCheck(object):
                      for i in range(len(times))]
         temp_array = np.rec.fromrecords(
             temp_recs, names=('time', 'date', self.msid))
-
         fmt = {self.msid: '%.2f',
                'time': '%.2f'}
         out = open(outfile, 'w')
@@ -555,7 +566,7 @@ class ACISThermalCheck(object):
 
         return plots
 
-    def get_histogram_mask(self, tlm, limit):
+    def get_histogram_mask(self, tlm, limits):
         """
         This method determines which values of telemetry
         should be used to construct the temperature 
@@ -569,10 +580,18 @@ class ACISThermalCheck(object):
         ----------
         tlm : NumPy record array
             NumPy record array of telemetry
-        limit : array of floats
+        limits : list of floats or 2-tuples of floats
             The limit or limits to use in the masking.
         """
-        return tlm[self.msid] > limit
+        masks = []
+        for i, limit in enumerate(limits):
+            if isinstance(limit, tuple):
+                mask = (tlm[self.msid] >= limit[0]) & (tlm[self.msid] <= limit[1])
+            else:
+                op = getattr(np, self.hist_ops[i])
+                mask = op(tlm[self.msid], limit)
+            masks.append(mask)
+        return masks
 
     def make_validation_plots(self, tlm, model_spec, outdir, run_start):
         """
@@ -695,17 +714,16 @@ class ACISThermalCheck(object):
             plot['lines'] = filename
 
             # Figure out histogram masks
+            ok = self.get_histogram_mask(tlm, self.hist_limit)
             if msid == self.msid:
-                ok = self.get_histogram_mask(tlm, self.hist_limit[0]) 
-                ok = ok & good_mask
+                ok = ok[0] & good_mask
             else:
                 ok = slice(None, None, None)
             diff = np.sort(tlm[msid][ok] - pred[msid][ok])
-            # The PSMC model has a second histogram limit
-            if len(self.hist_limit) == 2:
+            # Some models have a second histogram limit
+            if len(ok) == 2:
                 if msid == self.msid:
-                    ok2 = self.get_histogram_mask(tlm, self.hist_limit[1])
-                    ok2 = ok2 & good_mask
+                    ok2 = ok[1] & good_mask
                 else:
                     ok2 = slice(None, None, None)
                 diff2 = np.sort(tlm[msid][ok2] - pred[msid][ok2])
@@ -725,7 +743,7 @@ class ACISThermalCheck(object):
                 fig.clf()
                 ax = fig.gca()
                 ax.hist(diff / scale, bins=50, log=(histscale == 'log'))
-                if msid == self.msid and len(self.hist_limit) == 2 and ok2.any():
+                if msid == self.msid and ok2.any():
                     ax.hist(diff2 / scale, bins=50, log=(histscale == 'log'),
                             color='red')
                 ax.set_title(msid.upper() + ' residuals: data - model')
