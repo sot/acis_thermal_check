@@ -992,3 +992,15 @@ class ACISThermalCheck(object):
         out['tscpos'] *= -397.7225924607
 
         return out
+
+class DPABoardTempCheck(ACISThermalCheck):
+    def __init__(self, msid, name, validation_limits, hist_limit,
+                 calc_model, args, other_telem=None, other_map=None):
+        hist_ops = ["greater_equal", "lesser_equal"]
+        super(DPABoardTempCheck, self).__init__(msid, name,
+                                                validation_limits,
+                                                hist_limit, calc_model,
+                                                args, other_telem=other_telem,
+                                                other_map=other_map,
+                                                flag_cold_viols=True, 
+                                                hist_ops=hist_ops)
