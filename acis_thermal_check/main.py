@@ -29,8 +29,8 @@ from kadi import events
 
 op_map = {"greater": ">",
           "greater_equal": ">=",
-          "lesser": "<",
-          "lesser_equal": "<="}
+          "less": "<",
+          "less_equal": "<="}
 
 class ACISThermalCheck(object):
     r"""
@@ -98,8 +98,8 @@ class ACISThermalCheck(object):
         or below a certain value. Should be a list equal to the
         length of the *hist_limit* length. For example, 
         ["greater_equal", "greater_equal"] for two histogram limits.
-        Options are "greater", "lesser", "greater_equal", 
-        "lesser_equal" Defaults to "greater_equal" for all values 
+        Options are "greater", "less", "greater_equal", 
+        "less_equal" Defaults to "greater_equal" for all values 
         in *hist_limit*. 
     """
     def __init__(self, msid, name, validation_limits, hist_limit, 
@@ -727,7 +727,7 @@ class ACISThermalCheck(object):
                 ok = slice(None, None, None)
             diff = np.sort(tlm[msid][ok] - pred[msid][ok])
             # Some models have a second histogram limit
-            if len(ok) == 2:
+            if len(self.hist_limit) == 2:
                 if msid == self.msid:
                     ok2 = ok[1] & good_mask
                 else:
@@ -996,7 +996,7 @@ class ACISThermalCheck(object):
 class DPABoardTempCheck(ACISThermalCheck):
     def __init__(self, msid, name, validation_limits, hist_limit,
                  calc_model, args, other_telem=None, other_map=None):
-        hist_ops = ["greater_equal", "lesser_equal"]
+        hist_ops = ["greater_equal", "less_equal"]
         super(DPABoardTempCheck, self).__init__(msid, name,
                                                 validation_limits,
                                                 hist_limit, calc_model,
