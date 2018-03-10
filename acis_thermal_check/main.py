@@ -27,6 +27,11 @@ from acis_thermal_check.utils import \
     get_acis_limits, make_state_builder
 from kadi import events
 
+op_map = {"greater": ">",
+          "greater_equal": ">=",
+          "lesser": "<",
+          "lesser_equal": "<="}
+
 class ACISThermalCheck(object):
     r"""
     ACISThermalCheck class for making thermal model predictions
@@ -161,6 +166,7 @@ class ACISThermalCheck(object):
         # Make the validation plots
         plots_validation = self.make_validation_plots(tlm, self.args.model_spec,
                                                       self.args.outdir, self.args.run_start)
+        proc["op"] = [op_map[op] for op in self.hist_ops]
 
         # Determine violations of temperature validation
         valid_viols = self.make_validation_viols(plots_validation)

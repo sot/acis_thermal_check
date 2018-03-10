@@ -99,9 +99,9 @@ No Validation Violations
 -----------------------
 
 {% if proc.hist_limit|length == 2 %}
-Note: {{proc.name}} residual histograms include points where {{proc.msid}} > {{proc.hist_limit.0}} degC in blue and points where {{proc.msid}} > {{proc.hist_limit.1}} degC in red.
+Note: {{proc.name}} residual histograms include points where {{proc.msid}} {{proc.op.0}} {{proc.hist_limit.0}} degC in blue and points where {{proc.msid}} {{proc.op.1}} {{proc.hist_limit.1}} degC in red.
 {% else %}
-Note: {{proc.name}} residual histograms include only points where {{proc.msid}} > {{proc.hist_limit.0}} degC.
+Note: {{proc.name}} residual histograms include only points where {{proc.msid}} {{proc.op.0}} {{proc.hist_limit.0}} degC.
 {% endif %}
 
 Red = telemetry, blue = model
