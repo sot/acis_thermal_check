@@ -98,10 +98,12 @@ No Validation Violations
 {{ plot.msid }}
 -----------------------
 
+{% if plot.msid == proc.msid %}
 {% if proc.hist_limit|length == 2 %}
 Note: {{proc.name}} residual histograms include points where {{proc.msid}} {{proc.op.0}} {{proc.hist_limit.0}} degC in blue and points where {{proc.msid}} {{proc.op.1}} {{proc.hist_limit.1}} degC in red.
 {% else %}
 Note: {{proc.name}} residual histograms include only points where {{proc.msid}} {{proc.op.0}} {{proc.hist_limit.0}} degC.
+{% endif %}
 {% endif %}
 
 Red = telemetry, blue = model
