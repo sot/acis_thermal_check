@@ -751,7 +751,7 @@ class ACISThermalCheck(object):
                 ax.hist(diff / scale, bins=50, log=(histscale == 'log'))
                 if msid == self.msid and ok2.any():
                     ax.hist(diff2 / scale, bins=50, log=(histscale == 'log'),
-                            color='red')
+                            color='red', alpha=0.5)
                 ax.set_title(msid.upper() + ' residuals: data - model')
                 ax.set_xlabel(labels[msid])
                 fig.subplots_adjust(bottom=0.18)
