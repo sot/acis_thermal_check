@@ -748,10 +748,11 @@ class ACISThermalCheck(object):
                 fig = plt.figure(20 + fig_id, figsize=(4, 3))
                 fig.clf()
                 ax = fig.gca()
-                ax.hist(diff / scale, bins=50, log=(histscale == 'log'))
+                ax.hist(diff / scale, bins=50, log=(histscale == 'log'),
+                        histtype='step')
                 if msid == self.msid and ok2.any():
                     ax.hist(diff2 / scale, bins=50, log=(histscale == 'log'),
-                            color='red', alpha=0.5)
+                            color='red', histtype='step')
                 ax.set_title(msid.upper() + ' residuals: data - model')
                 ax.set_xlabel(labels[msid])
                 fig.subplots_adjust(bottom=0.18)
