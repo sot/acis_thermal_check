@@ -303,8 +303,8 @@ def get_options(name, model_path, opts=None):
     parser.add_argument("--cmd-states-db", default="sybase",
                         help="Commanded states database server (sybase|sqlite). "
                              "Only used if state-builder=sql. Default: sybase")
-    parser.add_argument("--state-builder", default="sql",
-                        help="StateBuilder to use (sql|acis). Default: sql")
+    parser.add_argument("--state-builder", default="acis",
+                        help="StateBuilder to use (sql|acis). Default: acis")
     parser.add_argument("--version", action='store_true', help="Print version")
     # Argument pointing to the NLET file the model should use for this run
     parser.add_argument("--nlet_file",
