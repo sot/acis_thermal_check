@@ -1,0 +1,178 @@
+
+
+Change Description
+==================
+
+ This update integrates the Non-Load Event Tracking (NLET) mechanism, and 
+ the ACIS Ops Backstop History Assembly modules into acis_thermal_check.
+
+ This integration is used for ACIS Ops thermal model execution. The
+ The NLET and Backstop History Assembly modules can also be used
+ independently to track and display load execution and load
+ interruptions of all sorts.
+
+
+Rationale
+==========
+
+ Using this update, acis_thermal_check users will have a new option for 
+ correctly assembling the backstop history starting from, and
+ including, the load week under consideration and working back to any
+ specified date. The assembly takes into account Normal weekly load
+ progression, TOO's, SCS-107 (where the maneuver load is still
+ running), and Full Stops (where both the science and maneuver load
+ has been stopped - e.g. BSH/NSM). Using NLET, any Long Term CTI
+ (LTCTI) measurements and other maneuver CAPs executed are taken into
+ account.
+ 
+ The assembly is done using products that are contained in the load
+ tarballs and which ACIS Ops has always used for load reviews and 
+ thermal models: e.g. full backstop files, maneuver-only backstop
+ files. In addition, archived and controlled LTCTI .RTS files
+ (e.g. 1_CTI06.RTS) are used to factor in any LTCTI measurement which
+ may occur after a shutdown.
+ 
+ The Backstop History module can also be used outside of thermal
+ models if a user wishes to see, and/or use within another program,
+ the load history of a particular time period of interest. But
+ presently the main focus of Backstop History are those attributes of
+ the history pertinent to thermal models.
+ 
+ The old method of backstop history assembly is still available to the
+ user of ACIS Ops thermal models/acis_thermal_check through the use of
+ a command line switch  to the model call(s).
+ 
+
+Files Changed:
+==============
+
+The changed and added files can be seen in these PR's:
+
+ Addition of the ACIS state builder into acis_thermal_check:
+    https://github.com/acisops/acis_thermal_check/pull/16
+
+ Module required to build the history:
+   https://github.com/acisops/backstop_history/pull/3
+
+ ACIS Ops LET GUI:
+   https://github.com/acisops/nlet_gui/pull/1
+
+ Once installed, anyone wishing to clone a single model will have to
+ clone the following packages:
+
+    dpa_check (for example)
+    acis_thermal_check
+    backstop_history
+
+ ACIS Ops Load Review program: run_models.pl
+
+
+Testing:
+======== 
+
+The change was tested, using the following loads:
+
+ FEB2717
+ MAR0617
+ MAR0817
+ MAR1117
+ MAR1517
+ MAR2017
+ MAR2717
+ APR0217
+ APR1017
+ JUL2717
+ JUL3117 
+ AUG3017
+ AUG2817
+ SEP0417
+ SEP0917
+ SEP1317
+ SEP1817 
+
+ JAN0818
+ JAN1518
+ JAN1918
+ JAN2218
+ JAN2918
+ FEB1218
+ FEB1918 
+ FEB2618
+ MAR0518
+ MAR1218
+
+Test loads were selected such that loads which were Normal, TOO,
+SCS-107, and STOP loads were directly tested; both with and without
+LTCTI runs. In addition, the load that came after TOO, SCS-107
+and STOP loads were also tested to be certain the history assembly took
+the TOO's, 107's and STOPs into account correctly.
+
+For each of the loads in the above list, the following runs were made:
+
+Run with Present operational software
+Run with new modules but using the old history assembly technique
+Run with the new modules using the new NLET/Backstop History assembly
+technique
+
+The resultant temperatures.dat file for each of the three runs for
+each of the 27 loads were overplotted and subtracted from each other
+Since the new acis_thermal_check retains the old method of history
+assembly, thorough testing was done to assure that code had not been
+disturbed: highly unlikely as it's an entirely different class. But
+instantiation of the old assembly class was tested.
+
+ Present Operational - New using old technique
+ Present operational - New using new technique
+ New using old technique - New using new technique
+
+The few differences were understood and acceptable.
+
+run_models.pl is the operational ACIS Ops Load Review program that
+calls each thermal model.  As the new NLET/Backstop History technique
+requires a new switch to be added to the model command line options, a
+version of run_models.pl was created and tested to be certain that
+both the old technique and new technique can be successfully run.
+
+Each of the lines that execute the models have these changes:
+
+--state-builder="acis" 
+
+  --state_builder is already incorporated into the model options list
+    but the default is to use the old assembly technique. So this
+    switch was added to the command line.
+
+And this new switch was added to the command line:
+
+--nlet_file /data/acis/LoadReviews/NonLoadTrackedEvents.txt
+
+Both were tested via a new version of run_models.pl.
+
+
+Interface impacts
+=================
+
+When this change is approved and installed, the models will be run
+using the NLET/Backstop History assembly system. The interface change
+occurs in run_models.pl and is described above. No other interface change is
+necessary.
+
+
+
+Review
+====== 
+
+ACIS Ops Operational Readiness Review March 9 and 12, 2018
+
+Several ACIS Ops team reviews of the design and implementation.
+
+Several ACIS Ops reviews of the Operational methods to be used.
+
+Test Results review by ACIS Ops
+
+TWG technical review and approval for ACIS Ops
+
+
+Deployment Plan
+===============
+
+Deploy as soon as approval in this telecon is given.
