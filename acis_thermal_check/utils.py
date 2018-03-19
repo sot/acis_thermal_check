@@ -367,7 +367,8 @@ def make_state_builder(name, args):
         # modules
         state_builder = builder_class(interrupt=args.interrupt,
                                       backstop_file=args.backstop_file,
-                                      nlet_file = args.nlet_file,
+                                      nlet_file=args.nlet_file,
+                                      cmd_states_db=args.cmd_states_db,
                                       logger=mylog)
 
     return state_builder
