@@ -350,7 +350,7 @@ class ACISStateBuilder(StateBuilder):
         # create one for itself and use that. Here, all that really matters 
         # is the value of 'tbegin', the specification of the date parameter to be used
         # and the date_margin.
-        state0 = cmd_states.get_state0(tbegin, None,  datepar='datestart',
+        state0 = cmd_states.get_state0(tbegin, self.db, datepar='datestart',
                                        date_margin=None)
         # WHILE
         # The big while loop that backchains through previous loads and concatenates the
