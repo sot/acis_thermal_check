@@ -143,7 +143,7 @@ class SQLStateBuilder(StateBuilder):
 
         # Get timeline load segments including state0 and beyond.
         timeline_loads = self.db.fetchall("""SELECT * from timeline_loads
-                                          WHERE datestop > '%s'
+                                          WHERE datestop >= '%s'
                                           and datestart < '%s'"""
                                           % (cmds_datestart, cmds_datestop))
         self.logger.info('Found {} timeline_loads  after {}'.format(
