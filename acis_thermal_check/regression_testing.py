@@ -115,9 +115,9 @@ data_dtype = {'temperatures': {'names': ('time', 'date', 'temperature'),
                         }
              }
 
-def exception_catcher(test, old, new, data_type):
+def exception_catcher(test, old, new, data_type, **kwargs):
     try:
-        test(old, new)
+        test(old, new, **kwargs)
     except AssertionError:
         raise AssertionError("%s are not the same!" % data_type)
 
@@ -310,7 +310,7 @@ class RegressionTester(object):
         for k, dt in new_data.dtype.descr:
             if 'f' in dt:
                 exception_catcher(assert_allclose, new_data[k], old_data[k],
-                                  "Prediction arrays for %s" % k)
+                                  "Prediction arrays for %s" % k, rtol=1.0e-5)
             else:
                 exception_catcher(assert_array_equal, new_data[k], old_data[k],
                                   "Prediction arrays for %s" % k)
