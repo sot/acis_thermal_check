@@ -263,23 +263,23 @@ class RegressionTester(object):
         new_results = pickle.load(open(new_answer_file, "rb"))
         old_answer_file = os.path.join(test_data_dir, self.name, load_week,
                                        "validation_data.pkl")
-        old_results = pickle.load(open(old_answer_file, "rb"))
+        old_results = pickle.load(open(old_answer_file, "rb"), encoding='bytes')
         # Compare predictions
         new_pred = new_results["pred"]
-        old_pred = old_results["pred"]
-        pred_keys = set(list(new_pred.keys())+list(old_pred.keys()))
+        old_pred = old_results[b"pred"]
+        pred_keys = set(list(new_pred.keys())+[k.decode() for k in old_pred.keys()])
         for k in pred_keys:
             if k not in new_pred:
                 print("WARNING in pred: '%s' in old answer but not new. Answers should be updated." % k)
                 continue
-            if k not in old_pred:
+            if k.encode('utf-8') not in old_pred:
                 print("WARNING in pred: '%s' in new answer but not old. Answers should be updated." % k)
                 continue
-            exception_catcher(assert_array_equal, new_pred[k], old_pred[k],
+            exception_catcher(assert_allclose, new_pred[k], old_pred[k.encode('utf-8')],
                               "Validation model arrays for %s" % k)
         # Compare telemetry
         new_tlm = new_results['tlm']
-        old_tlm = old_results['tlm']
+        old_tlm = old_results[b'tlm']
         tlm_keys = set(list(new_tlm.dtype.names)+list(old_tlm.dtype.names))
         for k in tlm_keys:
             if k not in new_tlm.dtype.names:
