@@ -233,7 +233,10 @@ class RegressionTester(object):
         new_results = pickle.load(open(new_answer_file, "rb"))
         old_answer_file = os.path.join(test_data_dir, self.name, load_week,
                                        "validation_data.pkl")
-        old_results = pickle.load(open(old_answer_file, "rb"), encoding='bytes')
+        kwargs = {}
+        if six.PY3:
+            kwargs["encoding"] = "bytes"
+        old_results = pickle.load(open(old_answer_file, "rb"), **kwargs)
         # Compare predictions
         new_pred = new_results["pred"]
         old_pred = old_results[b"pred"]
