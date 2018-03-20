@@ -8,6 +8,7 @@ from scipy import misc
 import tempfile
 from .main import ACISThermalCheck
 import pytest
+import six
 
 def pytest_addoption(parser):
     parser.addoption("--answer_store",
@@ -59,17 +60,23 @@ class TestArgs(object):
         Whether or not this is an interrupt load. Default: False
     state_builder string, optional
         The mode used to create the list of commanded states. "sql" or
-        "acis", default "sql".
+        "acis", default "acis".
     cmd_states_db : string, optional
         The mode of database access for the commanded states database.
-        "sybase" or "sqlite". Default: "sybase"
+        "sybase" or "sqlite". Default: "sybase", unless running in
+        Python 3.
     verbose : integer, optional
         The verbosity of the output. Default: 0
     """
     def __init__(self, name, outdir, model_path, run_start=None,
                  load_week=None, days=21.0, T_init=None, interrupt=False,
-                 state_builder='sql', cmd_states_db='sybase', verbose=0):
+                 state_builder='acis', cmd_states_db=None, verbose=0):
         from datetime import datetime
+        if cmd_states_db is None:
+            if six.PY3:
+                cmd_states_db = "sqlite"
+            else:
+                cmd_states_db = "sybase"
         self.load_week = load_week
         if run_start is None:
             year = 2000 + int(load_week[5:7])
@@ -86,6 +93,7 @@ class TestArgs(object):
             load_letter = load_week[-1].lower()
             self.backstop_file = "/data/acis/LoadReviews/%s/%s/ofls%s" % (load_year, load_week[:-1], load_letter)
         self.days = days
+        self.nlet_file = '/data/acis/LoadReviews/NonLoadTrackedEvents.txt'
         self.interrupt = interrupt
         self.state_builder = state_builder
         self.cmd_states_db = cmd_states_db
@@ -138,19 +146,23 @@ class RegressionTester(object):
             atc_class = ACISThermalCheck
         self.atc_class = atc_class
 
-    def run_test_arrays(self, generate_answers, exclude_images=None):
+    def run_test_arrays(self, generate_answers, exclude_images=None, 
+                        state_builder='acis', run_start=None):
         for load_week in normal_loads:
             self.load_test_template(load_week, generate_answers, interrupt=False, 
-                                    exclude_images=exclude_images)
+                                    exclude_images=exclude_images, 
+                                    state_builder=state_builder, run_start=run_start)
         for load_week in too_loads:
             self.load_test_template(load_week, generate_answers, interrupt=True, 
-                                    exclude_images=exclude_images)
+                                    exclude_images=exclude_images, 
+                                    state_builder=state_builder, run_start=run_start)
         for load_week in stop_loads:
             self.load_test_template(load_week, generate_answers, interrupt=True, 
-                                    exclude_images=exclude_images)
+                                    exclude_images=exclude_images, 
+                                    state_builder=state_builder, run_start=run_start)
 
     def load_test_template(self, load_week, generate_answers, run_start=None,
-                           state_builder='sql', interrupt=False, cmd_states_db="sybase",
+                           state_builder='acis', interrupt=False, 
                            exclude_images=None):
         if generate_answers is not None:
             generate_answers = os.path.join(os.path.abspath(generate_answers),
@@ -163,7 +175,7 @@ class RegressionTester(object):
         out_dir = self.name+"_test"
         args = TestArgs(self.name, out_dir, self.model_path, run_start=run_start,
                         load_week=load_week, interrupt=interrupt,
-                        cmd_states_db=cmd_states_db, state_builder=state_builder)
+                        state_builder=state_builder)
         msid_check = self.atc_class(self.msid, self.name, self.valid_limits,
                                     self.hist_limit, self.calc_model, args,
                                     **self.atc_kwargs)
