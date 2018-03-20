@@ -24,3 +24,12 @@ directory, but to be safe there is a script, ``update_atc_answers``,
 which handles this for you in a transparent way with prompts and
 outputs to screen so that you are sure you are doing the right thing
 and that you see what is actually being done. 
+
+First, you should change your group to ``acisops``:
+
+.. code-block:: bash
+    
+    newgrp acisops
+
+This enables you to write to the set of thermal model gold standard answers
+which are owned by ``acisdude``. 
