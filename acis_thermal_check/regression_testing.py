@@ -1,4 +1,4 @@
-import pickle
+from six.moves import cPickle as pickle
 import os
 from numpy.testing import assert_array_equal, \
     assert_allclose
@@ -72,10 +72,10 @@ class TestArgs(object):
                  state_builder='acis', cmd_states_db=None, verbose=0):
         from datetime import datetime
         if cmd_states_db is None:
-            if six.PY3:
-                cmd_states_db = "sqlite"
-            else:
+            if six.PY2:
                 cmd_states_db = "sybase"
+            else:
+                cmd_states_db = "sqlite"
         self.load_week = load_week
         if run_start is None:
             year = 2000 + int(load_week[5:7])
