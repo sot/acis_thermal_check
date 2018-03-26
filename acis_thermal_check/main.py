@@ -708,7 +708,7 @@ class ACISThermalCheck(object):
             filename = os.path.join(outdir, 'validation_data.pkl')
             mylog.info('Writing validation data %s' % filename)
             f = open(filename, 'wb')
-            pickle.dump({'pred': pred, 'tlm': tlm}, f, protocol=-1)
+            pickle.dump({'pred': pred, 'tlm': tlm}, f)
             f.close()
 
         return plots
