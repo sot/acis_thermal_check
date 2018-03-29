@@ -320,13 +320,12 @@ def get_options(name, model_path, opts=None):
     if args.oflsdir is not None:
         args.backstop_file = args.oflsdir
 
-    if args.state_builder == "sql":
-        if args.cmd_states_db not in ('sybase', 'sqlite'):
-            raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
+    if args.cmd_states_db not in ('sybase', 'sqlite'):
+        raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
 
-        # Enforce sqlite cmd states db for Python 3
-        if six.PY3 and args.cmd_states_db == 'sybase':
-            args.cmd_states_db = 'sqlite'
+    # Enforce sqlite cmd states db for Python 3
+    if six.PY3 and args.cmd_states_db == 'sybase':
+        args.cmd_states_db = 'sqlite'
 
     return args
 
@@ -367,7 +366,8 @@ def make_state_builder(name, args):
         # modules
         state_builder = builder_class(interrupt=args.interrupt,
                                       backstop_file=args.backstop_file,
-                                      nlet_file = args.nlet_file,
+                                      nlet_file=args.nlet_file,
+                                      cmd_states_db=args.cmd_states_db,
                                       logger=mylog)
 
     return state_builder

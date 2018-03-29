@@ -8,7 +8,7 @@ from pprint import pformat
 from collections import OrderedDict, defaultdict
 import re
 import time
-import pickle
+from six.moves import cPickle as pickle
 import numpy as np
 import Ska.DBI
 import Ska.Numpy
@@ -708,7 +708,7 @@ class ACISThermalCheck(object):
             filename = os.path.join(outdir, 'validation_data.pkl')
             mylog.info('Writing validation data %s' % filename)
             f = open(filename, 'wb')
-            pickle.dump({'pred': pred, 'tlm': tlm}, f, protocol=-1)
+            pickle.dump({'pred': pred, 'tlm': tlm}, f)
             f.close()
 
         return plots
