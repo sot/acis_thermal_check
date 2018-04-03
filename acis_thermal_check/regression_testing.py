@@ -163,27 +163,22 @@ class RegressionTester(object):
                 os.makedirs(answer_dir)
         return answer_dir
 
-    def run_test(self, test_name, answer_dir, load_week, image=None):
+    def run_test(self, test_name, answer_dir, load_week):
         """
-        This function runs the image answer test in one of two modes:
-        either comparing the image answers from this test to the "gold
-        standard" answers or to simply run the model to generate image
-        answers.
+        This function runs the answer test in one of two modes:
+        either comparing the answers from this test to the "gold
+        standard" answers or to simply run the model to generate answers.
 
         Parameters
         ----------
         test_name : string
-            The name of the test to run. "prediction", "validation", or 
-            "image".
+            The name of the test to run. "prediction" or "validation".
         answer_dir : string
             The path to the directory to which to copy the files. Is None
             if this is a test run, is an actual directory if we are simply
             generating answers.
         load_week : string
             The load week to be tested, in a format like "MAY2016A".
-        image : string, optional
-            The filename of the image to be compared, if running the image
-            test.
         """
         answer_dir = self._set_answer_dir(answer_dir, load_week)
         out_dir = os.path.join(self.outdir, load_week)
@@ -193,7 +188,7 @@ class RegressionTester(object):
             filenames = ["validation_data.pkl"]
         else:
             raise RuntimeError("Invalid test specification! "
-                               "Test name = %s, image = %s." % (test_name, image))
+                               "Test name = %s." % test_name)
         if not answer_dir:
             compare_test = getattr(self, "compare_"+test_name)
             compare_test(load_week, out_dir)
