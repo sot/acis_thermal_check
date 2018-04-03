@@ -156,6 +156,14 @@ class RegressionTester(object):
                                     **self.atc_kwargs)
         msid_check.run()
 
+    def run_models(self, normal=True, interrupt=True):
+        if normal:
+            for load in test_loads["normal"]:
+                self.run_model(load)
+        if interrupt:
+            for load in test_loads["interrupt"]:
+                self.run_model(load, interrupt=True)
+
     def _set_answer_dir(self, answer_dir, load_week):
         if answer_dir is not None:
             answer_dir = os.path.join(os.path.abspath(answer_dir),
