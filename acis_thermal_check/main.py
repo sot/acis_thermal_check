@@ -720,21 +720,20 @@ class ACISThermalCheck(object):
             plot['lines'] = filename
 
             # Figure out histogram masks
-            ok = self.get_histogram_mask(tlm, self.hist_limit)
             if msid == self.msid:
-                ok = ok[0] & good_mask
-            else:
-                ok = slice(None, None, None)
-            diff = np.sort(tlm[msid][ok] - pred[msid][ok])
-            # Some models have a second histogram limit
-            if len(self.hist_limit) == 2:
-                if msid == self.msid:
-                    ok2 = ok[1] & good_mask
+                masks = self.get_histogram_mask(tlm, self.hist_limit)
+                ok = masks[0] & good_mask
+                # Some models have a second histogram limit
+                if len(self.hist_limit) == 2:
+                    ok2 = masks[1] & good_mask
                 else:
-                    ok2 = slice(None, None, None)
-                diff2 = np.sort(tlm[msid][ok2] - pred[msid][ok2])
+                    ok2 = np.zeros(tlm[msid].size, dtype=bool)
             else:
-                ok2 = np.zeros(len(tlm[msid]), dtype=bool)
+                ok = np.ones(tlm[msid].size, dtype=bool)
+                ok2 = np.zeros(tlm[msid].size, dtype=bool)
+            diff = np.sort(tlm[msid][ok] - pred[msid][ok])
+            if ok2.any():
+                diff2 = np.sort(tlm[msid][ok2] - pred[msid][ok2])
             quant_line = "%s" % msid
             for quant in quantiles:
                 quant_val = diff[(len(diff) * quant) // 100]
