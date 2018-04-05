@@ -740,7 +740,6 @@ class ACISThermalCheck(object):
                 plot['quant%02d' % quant] = fmts[msid] % quant_val
                 quant_line += (',' + fmts[msid] % quant_val)
             quant_table += quant_line + "\n"
-
             # We make two histogram plots for each validation,
             # one with linear and another with log scaling.
             for histscale in ('log', 'lin'):
@@ -749,7 +748,7 @@ class ACISThermalCheck(object):
                 ax = fig.gca()
                 ax.hist(diff / scale, bins=50, log=(histscale == 'log'),
                         histtype='step')
-                if msid == self.msid and ok2.any():
+                if ok2.any():
                     ax.hist(diff2 / scale, bins=50, log=(histscale == 'log'),
                             color='red', histtype='step')
                 ax.set_title(msid.upper() + ' residuals: data - model')
