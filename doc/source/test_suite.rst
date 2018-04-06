@@ -3,13 +3,46 @@
 Using the ``acis_thermal_check`` Regression Testing
 ---------------------------------------------------
 
-``acis_thermal_check`` includes a regression test fremework which
+``acis_thermal_check`` includes a regression test fremework which allows one to
+develop tests for a given thermal model against a set of "gold standard" model 
+outputs for a number of load weeks. This section describes the test suite, how 
+to run it, how to add new loads for testing, and how to update the gold standard
+model answers.
 
 A Overview of ``acis_thermal_check`` Regression Testing
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+When an ``acis_thermal_check`` model is run, it produces numerical outputs for 
+model prediction and validation in addition to the plots and tables on the 
+webpages. The ``acis_thermal_check`` regression testing framework compares this
+numerical output from model runs against a set of "gold standard" stored 
+outputs. The idea is that code developments should not change the values 
+compared to those stored in the gold standard, or if they do, that the reasons
+for the changes are understood and deemed necessary (e.g., you found
+a bug, you updated the model specification, or you added a feature to 
+a model). Though this means that the gold standard answers might 
+change regularly (so maybe more of a floating currency), the idea is to
+track the effect of code changes in a systematic way and flag those 
+changes which are not expected to change results but do, so that bugs
+can be identified and fixed before merging the new code into master. 
+
 Running the Test Suite for a Particular Model
 +++++++++++++++++++++++++++++++++++++++++++++
+
+There are a few equivalent ways to invoke the ``acis_thermal_check``
+tests for a given model. 
+
+If you are making changes to a model, you can go to the root of the model code
+directory (e.g., ``dpa_check``) and just run ``py.test``:
+
+.. code-block:: bash
+
+    [~]$ py.test -s 
+
+The ``-s`` flag is optionally included so that the output has maximum verbosity.
+
+Adding the Basic Test Suite to a New Model
+++++++++++++++++++++++++++++++++++++++++++
 
 Updating the "Gold Standard" Answers
 ++++++++++++++++++++++++++++++++++++
@@ -29,7 +62,8 @@ First, you should change your group to ``acisops``:
 
 .. code-block:: bash
     
-    newgrp acisops
+    [~]$ newgrp acisops
 
 This enables you to write to the set of thermal model gold standard answers
-which are owned by ``acisdude``. 
+which are owned by the user ``acisdude`` under the group ``acisops``. These 
+are located in the directory ``/data/acis/thermal_model_tests``. 

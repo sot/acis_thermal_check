@@ -76,12 +76,13 @@ should be noted. The ``setup.py`` for ``dpa_check`` looks like this:
           cmdclass=cmdclass,
           )
 
-Your ``setup.py`` script should look essentially the same as this one, except that
-wherever there is a reference to ``dpa_check`` or 1DPAMZT you should change it to
-the appropriate name for your package. Note the ``entry_points`` dictionary: what it
-does is tell the installer that we want to make an executable wrapper for the 
-``dpa_check.py`` script that can be run from the command line. It does this for you, 
-you just need to make sure it points to the correct package name. 
+Your ``setup.py`` script should look essentially the same as this one, except 
+that wherever there is a reference to ``dpa_check`` or 1DPAMZT you should change
+it to the appropriate name for your package. Note the ``entry_points`` 
+dictionary: what it does is tell the installer that we want to make an 
+executable wrapper for the ``dpa_check.py`` script that can be run from the 
+command line. It does this for you, you just need to make sure it points to the
+correct package name. 
 
 ``MANIFEST.in`` contains a list of data files and file wildcards that need to be 
 installed along with the package. There is only one data file included with
@@ -92,11 +93,11 @@ case ``MANIFEST.in`` is just one line:
 
     include dpa_check/dpa_model_spec.json
 
-``.gitignore`` is simply a list of files and file wildcards that one wants git to
-ignore so they don't get accidentally committed to the repository. These include
-things like byte-compiled files (``*.pyc``) and other directories and files that
-are created when the package is installed. The ``.gitignore`` for ``dpa_check``
-looks like this:
+``.gitignore`` is simply a list of files and file wildcards that one wants git 
+to ignore so they don't get accidentally committed to the repository. These 
+include things like byte-compiled files (``*.pyc``) and other directories and 
+files that are created when the package is installed. The ``.gitignore`` for 
+``dpa_check`` looks like this:
 
 .. code-block:: none
     
@@ -108,29 +109,30 @@ looks like this:
 The Main Script
 ===============
 
-The following describes how one designs the script that uses ``acis_thermal_check``
-to 
+The following describes how one designs the script that uses 
+``acis_thermal_check`` to
+
 Set Up Limits
 +++++++++++++
 
-First, ``acis_thermal_check`` needs to know two "health and safety" limits 
-for the modeled temperature in question: the yellow/caution limit and the 
-"planning" limit, which is defined as a margin away from the yellow limit. 
-These limits are handled by the ``get_acis_limits`` function which is in
-the ``acis_thermal_check.utils`` module. If you have a brand-new model which
+First, ``acis_thermal_check`` needs to know two "health and safety" limits for 
+the modeled temperature in question: the yellow/caution limit and the "planning"
+limit, which is defined as a margin away from the yellow limit. These limits are
+handled by the ``get_acis_limits`` function which is in the 
+``acis_thermal_check.utils`` module. If you have a brand-new model which 
 ``get_acis_limits`` does not 
 
-It is also necessary to specify validation limits, which correspond to limits
-on the differences between the data and the model. Violations of these 
-limits will be flagged in the validation report on the web page. For each
-MSID, the violation limits are given as a list of tuples, where the first
-item in each tuple is the percentile of the distribution of the model error,
-and the second item is the amount of allowed error corresponding to that 
-percentile. These are specified in the ``VALIDATION_LIMITS`` dictionary, which 
-should be specified at the top of the script. 
+It is also necessary to specify validation limits, which correspond to limits on
+the differences between the data and the model. Violations of these limits will
+be flagged in the validation report on the web page. For each MSID, the 
+violation limits are given as a list of tuples, where the first item in each 
+tuple is the percentile of the distribution of the model error, and the second
+item is the amount of allowed error corresponding to that percentile. These are
+specified in the ``VALIDATION_LIMITS`` dictionary, which should be specified at
+the top of the script. 
 
 Lastly, the histograms produced as a part of the validation report do not 
-display the histogram for all temperatures, but only for those temperatures
+display the histogram for all temperatures, but only for those temperatures 
 greater than a lower limit, which is contained in the ``HIST_LIMIT`` list. 
 
 Including the necessary imports, the top of the script should look like this:
@@ -166,11 +168,11 @@ Including the necessary imports, the top of the script should look like this:
 Define ``calc_model`` Function
 ++++++++++++++++++++++++++++++
 
-The next thing to do is to supply a ``calc_model`` function that actually performs
-the ``xija`` model calculation. If your thermal model is sensitive to the spacecraft 
-roll angle, ``acis_thermal_check`` also provides the ``calc_off_nom_rolls`` function 
-which can be used in ``calc_model``. The example of how to set up the DPA model is
-shown below:
+The next thing to do is to supply a ``calc_model`` function that actually 
+performs the ``xija`` model calculation. If your thermal model is sensitive to 
+the spacecraft roll angle, ``acis_thermal_check`` also provides the 
+``calc_off_nom_rolls`` function which can be used in ``calc_model``. The example
+of how to set up the DPA model is shown below:
 
 .. code-block:: python
 
@@ -192,19 +194,21 @@ shown below:
 
 The ``calc_model`` function must have this exact signature, with the first four
 required arguments and the last four optional arguments. Note that even though 
-this particular model does not depend on the state of the detector housing heater,
-the optional arguments are still required in the signature of the function. 
+this particular model does not depend on the state of the detector housing 
+heater, the optional arguments are still required in the signature of the 
+function. 
 
 Create ``ACISThermalCheck`` Object
 ++++++++++++++++++++++++++++++++++
 
 The last thing to do is to create a ``main`` function which will be run when the 
 script is run. This function will collect the command-line arguments using the
-``get_options`` function, create the ``ACISThermalCheck`` object with the arguments
-it needs, and then use the ``run`` method of ``ACISThermalCheck`` to run the model. 
-It's a good idea to run the model within a ``try...except`` block in case any 
-exceptions are raised, because then we can control whether or not the traceback is 
-printed to screen via the ``--traceback`` command-line argument.
+``get_options`` function, create the ``ACISThermalCheck`` object with the 
+arguments it needs, and then use the ``run`` method of ``ACISThermalCheck`` to 
+run the model. It's a good idea to run the model within a ``try...except`` block 
+in case any exceptions are raised, because then we can control whether or not 
+the traceback is printed to screen via the ``--traceback`` command-line 
+argument.
 
 .. code-block:: python
 
