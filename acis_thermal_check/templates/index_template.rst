@@ -16,7 +16,7 @@ Summary
 =====================  =============================================
 Date start             {{proc.datestart}}
 Date stop              {{proc.datestop}}
-Model status           {%if viols.default%}:red:`NOT OK`{% else %}OK{% endif%} (Planning Limit = {{"%.1f"|format(proc.msid_limit)}} C)
+Model status           {%if viols.hi or viols.lo %}:red:`NOT OK`{% else %}OK{% endif%} (Planning Limit = {{"%.1f"|format(proc.msid_limit)}} C)
 {% if bsdir %}
 Load directory         {{bsdir}}
 {% endif %}
