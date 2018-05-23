@@ -182,7 +182,8 @@ class ACISThermalCheck(object):
                    'plots': pred["plots"],
                    'valid_viols': valid_viols,
                    'proc': proc,
-                   'plots_validation': plots_validation}
+                   'plots_validation': plots_validation,
+                   'flag_cold': self.flag_cold_viols}
         self.write_index_rst(self.bsdir, self.args.outdir, context)
 
         # Second, convert reST to HTML

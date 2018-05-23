@@ -40,6 +40,7 @@ Date start             Date stop              Max temperature
 No {{proc.msid}} Hot Violations
 {% endif %}
 
+{% if flag_cold %}
 {% if viols.lo  %}
 {{proc.msid}} Cold Violations
 ------------------------------
@@ -52,6 +53,7 @@ Date start             Date stop              Min temperature
 =====================  =====================  ==================
 {% else %}
 No {{proc.msid}} Cold Violations
+{% endif %}
 {% endif %}
 
 .. image:: {{plots.default.filename}}
