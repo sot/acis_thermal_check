@@ -16,7 +16,7 @@ Summary
 =====================  =============================================
 Date start             {{proc.datestart}}
 Date stop              {{proc.datestop}}
-Model status           {%if viols.default%}:red:`NOT OK`{% else %}OK{% endif%} (Planning Limit = {{"%.1f"|format(proc.msid_limit)}} C)
+Model status           {%if viols.hi or viols.lo %}:red:`NOT OK`{% else %}OK{% endif%} (Planning Limit = {{"%.1f"|format(proc.msid_limit)}} C)
 {% if bsdir %}
 Load directory         {{bsdir}}
 {% endif %}
@@ -26,18 +26,34 @@ Temperatures           `<temperatures.dat>`_
 States                 `<states.dat>`_
 =====================  =============================================
 
-{% if viols.default  %}
-{{proc.msid}} Violations
-------------------------
+{% if viols.hi  %}
+{{proc.msid}} Hot Violations
+-----------------------------
 =====================  =====================  ==================
 Date start             Date stop              Max temperature
 =====================  =====================  ==================
-{% for viol in viols.default %}
+{% for viol in viols.hi %}
 {{viol.datestart}}  {{viol.datestop}}  {{"%.2f"|format(viol.maxtemp)}}
 {% endfor %}
 =====================  =====================  ==================
 {% else %}
-No {{proc.msid}} Violations
+No {{proc.msid}} Hot Violations
+{% endif %}
+
+{% if flag_cold %}
+{% if viols.lo  %}
+{{proc.msid}} Cold Violations
+------------------------------
+=====================  =====================  ==================
+Date start             Date stop              Min temperature
+=====================  =====================  ==================
+{% for viol in viols.lo %}
+{{viol.datestart}}  {{viol.datestop}}  {{"%.2f"|format(viol.mintemp)}}
+{% endfor %}
+=====================  =====================  ==================
+{% else %}
+No {{proc.msid}} Cold Violations
+{% endif %}
 {% endif %}
 
 .. image:: {{plots.default.filename}}
@@ -84,10 +100,12 @@ No Validation Violations
 {{ plot.msid }}
 -----------------------
 
+{% if plot.msid == proc.msid %}
 {% if proc.hist_limit|length == 2 %}
-Note: {{proc.name}} residual histograms include points where {{proc.msid}} > {{proc.hist_limit.0}} degC in blue and points where {{proc.msid}} > {{proc.hist_limit.1}} degC in red.
+Note: {{proc.name}} residual histograms include points where {{proc.msid}} {{proc.op.0}} {{proc.hist_limit.0}} degC in blue and points where {{proc.msid}} {{proc.op.1}} {{proc.hist_limit.1}} degC in red.
 {% else %}
-Note: {{proc.name}} residual histograms include only points where {{proc.msid}} > {{proc.hist_limit.0}} degC.
+Note: {{proc.name}} residual histograms include only points where {{proc.msid}} {{proc.op.0}} {{proc.hist_limit.0}} degC.
+{% endif %}
 {% endif %}
 
 Red = telemetry, blue = model

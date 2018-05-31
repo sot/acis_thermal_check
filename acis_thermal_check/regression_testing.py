@@ -123,6 +123,10 @@ data_dtype = {'temperatures': {'names': ('time', 'date', 'temperature'),
              }
 
 def exception_catcher(test, old, new, data_type, **kwargs):
+    if new.dtype.kind == "S":
+        new = new.astype("U")
+    if old.dtype.kind == "S":
+        old = old.astype("U")
     try:
         test(old, new, **kwargs)
     except AssertionError:

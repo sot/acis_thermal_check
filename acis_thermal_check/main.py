@@ -27,6 +27,11 @@ from acis_thermal_check.utils import \
     get_acis_limits, make_state_builder
 from kadi import events
 
+op_map = {"greater": ">",
+          "greater_equal": ">=",
+          "less": "<",
+          "less_equal": "<="}
+
 class ACISThermalCheck(object):
     r"""
     ACISThermalCheck class for making thermal model predictions
@@ -84,16 +89,34 @@ class ACISThermalCheck(object):
         A dictionary which maps names to MSIDs, e.g.:
         {'sim_z': 'tscpos', 'dp_pitch': 'pitch'}. Used to map
         names understood by Xija to MSIDs.
+    flag_cold_viols : boolean, optional
+        If set, violations for the lower planning limit will be
+        checked for and flagged, and 
+    hist_ops : list of strings, optional
+        This sets the operations which will be used to create the
+        error histograms, e.g., including only temperatures above
+        or below a certain value. Should be a list equal to the
+        length of the *hist_limit* length. For example, 
+        ["greater_equal", "greater_equal"] for two histogram limits.
+        Options are "greater", "less", "greater_equal", 
+        "less_equal" Defaults to "greater_equal" for all values 
+        in *hist_limit*. 
     """
     def __init__(self, msid, name, validation_limits, hist_limit, 
-                 calc_model, args, other_telem=None, other_map=None):
+                 calc_model, args, other_telem=None, other_map=None,
+                 flag_cold_viols=False, hist_ops=None):
         self.msid = msid
         self.name = name
         if self.msid == "fptemp":
-            self.yellow = None
+            self.yellow_lo = None
+            self.yellow_hi = None
             self.margin = None
+            self.plan_limit_lo = None
+            self.plan_limit_hi = None
         else:
-            self.yellow, self.margin = get_acis_limits(self.msid)
+            self.yellow_lo, self.yellow_hi, self.margin = get_acis_limits(self.msid)
+            self.plan_limit_hi = self.yellow_hi-self.margin
+            self.plan_limit_lo = self.yellow_lo+self.margin
         self.validation_limits = validation_limits
         self.hist_limit = hist_limit
         self.calc_model = calc_model
@@ -102,6 +125,10 @@ class ACISThermalCheck(object):
         self.args = args
         # Record the selected state builder in a class attribute
         self.state_builder = make_state_builder(args.state_builder, args)
+        self.flag_cold_viols = flag_cold_viols
+        if hist_ops is None:
+            hist_ops = ["greater_equal"]*len(hist_limit)
+        self.hist_ops = hist_ops
 
     def run(self):
         """
@@ -139,6 +166,7 @@ class ACISThermalCheck(object):
         # Make the validation plots
         plots_validation = self.make_validation_plots(tlm, self.args.model_spec,
                                                       self.args.outdir, self.args.run_start)
+        proc["op"] = [op_map[op] for op in self.hist_ops]
 
         # Determine violations of temperature validation
         valid_viols = self.make_validation_viols(plots_validation)
@@ -154,7 +182,8 @@ class ACISThermalCheck(object):
                    'plots': pred["plots"],
                    'valid_viols': valid_viols,
                    'proc': proc,
-                   'plots_validation': plots_validation}
+                   'plots_validation': plots_validation,
+                   'flag_cold': self.flag_cold_viols}
         self.write_index_rst(self.bsdir, self.args.outdir, context)
 
         # Second, convert reST to HTML
@@ -322,6 +351,45 @@ class ACISThermalCheck(object):
 
         return viols
 
+    def _make_prediction_viols(self, times, temp, load_start, limit, lim_name,
+                               lim_type):
+        viols = []
+        if lim_type == "min":
+            bad = temp <= limit
+        elif lim_type == "max":
+            bad = temp >= limit
+        op = getattr(np, lim_type)
+        # The NumPy black magic of the next two lines is to figure 
+        # out which time periods have planning limit violations and 
+        # to find the bounding indexes of these times. This will also
+        # find violations which happen for one discrete time value also.
+        bad = np.concatenate(([False], bad, [False]))
+        changes = np.flatnonzero(bad[1:] != bad[:-1]).reshape(-1, 2)
+        # Now go through the periods where the temperature violates
+        # the planning limit and flag the duration and maximum of
+        # the violation
+        for change in changes:
+            # Only report violations which occur after the load being
+            # reviewed starts.
+            in_load = times[change[0]] > load_start or \
+                      (times[change[0]] < load_start < times[change[1]])
+            if in_load:
+                if times[change[0]] > load_start:
+                    datestart = DateTime(times[change[0]]).date
+                else:
+                    datestart = DateTime(load_start).date
+                viol = {'datestart': datestart,
+                        'datestop': DateTime(times[change[1] - 1]).date,
+                        '%stemp' % lim_type: op(temp[change[0]:change[1]])}
+                mylog.info('WARNING: %s violates %s limit ' % (self.msid,
+                                                              lim_name) +
+                           'of %.2f degC from %s to %s' % (limit,
+                                                           viol['datestart'],
+                                                           viol['datestop']))
+                viols.append(viol)
+
+        return viols
+
     def make_prediction_viols(self, times, temps, load_start):
         """
         Find limit violations where predicted temperature is above the
@@ -340,37 +408,15 @@ class ACISThermalCheck(object):
         """
         mylog.info('Checking for limit violations')
 
-        viols = {self.name: []}
-
         temp = temps[self.name]
-        plan_limit = self.yellow - self.margin
-        # The NumPy black magic of the next two lines is to figure 
-        # out which time periods have planning limit violations and 
-        # to find the bounding indexes of these times. This will also
-        # find violations which happen for one discrete time value also.
-        bad = np.concatenate(([False], temp >= plan_limit, [False]))
-        changes = np.flatnonzero(bad[1:] != bad[:-1]).reshape(-1, 2)
-        # Now go through the periods where the temperature violates
-        # the planning limit and flag the duration and maximum of
-        # the violation
-        for change in changes:
-            # Only report violations which occur after the load being
-            # reviewed starts.
-            in_load = times[change[0]] > load_start or \
-                (times[change[0]] < load_start < times[change[1]])
-            if in_load:
-                viol = {'datestart': DateTime(times[change[0]]).date,
-                        'datestop': DateTime(times[change[1] - 1]).date,
-                        'maxtemp': temp[change[0]:change[1]].max()}
-                mylog.info('WARNING: %s exceeds planning limit of %.2f '
-                           'degC from %s to %s' % (self.msid,
-                                                   plan_limit,
-                                                   viol['datestart'],
-                                                   viol['datestop']))
-                viols[self.name].append(viol)
 
-        viols["default"] = viols[self.name]
-
+        viols = {"hi": self._make_prediction_viols(times, temp, load_start,
+                                                   self.plan_limit_hi,
+                                                   "planning", "max")}
+        if self.flag_cold_viols:
+            viols["lo"] = self._make_prediction_viols(times, temp, load_start,
+                                                      self.plan_limit_lo,
+                                                      "planning", "min")
         return viols
 
     def write_states(self, outdir, states):
@@ -414,7 +460,6 @@ class ACISThermalCheck(object):
                      for i in range(len(times))]
         temp_array = np.rec.fromrecords(
             temp_recs, names=('time', 'date', self.msid))
-
         fmt = {self.msid: '%.2f',
                'time': '%.2f'}
         out = open(outfile, 'w')
@@ -498,10 +543,19 @@ class ACISThermalCheck(object):
                                     ylabel2='Pitch (deg)', ylim2=(40, 180),
                                     figsize=(8.0, 4.0), width=w1, load_start=load_start)
         # Add horizontal lines for the planning and caution limits
-        plots[self.name]['ax'].axhline(self.yellow, linestyle='-', color='y',
+        ymin, ymax = plots[self.name]['ax'].get_ylim()
+        ymax = max(self.yellow_hi+1, ymax)
+        plots[self.name]['ax'].axhline(self.yellow_hi, linestyle='-', color='y',
                                        linewidth=2.0)
-        plots[self.name]['ax'].axhline(self.yellow-self.margin, linestyle='--', 
+        plots[self.name]['ax'].axhline(self.plan_limit_hi, linestyle='--', 
                                        color='y', linewidth=2.0)
+        if self.flag_cold_viols:
+            ymin = min(self.yellow_lo-1, ymin)
+            plots[self.name]['ax'].axhline(self.yellow_lo, linestyle='-', color='y',
+                                           linewidth=2.0)
+            plots[self.name]['ax'].axhline(self.plan_limit_lo, linestyle='--',
+                                           color='y', linewidth=2.0)
+        plots[self.name]['ax'].set_ylim(ymin, ymax)
         filename = self.msid.lower() + '.png'
         outfile = os.path.join(outdir, filename)
         mylog.info('Writing plot file %s' % outfile)
@@ -519,7 +573,7 @@ class ACISThermalCheck(object):
 
         return plots
 
-    def get_histogram_mask(self, tlm, limit):
+    def get_histogram_mask(self, tlm, limits):
         """
         This method determines which values of telemetry
         should be used to construct the temperature 
@@ -533,10 +587,18 @@ class ACISThermalCheck(object):
         ----------
         tlm : NumPy record array
             NumPy record array of telemetry
-        limit : array of floats
+        limits : list of floats or 2-tuples of floats
             The limit or limits to use in the masking.
         """
-        return tlm[self.msid] > limit
+        masks = []
+        for i, limit in enumerate(limits):
+            if isinstance(limit, tuple):
+                mask = (tlm[self.msid] >= limit[0]) & (tlm[self.msid] <= limit[1])
+            else:
+                op = getattr(np, self.hist_ops[i])
+                mask = op(tlm[self.msid], limit)
+            masks.append(mask)
+        return masks
 
     def make_validation_plots(self, tlm, model_spec, outdir, run_start):
         """
@@ -634,15 +696,24 @@ class ACISThermalCheck(object):
                 for ptime in ptimes:
                     ax.axvline(ptime, ls='--', color='g')
             # Add horizontal lines for the planning and caution limits
-            # or the limits for the focal plane model
+            # or the limits for the focal plane model. Make sure we can
+            # see all of the limits.
             if self.msid == msid:
+                ymin, ymax = ax.get_ylim()
                 if msid == "fptemp":
                     fp_sens, acis_s, acis_i = get_acis_limits("fptemp")
                     ax.axhline(acis_i, linestyle='-.', color='purple')
                     ax.axhline(acis_s, linestyle='-.', color='blue')
+                    ymax = max(acis_i+1, ymax)
                 else:
-                    ax.axhline(self.yellow, linestyle='-', color='y')
-                    ax.axhline(self.yellow - self.margin, linestyle='--', color='y')
+                    ax.axhline(self.yellow_hi, linestyle='-', color='y')
+                    ax.axhline(self.plan_limit_hi, linestyle='--', color='y')
+                    ymax = max(self.yellow_hi+1, ymax)
+                    if self.flag_cold_viols:
+                        ax.axhline(self.yellow_lo, linestyle='-', color='y')
+                        ax.axhline(self.plan_limit_lo, linestyle='--', color='y')
+                        ymin = min(self.yellow_lo-1, ymin)
+                ax.set_ylim(ymin, ymax)
             filename = msid + '_valid.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
@@ -651,38 +722,36 @@ class ACISThermalCheck(object):
 
             # Figure out histogram masks
             if msid == self.msid:
-                ok = self.get_histogram_mask(tlm, self.hist_limit[0]) 
-                ok = ok & good_mask
-            else:
-                ok = slice(None, None, None)
-            diff = np.sort(tlm[msid][ok] - pred[msid][ok])
-            # The PSMC model has a second histogram limit
-            if len(self.hist_limit) == 2:
-                if msid == self.msid:
-                    ok2 = self.get_histogram_mask(tlm, self.hist_limit[1])
-                    ok2 = ok2 & good_mask
+                masks = self.get_histogram_mask(tlm, self.hist_limit)
+                ok = masks[0] & good_mask
+                # Some models have a second histogram limit
+                if len(self.hist_limit) == 2:
+                    ok2 = masks[1] & good_mask
                 else:
-                    ok2 = slice(None, None, None)
-                diff2 = np.sort(tlm[msid][ok2] - pred[msid][ok2])
+                    ok2 = np.zeros(tlm[msid].size, dtype=bool)
             else:
-                ok2 = np.zeros(len(tlm[msid]), dtype=bool)
+                ok = np.ones(tlm[msid].size, dtype=bool)
+                ok2 = np.zeros(tlm[msid].size, dtype=bool)
+            diff = np.sort(tlm[msid][ok] - pred[msid][ok])
+            if ok2.any():
+                diff2 = np.sort(tlm[msid][ok2] - pred[msid][ok2])
             quant_line = "%s" % msid
             for quant in quantiles:
                 quant_val = diff[(len(diff) * quant) // 100]
                 plot['quant%02d' % quant] = fmts[msid] % quant_val
                 quant_line += (',' + fmts[msid] % quant_val)
             quant_table += quant_line + "\n"
-
             # We make two histogram plots for each validation,
             # one with linear and another with log scaling.
             for histscale in ('log', 'lin'):
                 fig = plt.figure(20 + fig_id, figsize=(4, 3))
                 fig.clf()
                 ax = fig.gca()
-                ax.hist(diff / scale, bins=50, log=(histscale == 'log'))
-                if msid == self.msid and len(self.hist_limit) == 2 and ok2.any():
+                ax.hist(diff / scale, bins=50, log=(histscale == 'log'),
+                        histtype='step')
+                if ok2.any():
                     ax.hist(diff2 / scale, bins=50, log=(histscale == 'log'),
-                            color='red')
+                            color='red', histtype='step')
                 ax.set_title(msid.upper() + ' residuals: data - model')
                 ax.set_xlabel(labels[msid])
                 fig.subplots_adjust(bottom=0.18)
@@ -815,7 +884,7 @@ class ACISThermalCheck(object):
                     name=self.name.upper(),
                     hist_limit=self.hist_limit)
         if self.msid != "fptemp":
-            proc["msid_limit"] = self.yellow - self.margin
+            proc["msid_limit"] = self.yellow_hi - self.margin
         mylog.info('##############################'
                    '#######################################')
         mylog.info('# %s_check run at %s by %s'
@@ -923,3 +992,15 @@ class ACISThermalCheck(object):
         out['tscpos'] *= -397.7225924607
 
         return out
+
+class DPABoardTempCheck(ACISThermalCheck):
+    def __init__(self, msid, name, validation_limits, hist_limit,
+                 calc_model, args, other_telem=None, other_map=None):
+        hist_ops = ["greater_equal", "less_equal"]
+        super(DPABoardTempCheck, self).__init__(msid, name,
+                                                validation_limits,
+                                                hist_limit, calc_model,
+                                                args, other_telem=other_telem,
+                                                other_map=other_map,
+                                                flag_cold_viols=True, 
+                                                hist_ops=hist_ops)

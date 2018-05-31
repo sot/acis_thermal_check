@@ -391,6 +391,7 @@ def get_acis_limits(msid):
         acis_s = -112.0
         return fp_sens, acis_i, acis_s
 
+    yellow_lo = None
     yellow_hi = None
 
     margins = {"1dpamzt": 2.0, 
@@ -408,11 +409,11 @@ def get_acis_limits(msid):
 
     if msid.startswith("tmp_"):
         limits_file = pmon_file
-        cols = (5, 6)
+        cols = (4, 5)
         msid = "ADC_"+msid.upper()
     else:
         limits_file = eng_file
-        cols = (3, 5)
+        cols = (2, 3)
 
     if os.path.exists(file_root):
         loc = "local"
@@ -430,7 +431,8 @@ def get_acis_limits(msid):
     for line in lines:
         words = line.strip().split()
         if len(words) > 1 and words[0] == msid.upper():
-            yellow_hi = float(words[cols[0]])
+            yellow_lo = float(words[cols[0]])
+            yellow_hi = float(words[cols[1]])
             break
 
-    return yellow_hi, margin
+    return yellow_lo, yellow_hi, margin
