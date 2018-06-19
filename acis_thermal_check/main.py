@@ -257,6 +257,8 @@ class ACISThermalCheck(object):
         model = self.calc_model_wrapper(model_spec, states, state0['tstart'],
                                         tstop, state0=state0)
 
+        self.predict_model = model
+
         # Make the limit check plots and data files
         plt.rc("axes", labelsize=10, titlesize=12)
         plt.rc("xtick", labelsize=10)
@@ -626,6 +628,8 @@ class ACISThermalCheck(object):
         # Run the thermal model from the beginning of obtained telemetry
         # to the end, so we can compare its outputs to the real values
         model = self.calc_model_wrapper(model_spec, states, start, stop)
+
+        self.validate_model = model
 
         # Use an OrderedDict here because we want the plots on the validation
         # page to appear in this order
