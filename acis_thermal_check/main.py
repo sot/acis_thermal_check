@@ -444,7 +444,7 @@ class ACISThermalCheck(object):
 
     def write_temps(self, outdir, times, temps):
         """
-        Write the states record array to the file "states.dat".
+        Write the states record array to the file "temperatures.dat".
 
         Parameters
         ----------
