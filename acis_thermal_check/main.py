@@ -12,7 +12,7 @@ from six.moves import cPickle as pickle
 import numpy as np
 import Ska.DBI
 import Ska.Numpy
-from Chandra.Time import DateTime, date2secs
+from Chandra.Time import DateTime, date2secs, secs2date
 import matplotlib.pyplot as plt
 from Ska.Matplotlib import cxctime2plotdate, \
     pointpair, plot_cxctime
@@ -26,6 +26,7 @@ from acis_thermal_check.utils import \
     mylog, plot_one, calc_off_nom_rolls, \
     get_acis_limits, make_state_builder
 from kadi import events
+from astropy.table import Table
 
 op_map = {"greater": ">",
           "greater_equal": ">=",
@@ -458,15 +459,12 @@ class ACISThermalCheck(object):
         outfile = os.path.join(outdir, 'temperatures.dat')
         mylog.info('Writing temperatures to %s' % outfile)
         T = temps[self.name]
-        temp_recs = [(times[i], DateTime(times[i]).date, T[i])
-                     for i in range(len(times))]
-        temp_array = np.rec.fromrecords(
-            temp_recs, names=('time', 'date', self.msid))
-        fmt = {self.msid: '%.2f',
-               'time': '%.2f'}
-        out = open(outfile, 'w')
-        Ska.Numpy.pprint(temp_array, fmt, out)
-        out.close()
+        temp_table = Table([times, secs2date(times), T],
+                           names=['time', 'date', self.msid],
+                           copy=False)
+        temp_table['time'].format = '.2f'
+        temp_table[self.msid].format = '.2f'
+        temp_table.write(outfile, format='ascii', delimiter='\t', overwrite=True)
 
     def _make_state_plots(self, plots, num_figs, w1, plot_start,
                           outdir, states, load_start, figsize=(8.5, 4.0)):
