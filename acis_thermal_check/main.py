@@ -436,12 +436,11 @@ class ACISThermalCheck(object):
         outfile = os.path.join(outdir, 'states.dat')
         mylog.info('Writing states to %s' % outfile)
         out = open(outfile, 'w')
-        fmt = {'power': '%.1f',
-               'pitch': '%.2f',
-               'tstart': '%.2f',
-               'tstop': '%.2f'}
-        Ska.Numpy.pprint(states, fmt, out)
-        out.close()
+        states_table = Table(states, copy=False)
+        states_table['pitch'].format = '.2f'
+        states_table['tstart'].format = '.2f'
+        states_table['tstop'].format = '.2f'
+        states_table.write(outfile, format='ascii', delimiter='\t', overwrite=True)
 
     def write_temps(self, outdir, times, temps):
         """
