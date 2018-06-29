@@ -204,7 +204,7 @@ class RegressionTester(object):
         else:
             self.copy_new_files(out_dir, answer_dir, filenames)
 
-    def compare_validation(self, load_week, out_dir):
+    def compare_validation(self, load_week, out_dir, filenames):
         """
         This function compares the "gold standard" validation data 
         with the current test run's data.
@@ -215,13 +215,16 @@ class RegressionTester(object):
             The load week to be tested, in a format like "MAY2016A".
         out_dir : string
             The path to the output directory.
+        filenames : list of strings
+            The list of files which will be used in the comparison.
+            Currently only "validation_data.pkl".
         """
         # First load the answers from the pickle files, both gold standard
         # and current
-        new_answer_file = os.path.join(out_dir, "validation_data.pkl")
+        new_answer_file = os.path.join(out_dir, filenames[0])
         new_results = pickle.load(open(new_answer_file, "rb"))
         old_answer_file = os.path.join(test_data_dir, self.name, load_week,
-                                       "validation_data.pkl")
+                                       filenames[0])
         kwargs = {} if six.PY2 else {'encoding': 'latin1'}
         old_results = pickle.load(open(old_answer_file, "rb"), **kwargs)
         # Compare predictions
@@ -251,21 +254,23 @@ class RegressionTester(object):
             exception_catcher(assert_array_equal, new_tlm[k], old_tlm[k],
                               "Validation telemetry arrays for %s" % k)
 
-    def compare_prediction(self, load_week, out_dir):
+    def compare_prediction(self, load_week, out_dir, filenames):
         """
         This function compares the "gold standard" prediction data with 
         the current test run's data for the .dat files produced in the 
         thermal model run.
-      
+
         Parameters
         ----------
-        load_week : string                                                                                                                                                                                           
-            The load week to be tested, in a format like "MAY2016A".                                                                                                                                                
+        load_week : string
+            The load week to be tested, in a format like "MAY2016A".
         out_dir : string
             The path to the output directory.
+        filenames : list of strings
+            The list of files which will be used in the comparison.
         """
-        for prefix in ("temperatures", "states"):
-            fn = prefix+".dat"
+        for fn in filenames:
+            prefix = fn.split(".")[0]
             new_fn = os.path.join(out_dir, fn)
             old_fn = os.path.join(test_data_dir, self.name, load_week, fn)
             new_data = np.loadtxt(new_fn, skiprows=1, dtype=data_dtype[prefix])
