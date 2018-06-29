@@ -100,6 +100,9 @@ class TestArgs(object):
 data_dtype = {'temperatures': {'names': ('time', 'date', 'temperature'),
                                'formats': ('f8', 'S21', 'f8')
                               },
+              'earth_solid_angles': {'names': ('time', 'date', 'earth_solid_angle'),
+                                     'formats': ('f8', 'S21', 'f8')
+                                     },
               'states': {'names': ('ccd_count', 'clocking', 'datestart',
                                    'datestop', 'dec', 'dither', 'fep_count',
                                    'hetg', 'letg', 'obsid', 'pcad_mode',
@@ -193,6 +196,8 @@ class RegressionTester(object):
         out_dir = os.path.join(self.outdir, load_week)
         if test_name == "prediction":
             filenames = ["temperatures.dat", "states.dat"]
+            if self.name == "acisfp":
+                filenames.append("earth_solid_angles.dat")
         elif test_name == "validation":
             filenames = ["validation_data.pkl"]
         else:
