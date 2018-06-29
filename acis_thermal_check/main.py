@@ -437,10 +437,10 @@ class ACISThermalCheck(object):
         mylog.info('Writing states to %s' % outfile)
         out = open(outfile, 'w')
         states_table = Table(states, copy=False)
-        states_table['pitch'].format = '.2f'
-        states_table['tstart'].format = '.2f'
-        states_table['tstop'].format = '.2f'
-        states_table.write(outfile, format='ascii', delimiter='\t', overwrite=True)
+        states_table['pitch'].format = '%.2f'
+        states_table['tstart'].format = '%.2f'
+        states_table['tstop'].format = '%.2f'
+        states_table.write(outfile, format='ascii', delimiter='\t')
 
     def write_temps(self, outdir, times, temps):
         """
@@ -461,9 +461,9 @@ class ACISThermalCheck(object):
         temp_table = Table([times, secs2date(times), T],
                            names=['time', 'date', self.msid],
                            copy=False)
-        temp_table['time'].format = '.2f'
-        temp_table[self.msid].format = '.2f'
-        temp_table.write(outfile, format='ascii', delimiter='\t', overwrite=True)
+        temp_table['time'].format = '%.2f'
+        temp_table[self.msid].format = '%.2f'
+        temp_table.write(outfile, format='ascii', delimiter='\t')
 
     def _make_state_plots(self, plots, num_figs, w1, plot_start,
                           outdir, states, load_start, figsize=(8.5, 4.0)):
