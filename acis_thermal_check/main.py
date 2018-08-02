@@ -749,7 +749,7 @@ class ACISThermalCheck(object):
                 fig.clf()
                 ax = fig.gca()
                 ax.hist(diff / scale, bins=50, log=(histscale == 'log'),
-                        histtype='step')
+                        histtype='step', color='b')
                 if ok2.any():
                     ax.hist(diff2 / scale, bins=50, log=(histscale == 'log'),
                             color='red', histtype='step')
