@@ -675,6 +675,7 @@ class ACISThermalCheck(object):
         quant_table = ''
         quant_head = ",".join(['MSID'] + ["quant%d" % x for x in quantiles])
         quant_table += quant_head + "\n"
+        xmin, xmax = cxctime2plotdate(model.times)[[0, -1]]
         for fig_id, msid in enumerate(pred.keys()):
             plot = dict(msid=msid.upper())
             fig = plt.figure(10 + fig_id, figsize=(7, 3.5))
@@ -715,6 +716,7 @@ class ACISThermalCheck(object):
                         ax.axhline(self.plan_limit_lo, linestyle='--', color='y')
                         ymin = min(self.yellow_lo-1, ymin)
                 ax.set_ylim(ymin, ymax)
+            ax.set_xlim(xmin, xmax)
             filename = msid + '_valid.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
