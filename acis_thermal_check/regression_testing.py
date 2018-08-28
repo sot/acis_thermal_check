@@ -62,14 +62,13 @@ class TestArgs(object):
         "acis", default "acis".
     cmd_states_db : string, optional
         The mode of database access for the commanded states database.
-        "sybase" or "sqlite". Default: "sybase", unless running in
-        Python 3.
+        "sqlite" or "sybase".
     verbose : integer, optional
         The verbosity of the output. Default: 0
     """
     def __init__(self, name, outdir, model_path, run_start=None,
                  load_week=None, days=21.0, T_init=None, interrupt=False,
-                 state_builder='acis', cmd_states_db=None, verbose=0):
+                 state_builder='acis', cmd_states_db="sqlite", verbose=0):
         from datetime import datetime
         if cmd_states_db is None:
             if six.PY2:
