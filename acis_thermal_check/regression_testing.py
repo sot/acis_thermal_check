@@ -62,7 +62,7 @@ class TestArgs(object):
         "acis", default "acis".
     cmd_states_db : string, optional
         The mode of database access for the commanded states database.
-        "sqlite" or "sybase".
+        "sqlite" or "sybase". Default: "sqlite"
     verbose : integer, optional
         The verbosity of the output. Default: 0
     """
