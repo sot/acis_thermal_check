@@ -300,9 +300,9 @@ def get_options(name, model_path, opts=None):
     parser.add_argument("--T-init", type=float,
                         help="Starting temperature (degC or degF, depending on the model). "
                              "Default is to compute it from telemetry.")
-    parser.add_argument("--cmd-states-db", default="sybase",
+    parser.add_argument("--cmd-states-db", default="sqlite",
                         help="Commanded states database server (sybase|sqlite). "
-                             "Only used if state-builder=sql. Default: sybase")
+                             "Default: sqlite")
     parser.add_argument("--state-builder", default="acis",
                         help="StateBuilder to use (sql|acis). Default: acis")
     parser.add_argument("--version", action='store_true', help="Print version")
