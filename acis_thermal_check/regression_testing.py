@@ -95,6 +95,7 @@ class TestArgs(object):
         if name == "acisfp":
             self.fps_nopref = os.path.join(model_path, "FPS_NoPref.txt")
 
+
 # Large, multi-layer dictionary which encodes the datatypes for the
 # different quantities that are being checked against.
 data_dtype = {'temperatures': {'names': ('time', 'date', 'temperature'),
@@ -149,7 +150,7 @@ class RegressionTester(object):
             os.mkdir(self.outdir)
 
     def run_model(self, load_week, run_start=None, state_builder='acis',
-                  interrupt=False, cmd_states_db="sybase"):
+                  interrupt=False, cmd_states_db="sqlite"):
         out_dir = os.path.join(self.outdir, load_week)
         args = TestArgs(self.name, out_dir, self.model_path, run_start=run_start,
                         load_week=load_week, interrupt=interrupt,
