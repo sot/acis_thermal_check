@@ -29,20 +29,6 @@ class StateBuilder(object):
         """
         raise NotImplementedError("'StateBuilder should be subclassed!")
 
-    def get_validation_states(self, datestart, datestop):
-        """
-        Get states for validation of the thermal model.
-
-        Parameters
-        ----------
-        datestart : string
-            The start date to grab states afterward.
-        datestop : string
-            The end date to grab states before.
-        """
-        raise NotImplementedError("'StateBuilder should be subclassed!")
-
-
     def _get_bs_cmds(self):
         """
         Internal method used to obtain commands from the backstop 
@@ -63,6 +49,41 @@ class StateBuilder(object):
         self.tstart = bs_cmds[0]['time']
         self.tstop = bs_cmds[-1]['time']
 
+    def get_validation_states(self, datestart, datestop):
+        """
+        Get states for validation of the thermal model.
+
+        Parameters
+        ----------
+        datestart : string
+            The start date to grab states afterward.
+        datestop : string
+            The end date to grab states before.
+        """
+        datestart = DateTime(datestart).date
+        datestop = DateTime(datestop).date
+        self.logger.info('Getting commanded states between %s - %s' %
+                         (datestart, datestop))
+
+        # Get all states that intersect specified date range
+        cmd = """SELECT * FROM cmd_states
+                 WHERE datestop > '%s' AND datestart < '%s'
+                 ORDER BY datestart""" % (datestart, datestop)
+        self.logger.debug('Query command: %s' % cmd)
+        states = self.db.fetchall(cmd)
+        self.logger.info('Found %d commanded states' % len(states))
+
+        # Set start and end state date/times to match telemetry span.  Extend the
+        # state durations by a small amount because of a precision issue converting
+        # to date and back to secs.  (The reference tstop could be just over the
+        # 0.001 precision of date and thus cause an out-of-bounds error when
+        # interpolating state values).
+        states[0].tstart = DateTime(datestart).secs - 0.01
+        states[0].datestart = DateTime(states[0].tstart).date
+        states[-1].tstop = DateTime(datestop).secs + 0.01
+        states[-1].datestop = DateTime(states[-1].tstop).date
+
+        return states
 
 
 class SQLStateBuilder(StateBuilder):
@@ -187,41 +208,6 @@ class SQLStateBuilder(StateBuilder):
 
         return states, state0
 
-    def get_validation_states(self, datestart, datestop):
-        """
-        Get states for validation of the thermal model.
-
-        Parameters
-        ----------
-        datestart : string
-            The start date to grab states afterward.
-        datestop : string
-            The end date to grab states before.
-        """
-        datestart = DateTime(datestart).date
-        datestop = DateTime(datestop).date
-        self.logger.info('Getting commanded states between %s - %s' %
-                         (datestart, datestop))
-
-        # Get all states that intersect specified date range
-        cmd = """SELECT * FROM cmd_states
-                 WHERE datestop > '%s' AND datestart < '%s'
-                 ORDER BY datestart""" % (datestart, datestop)
-        self.logger.debug('Query command: %s' % cmd)
-        states = self.db.fetchall(cmd)
-        self.logger.info('Found %d commanded states' % len(states))
-
-        # Set start and end state date/times to match telemetry span.  Extend the
-        # state durations by a small amount because of a precision issue converting
-        # to date and back to secs.  (The reference tstop could be just over the
-        # 0.001 precision of date and thus cause an out-of-bounds error when
-        # interpolating state values).
-        states[0].tstart = DateTime(datestart).secs - 0.01
-        states[0].datestart = DateTime(states[0].tstart).date
-        states[-1].tstop = DateTime(datestop).secs + 0.01
-        states[-1].datestop = DateTime(states[-1].tstop).date
-
-        return states
 
 #-------------------------------------------------------------------------------
 # ACIS Ops Load History assembly 
@@ -288,7 +274,7 @@ class ACISStateBuilder(StateBuilder):
                   os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3'))
         self.logger.info('Connecting to {} to get cmd_states'.format(server))
         self.db = Ska.DBI.DBI(dbi=cmd_states_db, server=server, user='aca_read',
-                              database='aca')   
+                              database='aca')
 
 
     def get_prediction_states(self, tbegin):
@@ -339,7 +325,7 @@ class ACISStateBuilder(StateBuilder):
         bs_cmds = copy.copy(self.bs_cmds)
         bs_start_time = bs_cmds[0]['time']
         present_ofls_dir = copy.copy(self.backstop_file)
-        
+
         # So long as the earliest command in bs_cmds is after the state0
         # time, keep concatenating continuity commands to bs_cmds based upon
         # the type of load.
@@ -357,60 +343,59 @@ class ACISStateBuilder(StateBuilder):
         # The big while loop that backchains through previous loads and concatenates the
         # proper load sections to the review load.
         while state0['tstart'] < bs_start_time:
-    
+
             # Read the Continuity information of the present ofls directory
             cont_load_path, present_load_type, scs107_date = self.BSC.get_continuity_file_info(present_ofls_dir)
-    
-        #---------------------- NORMAL ----------------------------------------
+
+            #---------------------- NORMAL ----------------------------------------
             # If the load type is "normal" then grab the continuity command
             # set and concatenate those commands to the start of bs_cmds
             if present_load_type.upper() == 'NORMAL':
                 # Obtain the continuity load commands
                 cont_bs_cmds, cont_bs_name = self.BSC.get_bs_cmds(cont_load_path)
-    
+
                 # Combine the continuity commands with the bs_cmds
                 bs_cmds = self.BSC.CombineNormal(cont_bs_cmds, bs_cmds)
-        
+
                 # Reset the backstop collection start time for the While loop
                 bs_start_time = bs_cmds[0]['time']
                 # Now point the operative ofls directory to the Continuity directory
                 present_ofls_dir = cont_load_path
-        
-        #---------------------- TOO ----------------------------------------
+
+            #---------------------- TOO ----------------------------------------
             # If the load type is "too" then grab the continuity command
             # set and concatenate those commands to the start of bs_cmds
             elif present_load_type.upper() == 'TOO':
-                 # Obtain the continuity load commands
+                # Obtain the continuity load commands
                 cont_bs_cmds, cont_bs_name = self.BSC.get_bs_cmds(cont_load_path)
-    
+
                 # Combine the continuity commands with the bs_cmds
                 bs_cmds = self.BSC.CombineTOO(cont_bs_cmds, bs_cmds)
-                
+
                 # Reset the backstop collection start time for the While loop
                 bs_start_time = bs_cmds[0]['time']
                 # Now point the operative ofls directory to the Continuity directory
                 present_ofls_dir = cont_load_path
-        
-        
-        #---------------------- STOP ----------------------------------------
+
+            #---------------------- STOP ----------------------------------------
             # If the load type is "STOP" then grab the continuity command
             # set and concatenate those commands to the start of bs_cmds
             # Take into account the SCS-107 commands which shut ACIS down
             # and any LTCTI run
             elif present_load_type.upper() == 'STOP':
-        
+
                 # Obtain the continuity load commands
                 cont_bs_cmds, cont_bs_name = self.BSC.get_bs_cmds(cont_load_path)
-    
+
                 # CombineSTOP the continuity commands with the bs_cmds
                 bs_cmds = self.BSC.CombineSTOP(cont_bs_cmds, bs_cmds, scs107_date )
-                
+
                 # Reset the backstop collection start time for the While loop
                 bs_start_time = bs_cmds[0]['time']
                 # Now point the operative ofls directory to the Continuity directory
                 present_ofls_dir = cont_load_path
-        
-        #---------------------- SCS-107 ----------------------------------------
+
+            #---------------------- SCS-107 ----------------------------------------
             # If the load type is "STOP" then grab the continuity command
             # set and concatenate those commands to the start of bs_cmds
             # Take into account the SCS-107 commands which shut ACIS down
@@ -419,18 +404,17 @@ class ACISStateBuilder(StateBuilder):
                 # Obtain the continuity load commands
                 cont_bs_cmds, cont_bs_name = self.BSC.get_bs_cmds(cont_load_path)
                 # Store the continuity bs commands as a chunk in the chunk list
-        
+
                 # Obtain the CONTINUITY load Vehicle-Only file
                 vo_bs_cmds, vo_bs_name = self.BSC.get_vehicle_only_bs_cmds(cont_load_path)
-        
+
                 # Combine107 the continuity commands with the bs_cmds
                 bs_cmds = self.BSC.Combine107(cont_bs_cmds, vo_bs_cmds, bs_cmds, scs107_date )
-        
+
                 # Reset the backstop collection start time for the While loop
                 bs_start_time = bs_cmds[0]['time']
                 # Now point the operative ofls directory to the Continuity directory
                 present_ofls_dir = cont_load_path
-        
 
         # Convert the assembled backstop command history into commanded states
         # from state0 through the end of the Review Load backstop commands.
@@ -438,7 +422,7 @@ class ACISStateBuilder(StateBuilder):
         # time and then converts each relevant backstop command, in that resultant list,
         # into a pseudo-commanded states state
         states = cmd_states.get_states(state0, bs_cmds)
-    
+
         # Get rid of the 2099 placeholder stop date
         states[-1].datestop = bs_cmds[-1]['date']
         states[-1].tstop = bs_cmds[-1]['time']
@@ -448,41 +432,6 @@ class ACISStateBuilder(StateBuilder):
 
         return states, state0
 
-    def get_validation_states(self, datestart, datestop):
-        """
-        Get states for validation of the thermal model.
-
-        Parameters
-        ----------
-        datestart : string
-            The start date to grab states afterward.
-        datestop : string
-            The end date to grab states before.
-        """
-        datestart = DateTime(datestart).date
-        datestop = DateTime(datestop).date
-        self.logger.info('Getting commanded states between %s - %s' %
-                         (datestart, datestop))
-
-        # Get all states that intersect specified date range
-        cmd = """SELECT * FROM cmd_states
-                 WHERE datestop > '%s' AND datestart < '%s'
-                 ORDER BY datestart""" % (datestart, datestop)
-        self.logger.debug('Query command: %s' % cmd)
-        states = self.db.fetchall(cmd)
-        self.logger.info('Found %d commanded states' % len(states))
-
-        # Set start and end state date/times to match telemetry span.  Extend the
-        # state durations by a small amount because of a precision issue converting
-        # to date and back to secs.  (The reference tstop could be just over the
-        # 0.001 precision of date and thus cause an out-of-bounds error when
-        # interpolating state values).
-        states[0].tstart = DateTime(datestart).secs - 0.01
-        states[0].datestart = DateTime(states[0].tstart).date
-        states[-1].tstop = DateTime(datestop).secs + 0.01
-        states[-1].datestop = DateTime(states[-1].tstop).date
-
-        return states
 
 state_builders = {"sql": SQLStateBuilder,
                   "acis": ACISStateBuilder}
