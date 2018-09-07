@@ -206,7 +206,7 @@ class RegressionTester(object):
                                "Test name = %s." % test_name)
         if not answer_dir:
             compare_test = getattr(self, "compare_"+test_name)
-            compare_test(load_week, out_dir)
+            compare_test(load_week, out_dir, filenames)
         else:
             self.copy_new_files(out_dir, answer_dir, filenames)
 
