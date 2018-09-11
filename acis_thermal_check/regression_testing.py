@@ -187,7 +187,7 @@ class RegressionTester(object):
 
     def run_test(self, test_name, answer_dir, load_week):
         """
-        This function runs the answer test in one of two modes:
+        This method runs the answer test in one of two modes:
         either comparing the answers from this test to the "gold
         standard" answers or to simply run the model to generate answers.
 
@@ -221,7 +221,7 @@ class RegressionTester(object):
 
     def compare_validation(self, load_week, out_dir, filenames):
         """
-        This function compares the "gold standard" validation data 
+        This method compares the "gold standard" validation data 
         with the current test run's data.
 
         Parameters
@@ -271,7 +271,7 @@ class RegressionTester(object):
 
     def compare_prediction(self, load_week, out_dir, filenames):
         """
-        This function compares the "gold standard" prediction data with 
+        This method compares the "gold standard" prediction data with 
         the current test run's data for the .dat files produced in the 
         thermal model run.
 
@@ -303,7 +303,7 @@ class RegressionTester(object):
  
     def copy_new_files(self, out_dir, answer_dir, filenames):
         """
-        This function copies the files generated in this test
+        This method copies the files generated in this test
         run to a directory specified by the user, typically for
         inspection and for possible updating of the "gold standard"
         answers.
