@@ -322,19 +322,44 @@ class RegressionTester(object):
             tofile = os.path.join(answer_dir, filename)
             shutil.copyfile(fromfile, tofile)
 
-    def check_violation_reporting(self, load_week, model_spec, datestart,
-                                  datestop):
+    def check_violation_reporting(self, load_week, model_spec,
+                                  datestarts, datestops, temps):
+        """
+        This method runs loads which report violations of
+        limits and ensures that they report the violation,
+        as well as the correct start and stop times.
+
+        Parameters
+        ----------
+        load_week : string
+            The load to check. 
+        model_spec : string
+            The path to the model specification file to
+            use. To ensure the violation is reported in
+            the same way, we must use the same model
+            specification file that was used at the time
+            of the run.
+        datestarts : list of strings
+            The start times of the violations.
+        datestops : list of strings
+            The stop times of the violations.
+        temps : list of strings
+            The temperatures which were reached during the
+            violations, in string format rounded to two
+            decimal places.
+        """
+        load_year = "20%s" % load_week[-2:]
         self.run_model(load_week, model_spec)
         out_dir = os.path.join(self.outdir, load_week)
-        msg = "WARNING: {} violates planning limit".format(self.msid.lower())
-        with open(os.path.join(out_dir, "run.dat"), 'r') as myfile:
-            found_warning = False
+        with open(os.path.join(out_dir, "index.rst"), 'r') as myfile:
             lines = myfile.readlines()
+            i = 0
             for line in lines:
-                if msg in line:
-                    found_warning = True
-                    break
-            assert found_warning
-            assert datestart in line
-            assert datestop in line
+                if line.startswith("Model status"):
+                    assert "NOT OK" in line
+                if line.startswith(load_year):
+                    assert datestarts[i] in line
+                    assert datestops[i] in line
+                    assert temps[i] in line
+                    i += 1
 
