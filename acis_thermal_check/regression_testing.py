@@ -60,7 +60,8 @@ class TestArgs(object):
     """
     def __init__(self, name, outdir, model_path, run_start=None,
                  load_week=None, days=21.0, T_init=None, interrupt=False,
-                 state_builder='acis', cmd_states_db="sqlite", verbose=0):
+                 state_builder='acis', cmd_states_db="sqlite", verbose=0,
+                 model_spec=None):
         from datetime import datetime
         if cmd_states_db is None:
             if six.PY2:
@@ -90,7 +91,9 @@ class TestArgs(object):
         self.T_init = T_init
         self.traceback = True
         self.verbose = verbose
-        self.model_spec = os.path.join(model_path, "%s_model_spec.json" % name)
+        if model_spec is None:
+            model_spec = os.path.join(model_path, "%s_model_spec.json" % name)
+        self.model_spec = model_spec
         self.version = None
         if name == "acisfp":
             self.fps_nopref = os.path.join(model_path, "FPS_NoPref.txt")
@@ -150,11 +153,12 @@ class RegressionTester(object):
             os.mkdir(self.outdir)
 
     def run_model(self, load_week, run_start=None, state_builder='acis',
-                  interrupt=False, cmd_states_db="sqlite"):
+                  interrupt=False, cmd_states_db="sqlite", model_spec=None):
         out_dir = os.path.join(self.outdir, load_week)
         args = TestArgs(self.name, out_dir, self.model_path, run_start=run_start,
                         load_week=load_week, interrupt=interrupt,
-                        state_builder=state_builder, cmd_states_db=cmd_states_db)
+                        state_builder=state_builder, cmd_states_db=cmd_states_db,
+                        model_spec=model_spec)
         msid_check = self.atc_class(self.msid, self.name, self.valid_limits,
                                     self.hist_limit, self.calc_model, args,
                                     **self.atc_kwargs)
@@ -317,3 +321,20 @@ class RegressionTester(object):
             fromfile = os.path.join(out_dir, filename)
             tofile = os.path.join(answer_dir, filename)
             shutil.copyfile(fromfile, tofile)
+
+    def check_violation_reporting(self, load_week, model_spec, datestart,
+                                  datestop):
+        self.run_model(load_week, model_spec)
+        out_dir = os.path.join(self.outdir, load_week)
+        msg = "WARNING: {} violates planning limit".format(self.msid.lower())
+        with open(os.path.join(out_dir, "run.dat"), 'r') as myfile:
+            found_warning = False
+            lines = myfile.readlines()
+            for line in lines:
+                if msg in line:
+                    found_warning = True
+                    break
+            assert found_warning
+            assert datestart in line
+            assert datestop in line
+
