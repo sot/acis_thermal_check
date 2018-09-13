@@ -49,7 +49,7 @@ class TestArgs(object):
         determined from telemetry.
     interrupt : boolean, optional
         Whether or not this is an interrupt load. Default: False
-    state_builder string, optional
+    state_builder : string, optional
         The mode used to create the list of commanded states. "sql" or
         "acis", default "acis".
     cmd_states_db : string, optional
@@ -57,6 +57,9 @@ class TestArgs(object):
         "sqlite" or "sybase". Default: "sqlite"
     verbose : integer, optional
         The verbosity of the output. Default: 0
+    model_spec : string, optional
+        The path to the model specification file to use. Default is to
+        use the model specification file stored in the model package.
     """
     def __init__(self, name, outdir, model_path, run_start=None,
                  load_week=None, days=21.0, T_init=None, interrupt=False,
@@ -153,7 +156,33 @@ class RegressionTester(object):
             os.mkdir(self.outdir)
 
     def run_model(self, load_week, run_start=None, state_builder='acis',
-                  interrupt=False, cmd_states_db="sqlite", model_spec=None):
+                  interrupt=False, cmd_states_db="sqlite", model_spec=None,
+                  override_limits=None):
+        """
+        Run a thermal model in test mode for a single load week.
+
+        Parameters
+        ----------
+        load_week : string
+            The load week to be tested, in a format like "MAY2016A".
+        run_start : string, optional
+            The run start time in YYYY:DOY:HH:MM:SS.SSS format. If not
+            specified, one will be created 3 days prior to the model run.
+        state_builder : string, optional
+            The mode used to create the list of commanded states. "sql" or
+            "acis", default "acis".
+        interrupt : boolean, optional
+            Whether or not this is an interrupt load. Default: False
+        cmd_states_db : string, optional
+            The mode of database access for the commanded states database.
+            "sqlite" or "sybase". Default: "sqlite"
+        model_spec : string, optional
+            The path to the model specification file to use. Default is to
+        use the model specification file stored in the model package.
+            override_limits : dict, optional
+            Override any margin by setting a new value to its name
+            in this dictionary. SHOULD ONLY BE USED FOR TESTING.
+        """
         out_dir = os.path.join(self.outdir, load_week)
         args = TestArgs(self.name, out_dir, self.model_path, run_start=run_start,
                         load_week=load_week, interrupt=interrupt,
@@ -162,10 +191,29 @@ class RegressionTester(object):
         msid_check = self.atc_class(self.msid, self.name, self.valid_limits,
                                     self.hist_limit, self.calc_model, args,
                                     **self.atc_kwargs)
-        msid_check.run()
+        msid_check.run(override_limits=override_limits)
 
     def run_models(self, normal=True, interrupt=True, run_start=None,
                    state_builder='acis', cmd_states_db='sqlite'):
+        """
+        Run the internally set list of models for regression testing.
+
+        Parameters
+        ----------
+        normal : boolean, optional
+            Run the "normal" loads. Default: True
+        interrupt : boolean, optional
+            Run the "interrupt" loads. Default: True
+        run_start : string, optional
+            The run start time in YYYY:DOY:HH:MM:SS.SSS format. If not
+            specified, one will be created 3 days prior to the model run.
+        state_builder : string, optional
+            The mode used to create the list of commanded states. "sql" or
+            "acis", default "acis".
+        cmd_states_db : string, optional
+            The mode of database access for the commanded states database.
+            "sqlite" or "sybase". Default: "sqlite"
+        """
         if normal:
             for load in test_loads["normal"]:
                 self.run_model(load, run_start=run_start,
@@ -323,7 +371,8 @@ class RegressionTester(object):
             shutil.copyfile(fromfile, tofile)
 
     def check_violation_reporting(self, load_week, model_spec,
-                                  datestarts, datestops, temps):
+                                  run_start, datestarts, datestops, 
+                                  temps, override_limits=None):
         """
         This method runs loads which report violations of
         limits and ensures that they report the violation,
@@ -335,10 +384,12 @@ class RegressionTester(object):
             The load to check. 
         model_spec : string
             The path to the model specification file to
-            use. To ensure the violation is reported in
-            the same way, we must use the same model
-            specification file that was used at the time
-            of the run.
+            use. For this test, to ensure the violation is
+            reported in the same way, we must use the same
+            model specification file that was used at the
+            time of the run.
+        run_start : string
+            The run start time in YYYY:DOY:HH:MM:SS.SSS format.
         datestarts : list of strings
             The start times of the violations.
         datestops : list of strings
@@ -347,14 +398,19 @@ class RegressionTester(object):
             The temperatures which were reached during the
             violations, in string format rounded to two
             decimal places.
+        override_limits : dict, optional
+            Override any margin by setting a new value to its name
+            in this dictionary. SHOULD ONLY BE USED FOR TESTING.
         """
-        load_year = "20%s" % load_week[-2:]
-        self.run_model(load_week, model_spec)
+        load_year = "20%s" % load_week[-3:-1]
+        self.run_model(load_week, run_start=run_start, 
+                       model_spec=model_spec,
+                       override_limits=override_limits)
         out_dir = os.path.join(self.outdir, load_week)
+        os.system("cp %s /Users/jzuhone" % os.path.join(out_dir, "index.rst"))
         with open(os.path.join(out_dir, "index.rst"), 'r') as myfile:
-            lines = myfile.readlines()
             i = 0
-            for line in lines:
+            for line in myfile.readlines():
                 if line.startswith("Model status"):
                     assert "NOT OK" in line
                 if line.startswith(load_year):

@@ -87,7 +87,7 @@ class ACISThermalCheck(object):
         ["greater_equal", "greater_equal"] for two histogram limits.
         Options are "greater", "less", "greater_equal", 
         "less_equal" Defaults to "greater_equal" for all values 
-        in *hist_limit*. 
+        in *hist_limit*.
     """
     def __init__(self, msid, name, validation_limits, hist_limit,
                  other_telem=None, other_map=None,
@@ -116,7 +116,7 @@ class ACISThermalCheck(object):
             hist_ops = ["greater_equal"]*len(hist_limit)
         self.hist_ops = hist_ops
 
-    def run(self, args):
+    def run(self, args, override_limits=None):
         """
         The main interface to all of ACISThermalCheck's functions.
         This method must be called by the particular thermal model
@@ -127,11 +127,29 @@ class ACISThermalCheck(object):
         args : ArgumentParser arguments
             The command-line options object, which has the options
             attached to it as attributes
+        override_limits : dict, optional
+            Override any margin by setting a new value to its name
+            in this dictionary. SHOULD ONLY BE USED FOR TESTING.
+            This is deliberately hidden from command-line operation
+            to avoid it being used accidentally.
         """
         # First, record the selected state builder in the class attributes
         self.state_builder = make_state_builder(args.state_builder, args)
 
         proc = self._setup_proc_and_logger(args)
+
+        # This allows one to override the planning and yellow limits
+        # for a particular model run. THIS SHOULD ONLY BE USED FOR
+        # TESTING PURPOSES.
+        if override_limits is not None:
+            for k, v in override_limits.items():
+                if hasattr(self, k):
+                    limit = getattr(self, k)
+                    mylog.warning("Replacing %s %.2f with %.2f" % (k, limit, v))
+                    setattr(self, k, v)
+
+        if self.msid != "fptemp":
+            proc["msid_limit"] = self.plan_limit_hi
 
         # Determine the start and stop times either from whatever was
         # stored in state_builder or punt by using NOW and None for
@@ -1093,7 +1111,7 @@ class DPABoardTempCheck(ACISThermalCheck):
         hist_ops = ["greater_equal", "less_equal"]
         super(DPABoardTempCheck, self).__init__(msid, name,
                                                 validation_limits,
-                                                hist_limit, args,
+                                                hist_limit,
                                                 other_telem=other_telem,
                                                 other_map=other_map,
                                                 flag_cold_viols=True,
