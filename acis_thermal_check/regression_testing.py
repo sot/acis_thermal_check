@@ -372,7 +372,7 @@ class RegressionTester(object):
 
     def check_violation_reporting(self, load_week, model_spec,
                                   run_start, datestarts, datestops, 
-                                  temps, override_limits=None):
+                                  temps, obsids=None, override_limits=None):
         """
         This method runs loads which report violations of
         limits and ensures that they report the violation,
@@ -398,6 +398,9 @@ class RegressionTester(object):
             The temperatures which were reached during the
             violations, in string format rounded to two
             decimal places.
+        obsids : list of strings
+            For the focal plane model, these are the obsids
+            during which the violations occurred.
         override_limits : dict, optional
             Override any margin by setting a new value to its name
             in this dictionary. SHOULD ONLY BE USED FOR TESTING.
@@ -417,5 +420,7 @@ class RegressionTester(object):
                     assert datestarts[i] in line
                     assert datestops[i] in line
                     assert temps[i] in line
+                    if self.msid == "fptemp":
+                        assert obsids[i] in line
                     i += 1
 
