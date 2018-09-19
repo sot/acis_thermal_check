@@ -7,18 +7,18 @@ import shutil
 import glob
 from six.moves import input
 
-models = ["acisfp", "dea", "dpa", "psmc",
-          "fep1_mong", "fep1_actel",
-          "bep_pcb"]
+all_models = ["acisfp", "dea", "dpa", "psmc",
+              "fep1_mong", "fep1_actel",
+              "bep_pcb"]
 
 parser = argparse.ArgumentParser(description='A user-friendly script to update acis_thermal_check '
                                              'gold-standard answers.')
 parser.add_argument("answer_location", type=str, help='The location of the new answers.')
 parser.add_argument("--gold_standard", type=str, help='The location of the "gold standard" answers.',
                     default="/data/acis/thermal_model_tests")
-parser.add_argument("--which_models", type=str, help='Which models should have their answers updated. '
-                                                      'Should be passed in as a comma-separated list. If '
-                                                      'not specified, all answers found will be updated.')
+parser.add_argument("--models", type=str, help='Which models should have their answers updated. '
+                                               'Should be passed in as a comma-separated list. If '
+                                               'not specified, all answers found will be updated.')
 
 args = parser.parse_args()
 
@@ -32,18 +32,18 @@ if not os.path.exists(gold_standard):
 if not os.path.exists(answer_location):
     raise OSError("Cannot find the path %s!" % answer_location)
 
-if args.which_models is None:
-    which_models = os.listdir(answer_location)
+if args.models is None:
+    models = os.listdir(answer_location)
 else:
-    which_models = args.which_models.split(",")
+    models = args.models.split(",")
 
-if len(which_models) == 0:
+if len(models) == 0:
     raise OSError("No answers were found in %s or specified!" % answer_location)
 
 updated = []
 
-for model in which_models:
-    if model not in models:
+for model in models:
+    if model not in all_models:
         print("Directory %s not a model directory, so skipping." % model)
         continue
     answer_dir = os.path.join(answer_location, model)
