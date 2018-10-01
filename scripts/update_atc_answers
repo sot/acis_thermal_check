@@ -52,6 +52,7 @@ for model in models:
                       "the new answers %s!" % answer_dir)
     while True:
         response = input("I'm about to update the answers for model %s. Is that ok? [y/N]" % model)
+        response = response.upper()
         if response == "":
             response = "N"
         if response not in ["Y","N"]:
