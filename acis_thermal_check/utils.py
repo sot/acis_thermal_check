@@ -4,28 +4,54 @@ import logging
 import os
 import matplotlib.pyplot as plt
 from Ska.Matplotlib import cxctime2plotdate
+import Ska.Numpy
 import six
 
 TASK_DATA = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 mylog = logging.getLogger('acis_thermal_check')
 
-def calc_off_nom_rolls(states):
-    """
-    Calculate the off-nominal rolls from commanded states, which
-    include for a given state its start and stop times and the
-    attitude quaternion.
 
-    states : NumPy record array
-        The commanded states to compute the off-nominal rolls
-        from.
+def calc_pitch_roll(ephem, states):
+    """Calculate the normalized sun vector in body coordinates.
+
+    Parameters
+    ----------
+    ephem : MSIDset with orbitephem and solarephem MSIDs
+    states : commanded states NumPy recarray
+
+    Returns
+    -------
+    2 NumPy arrays, pitch and roll
     """
-    off_nom_rolls = []
-    for i, state in enumerate(states):
-        att = [state[x] for x in ['q1', 'q2', 'q3', 'q4']]
-        time = (state['tstart'] + state['tstop']) / 2
-        off_nom_rolls.append(Ska.Sun.off_nominal_roll(att, time))
-    return np.array(off_nom_rolls)
+    from Ska.engarchive.derived.pcad import arccos_clip, qrotate
+    idxs = Ska.Numpy.interpolate(np.arange(len(states)), states['tstart'],
+                                 ephem['solarephem0_x'].times, method='nearest')
+    states = states[idxs]
+
+    chandra_eci = np.array([ephem['orbitephem0_x'].vals,
+                            ephem['orbitephem0_y'].vals,
+                            ephem['orbitephem0_z'].vals])
+    sun_eci = np.array([ephem['solarephem0_x'].vals,
+                        ephem['solarephem0_y'].vals,
+                        ephem['solarephem0_z'].vals])
+    sun_vec = -chandra_eci + sun_eci
+    est_quat = np.array([states['q1'],
+                         states['q2'],
+                         states['q3'],
+                         states['q4']])
+
+    sun_vec_b = qrotate(est_quat, sun_vec)  # Rotate into body frame
+    magnitude = np.sqrt((sun_vec_b ** 2).sum(axis=0))
+    #ephem.bads |= magnitude == 0.0
+    #magnitude[ephem.bads] = 1.0
+    sun_vec_b = sun_vec_b / magnitude  # Normalize
+
+    pitch = np.degrees(arccos_clip(sun_vec_b[0, :]))
+    roll = np.degrees(np.arctan2(-sun_vec_b[1, :], -sun_vec_b[2, :]))
+
+    return ephem['solarephem0_x'].times, pitch, roll
+
 
 def config_logging(outdir, verbose):
     """

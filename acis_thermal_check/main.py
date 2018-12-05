@@ -23,8 +23,8 @@ from astropy.io import ascii
 version = acis_thermal_check.__version__
 from acis_thermal_check.utils import \
     config_logging, TASK_DATA, plot_two, \
-    mylog, plot_one, calc_off_nom_rolls, \
-    get_acis_limits, make_state_builder
+    mylog, plot_one, get_acis_limits, \
+    make_state_builder
 from kadi import events
 from astropy.table import Table
 
@@ -266,7 +266,7 @@ class ACISThermalCheck(object):
         plt.rc("ytick", labelsize=10)
         temps = {self.name: model.comp[self.msid].mvals}
         # make_prediction_plots runs the validation of the model against previous telemetry
-        plots = self.make_prediction_plots(outdir, states, model.times, temps, tstart)
+        plots = self.make_prediction_plots(outdir, states, model, model.times, temps, tstart)
         # make_prediction_viols determines the violations and prints them out
         viols = self.make_prediction_viols(model.times, temps, tstart)
         # write_states writes the commanded states to states.dat
@@ -466,7 +466,8 @@ class ACISThermalCheck(object):
         temp_table.write(outfile, format='ascii', delimiter='\t')
 
     def _make_state_plots(self, plots, num_figs, w1, plot_start,
-                          outdir, states, load_start, figsize=(8.5, 4.0)):
+                          outdir, states, model, load_start, 
+                          figsize=(8.5, 4.0)):
         # Make a plot of ACIS CCDs and SIM-Z position
         plots['pow_sim'] = plot_two(
             fig_id=num_figs+1,
@@ -493,8 +494,8 @@ class ACISThermalCheck(object):
             fig_id=num_figs+2,
             title='Off-Nominal Roll',
             xlabel='Date',
-            x=pointpair(states['tstart'], states['tstop']),
-            y=pointpair(calc_off_nom_rolls(states)),
+            x=model.times,
+            y=model.comp["roll"].mvals,
             xmin=plot_start,
             ylabel='Roll Angle (deg)',
             ylim=(-20.0, 20.0),
@@ -505,7 +506,7 @@ class ACISThermalCheck(object):
         plots['roll']['fig'].savefig(outfile)
         plots['roll']['filename'] = filename
 
-    def make_prediction_plots(self, outdir, states, times, temps, load_start):
+    def make_prediction_plots(self, outdir, states, model, times, temps, load_start):
         """
         Make plots of the thermal prediction as well as associated 
         commanded states.
@@ -566,7 +567,7 @@ class ACISThermalCheck(object):
         w1, _ = plots[self.name]['fig'].get_size_inches()
 
         self._make_state_plots(plots, 1, w1, plot_start,
-                               outdir, states, load_start)
+                               outdir, states, model, load_start)
 
         plots['default'] = plots[self.name]
 

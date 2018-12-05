@@ -6,7 +6,7 @@ from acis_thermal_check.main import \
     ACISThermalCheck, \
     DPABoardTempCheck
 from acis_thermal_check.utils import \
-    calc_off_nom_rolls, get_options, \
+    calc_pitch_roll, get_options, \
     get_acis_limits, mylog
 
 
