@@ -66,10 +66,10 @@ class ACISThermalCheck(object):
         temperatures which will be included in the validation
         histogram. The number of colored histograms on the plot
         will correspond to the number of values in this list.
-    calc_model : function
+    make_model : function
         A function which is used to drive Xija and run the
         thermal model. It must have the following signature:
-        def calc_model(model_spec, states, start, stop,
+        def make_model(model_spec, states, start, stop,
                        T_comp=None, T_comp_times=None)
         "model_spec": The model specifiation which is used to
         run the model.
@@ -104,7 +104,7 @@ class ACISThermalCheck(object):
         in *hist_limit*. 
     """
     def __init__(self, msid, name, validation_limits, hist_limit, 
-                 calc_model, args, other_telem=None, other_map=None,
+                 make_model, args, other_telem=None, other_map=None,
                  flag_cold_viols=False, hist_ops=None):
         self.msid = msid
         self.name = name
@@ -120,7 +120,7 @@ class ACISThermalCheck(object):
             self.plan_limit_lo = self.yellow_lo+self.margin
         self.validation_limits = validation_limits
         self.hist_limit = hist_limit
-        self.calc_model = calc_model
+        self.make_model = make_model
         self.other_telem = other_telem
         self.other_map = other_map
         self.args = args
@@ -253,10 +253,10 @@ class ACISThermalCheck(object):
         # Get commanded states and set initial temperature
         states, state0 = self.get_states(tlm, T_init)
 
-        # calc_model_wrapper actually does the model calculation by running
+        # calc_model actually does the model calculation by running
         # model-specific code.
-        model = self.calc_model_wrapper(model_spec, states, state0['tstart'],
-                                        tstop, state0=state0)
+        model = self.calc_model(model_spec, states, state0['tstart'],
+                                tstop, state0=state0)
 
         self.predict_model = model
 
@@ -277,9 +277,9 @@ class ACISThermalCheck(object):
         return dict(states=states, times=model.times, temps=temps,
                     plots=plots, viols=viols)
 
-    def calc_model_wrapper(self, model_spec, states, tstart, tstop, state0=None):
+    def calc_model(self, model_spec, states, tstart, tstop, state0=None):
         """
-        This method sets up the model and runs it. "calc_model" is
+        This method sets up the model and runs it. "make_model" is
         provided by the specific model instances.
 
         Parameters
@@ -306,8 +306,11 @@ class ACISThermalCheck(object):
             htrb = ascii.read(htrbfn, format='rdb')
             dh_heater_times = date2secs(htrb['time'])
             dh_heater = htrb['dahtbon'].astype(bool)
-        return self.calc_model(model_spec, states, tstart, tstop, start_msid,
-                               dh_heater=dh_heater, dh_heater_times=dh_heater_times)
+        model = self.make_model(model_spec, states, tstart, tstop, start_msid,
+                                dh_heater=dh_heater, dh_heater_times=dh_heater_times)
+        model.make()
+        model.calc()
+        return model
 
     def make_validation_viols(self, plots_validation):
         """
@@ -625,7 +628,7 @@ class ACISThermalCheck(object):
 
         # Run the thermal model from the beginning of obtained telemetry
         # to the end, so we can compare its outputs to the real values
-        model = self.calc_model_wrapper(model_spec, states, start, stop)
+        model = self.calc_model(model_spec, states, start, stop)
 
         self.validate_model = model
 
@@ -997,13 +1000,14 @@ class ACISThermalCheck(object):
 
         return out
 
+
 class DPABoardTempCheck(ACISThermalCheck):
     def __init__(self, msid, name, validation_limits, hist_limit,
-                 calc_model, args, other_telem=None, other_map=None):
+                 make_model, args, other_telem=None, other_map=None):
         hist_ops = ["greater_equal", "less_equal"]
         super(DPABoardTempCheck, self).__init__(msid, name,
                                                 validation_limits,
-                                                hist_limit, calc_model,
+                                                hist_limit, make_model,
                                                 args, other_telem=other_telem,
                                                 other_map=other_map,
                                                 flag_cold_viols=True, 

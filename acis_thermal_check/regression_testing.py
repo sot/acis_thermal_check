@@ -133,14 +133,14 @@ def exception_catcher(test, old, new, data_type, **kwargs):
 
 class RegressionTester(object):
     def __init__(self, msid, name, model_path, valid_limits,
-                 hist_limit, calc_model, atc_class=None,
+                 hist_limit, make_model, atc_class=None,
                  atc_kwargs=None):
         self.msid = msid
         self.name = name
         self.model_path = model_path
         self.valid_limits = valid_limits
         self.hist_limit = hist_limit
-        self.calc_model = calc_model
+        self.make_model = make_model
         if atc_kwargs is None:
             atc_kwargs = {}
         self.atc_kwargs = atc_kwargs
@@ -179,7 +179,7 @@ class RegressionTester(object):
                         load_week=load_week, interrupt=interrupt,
                         state_builder=state_builder)
         msid_check = self.atc_class(self.msid, self.name, self.valid_limits,
-                                    self.hist_limit, self.calc_model, args,
+                                    self.hist_limit, self.make_model, args,
                                     **self.atc_kwargs)
         msid_check.run()
         self.run_answer_test(load_week, out_dir, generate_answers)
