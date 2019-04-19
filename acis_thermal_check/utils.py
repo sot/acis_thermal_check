@@ -14,6 +14,8 @@ mylog = logging.getLogger('acis_thermal_check')
 
 def calc_pitch_roll(ephem, states):
     """Calculate the normalized sun vector in body coordinates.
+    Shamelessly copied from Ska.engarchive.derived.pcad but 
+    modified to use commanded states quaternions
 
     Parameters
     ----------
@@ -22,7 +24,7 @@ def calc_pitch_roll(ephem, states):
 
     Returns
     -------
-    2 NumPy arrays, pitch and roll
+    3 NumPy arrays: time, pitch and roll
     """
     from Ska.engarchive.derived.pcad import arccos_clip, qrotate
     idxs = Ska.Numpy.interpolate(np.arange(len(states)), states['tstart'],
