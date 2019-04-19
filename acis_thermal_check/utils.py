@@ -397,6 +397,8 @@ def make_state_builder(name, args):
                                       nlet_file=args.nlet_file,
                                       cmd_states_db=args.cmd_states_db,
                                       logger=mylog)
+    else:
+        raise RuntimeError("No such state builder with name %s!" % name)
 
     return state_builder
 
