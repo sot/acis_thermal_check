@@ -104,6 +104,7 @@ def config_logging(outdir, verbose):
         filehandler.setLevel(logging.DEBUG)
     logger.addHandler(filehandler)
 
+
 def plot_one(fig_id, x, y, linestyle='-', 
              color='blue', xmin=None,
              xmax=None, ylim=None, 
@@ -178,6 +179,7 @@ def plot_one(fig_id, x, y, linestyle='-',
         fig.subplots_adjust(left=lm, right=rm)
 
     return {'fig': fig, 'ax': ax}
+
 
 def plot_two(fig_id, x, y, x2, y2,
              linestyle='-', linestyle2='-',
@@ -277,8 +279,8 @@ def plot_two(fig_id, x, y, x2, y2,
         rm = fig.subplotpars.right * width / w2
         fig.subplots_adjust(left=lm, right=rm)
 
-
     return {'fig': fig, 'ax': ax, 'ax2': ax2}
+
 
 def get_options(name, model_path, opts=None):
     """
@@ -355,6 +357,7 @@ def get_options(name, model_path, opts=None):
 
     return args
 
+
 def make_state_builder(name, args):
     """
     Take the command-line arguments and use them to construct
@@ -374,12 +377,11 @@ def make_state_builder(name, args):
 
     builder_class = state_builders[name]
 
-
-    # Build the appropriate state_builder depending upon the 
+    # Build the appropriate state_builder depending upon the
     # value of the passed in parameter "name" which was
-    # originally the --state-builder="sql"|"acis"" input argument
+    # originally the --state-builder="sql"|"acis" input argument
     #
-    #  Instantiate the SQL History Builder: SQLStateBuilder
+    # Instantiate the SQL History Builder: SQLStateBuilder
     if name == "sql":
         state_builder = builder_class(interrupt=args.interrupt,
                                       backstop_file=args.backstop_file,
@@ -397,6 +399,7 @@ def make_state_builder(name, args):
                                       logger=mylog)
 
     return state_builder
+
 
 def get_acis_limits(msid):
     """
