@@ -43,8 +43,7 @@ def calc_pitch_roll(ephem, states):
 
     sun_vec_b = qrotate(est_quat, sun_vec)  # Rotate into body frame
     magnitude = np.sqrt((sun_vec_b ** 2).sum(axis=0))
-    #ephem.bads |= magnitude == 0.0
-    #magnitude[ephem.bads] = 1.0
+    magnitude[magnitude == 0.0] = 1.0
     sun_vec_b = sun_vec_b / magnitude  # Normalize
 
     pitch = np.degrees(arccos_clip(sun_vec_b[0, :]))
