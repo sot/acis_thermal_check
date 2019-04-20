@@ -301,7 +301,8 @@ class ACISThermalCheck(object):
             dh_heater_times = None
         else:
             start_msid = state0[self.msid]
-            htrbfn = os.path.join(self.bsdir, 'dahtbon_history.rdb')
+            htrbfn = os.path.join(TASK_DATA, 'acis_thermal_check', 'data',
+                                  'dahtbon_history.rdb')
             mylog.info('Reading file of dahtrb commands from file %s' % htrbfn)
             htrb = ascii.read(htrbfn, format='rdb')
             dh_heater_times = date2secs(htrb['time'])
