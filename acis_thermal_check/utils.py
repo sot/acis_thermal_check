@@ -51,7 +51,7 @@ def calc_pitch_roll(ephem, states):
     pitch = np.degrees(arccos_clip(sun_vec_b[0, :]))
     roll = np.degrees(np.arctan2(-sun_vec_b[1, :], -sun_vec_b[2, :]))
 
-    return ephem['solarephem0_x'].times, pitch, roll
+    return ephem['orbitephem0_x'].times, pitch, roll
 
 
 def config_logging(outdir, verbose):
@@ -337,9 +337,12 @@ def get_options(name, model_path, opts=None):
     parser.add_argument("--version", action='store_true', help="Print version")
     # Argument pointing to the NLET file the model should use for this run
     parser.add_argument("--nlet_file",
-                         default='/data/acis/LoadReviews/NonLoadTrackedEvents.txt',
-                        help="Full path to the Non-Load Event Tracking that should be used for this model run")    
-
+                        default='/data/acis/LoadReviews/NonLoadTrackedEvents.txt',
+                        help="Full path to the Non-Load Event Tracking file that should be "
+                             "used for this model run.")
+    parser.add_argument("--ephem_file",
+                        help="Path to a file containing an ephemeris for the period "
+                             "under consideration. Useful for testing purposes.")
     if opts is not None:
         for opt_name, opt in opts:
             parser.add_argument("--%s" % opt_name, **opt)

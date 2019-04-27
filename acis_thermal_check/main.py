@@ -33,6 +33,7 @@ op_map = {"greater": ">",
           "less": "<",
           "less_equal": "<="}
 
+
 class ACISThermalCheck(object):
     r"""
     ACISThermalCheck class for making thermal model predictions
@@ -192,6 +193,20 @@ class ACISThermalCheck(object):
 
         return
 
+    def get_ephemeris(self, start, stop):
+        msids = ['orbitephem0_{}'.format(axis) for axis in "xyz"]
+        msids += ['solarephem0_{}'.format(axis) for axis in "xyz"]
+        if self.args.ephem_file is None:
+            ephem = fetch.MSIDset(msids, start - 2000.0, stop + 2000.0)
+            return ephem["orbitephem0_x"].times, ephem
+        else:
+            ephem_t = ascii.read(self.args.ephem_file)
+            times = date2secs(ephem_t["dates"])
+            idxs = np.logical_and(times >= start - 2000.0,
+                                  times <= stop + 2000.0)
+            ephem = dict((k, ephem_t[k].data[idxs]) for k in msids)
+            return ephem_t["times"].data[idxs], ephem
+
     def get_states(self, tlm, T_init):
         """
         Call the state builder to get the commanded states and
@@ -307,8 +322,10 @@ class ACISThermalCheck(object):
             htrb = ascii.read(htrbfn, format='rdb')
             dh_heater_times = date2secs(htrb['time'])
             dh_heater = htrb['dahtbon'].astype(bool)
-        model = self.make_model(model_spec, states, tstart, tstop, start_msid,
-                                dh_heater=dh_heater, dh_heater_times=dh_heater_times)
+        ephem_times, ephem = self.get_ephemeris(tstart, tstop)
+        model = self.make_model(model_spec, states, tstart, tstop, ephem_times,
+                                ephem, start_msid, dh_heater=dh_heater, 
+                                dh_heater_times=dh_heater_times)
         model.make()
         model.calc()
         return model
