@@ -24,7 +24,7 @@ version = acis_thermal_check.__version__
 from acis_thermal_check.utils import \
     config_logging, TASK_DATA, plot_two, \
     mylog, plot_one, get_acis_limits, \
-    make_state_builder
+    make_state_builder, calc_pitch_roll
 from kadi import events
 from astropy.table import Table
 
@@ -67,22 +67,13 @@ class ACISThermalCheck(object):
         temperatures which will be included in the validation
         histogram. The number of colored histograms on the plot
         will correspond to the number of values in this list.
-    make_model : function
-        A function which is used to drive Xija and run the
-        thermal model. It must have the following signature:
-        def make_model(model_spec, states, start, stop,
-                       T_comp=None, T_comp_times=None)
-        "model_spec": The model specifiation which is used to
-        run the model.
-        "states": commanded states structured NumPy array.
-        "start": The start time of the model run
-        "stop": The stop time of the model run
-        "T_comp": The initial temperature values of the components
-        "T_comp_times": The times at which the components of the
-        temperature are defined
     args : ArgumentParser arguments
         The command-line options object, which has the options
         attached to it as attributes
+    calc_model : function, optional
+        The ACISThermalCheck class has its own calc_model
+        method which is used to drive Xija and run the
+        thermal model. The function supplied here 
     other_telem : list of strings, optional
         A list of other MSIDs that may need to be obtained from
         the engineering archive for validation purposes. The
@@ -105,7 +96,7 @@ class ACISThermalCheck(object):
         in *hist_limit*. 
     """
     def __init__(self, msid, name, validation_limits, hist_limit, 
-                 make_model, args, other_telem=None, other_map=None,
+                 args, calc_model=None, other_telem=None, other_map=None,
                  flag_cold_viols=False, hist_ops=None):
         self.msid = msid
         self.name = name
@@ -121,7 +112,7 @@ class ACISThermalCheck(object):
             self.plan_limit_lo = self.yellow_lo+self.margin
         self.validation_limits = validation_limits
         self.hist_limit = hist_limit
-        self.make_model = make_model
+        self._calc_model = calc_model
         self.other_telem = other_telem
         self.other_map = other_map
         self.args = args
@@ -197,8 +188,9 @@ class ACISThermalCheck(object):
         msids = ['orbitephem0_{}'.format(axis) for axis in "xyz"]
         msids += ['solarephem0_{}'.format(axis) for axis in "xyz"]
         if self.args.ephem_file is None:
-            ephem = fetch.MSIDset(msids, start - 2000.0, stop + 2000.0)
-            return ephem["orbitephem0_x"].times, ephem
+            e = fetch.MSIDset(msids, start - 2000.0, stop + 2000.0)
+            ephem = dict((k, e[k].values) for k in msids)
+            return e["orbitephem0_x"].times, ephem
         else:
             ephem_t = ascii.read(self.args.ephem_file)
             times = date2secs(ephem_t["dates"])
@@ -220,8 +212,7 @@ class ACISThermalCheck(object):
             The initial temperature of the model prediction. If None, an
             initial value will be constructed from telemetry.
         """
-
-        # The -5 here has us back off from the last telemetry 
+        # The -5 here has us back off from the last telemetry
         # reading just a bit
         tbegin = DateTime(tlm['date'][-5]).date
         # Call the overloaded state_builder method to assemble states
@@ -310,22 +301,37 @@ class ACISThermalCheck(object):
         state0 : initial state dictionary, optional
             This state is used to set the initial temperature.
         """
+        import xija
         if state0 is None:
             start_msid = None
-            dh_heater = None
-            dh_heater_times = None
         else:
             start_msid = state0[self.msid]
+        ephem_times, ephem = self.get_ephemeris(tstart, tstop)
+        model = xija.ThermalModel(self.name, start=tstart, stop=tstop,
+                                  model_spec=model_spec)
+        times = np.array([states['tstart'], states['tstop']])
+        model.comp['sim_z'].set_data(states['simpos'], times)
+        model.comp['eclipse'].set_data(False)
+        for name in ('ccd_count', 'fep_count', 'vid_board', 'clocking'):
+            model.comp[name].set_data(states[name], times)
+        pitch, roll = calc_pitch_roll(ephem_times, ephem, states)
+        model.comp['roll'].set_data(roll, ephem_times)
+        model.comp['pitch'].set_data(pitch, ephem_times)
+
+        if self.name in ["psmc", "acisfp"] and state0 is not None:
+            # Detector housing heater contribution to heating
             htrbfn = os.path.join(TASK_DATA, 'acis_thermal_check', 'data',
                                   'dahtbon_history.rdb')
             mylog.info('Reading file of dahtrb commands from file %s' % htrbfn)
             htrb = ascii.read(htrbfn, format='rdb')
             dh_heater_times = date2secs(htrb['time'])
             dh_heater = htrb['dahtbon'].astype(bool)
-        ephem_times, ephem = self.get_ephemeris(tstart, tstop)
-        model = self.make_model(model_spec, states, tstart, tstop, ephem_times,
-                                ephem, start_msid, dh_heater=dh_heater, 
-                                dh_heater_times=dh_heater_times)
+            model.comp['dh_heater'].set_data(dh_heater, dh_heater_times)
+
+        self._calc_model(model)
+
+        model.comp[self.msid].set_data(start_msid, None)
+
         model.make()
         model.calc()
         return model
@@ -1021,12 +1027,13 @@ class ACISThermalCheck(object):
 
 class DPABoardTempCheck(ACISThermalCheck):
     def __init__(self, msid, name, validation_limits, hist_limit,
-                 make_model, args, other_telem=None, other_map=None):
+                 args, calc_model=None, other_telem=None, other_map=None):
         hist_ops = ["greater_equal", "less_equal"]
         super(DPABoardTempCheck, self).__init__(msid, name,
                                                 validation_limits,
-                                                hist_limit, make_model,
-                                                args, other_telem=other_telem,
+                                                hist_limit, args,
+                                                calc_model=calc_model,
+                                                other_telem=other_telem,
                                                 other_map=other_map,
                                                 flag_cold_viols=True, 
                                                 hist_ops=hist_ops)
