@@ -30,6 +30,7 @@ normal_loads = ["MAR0617A", "MAR2017E", "JUL3117B", "SEP0417A"]
 too_loads = ["MAR1517B", "JUL2717A", "AUG2517C", "AUG3017A"]
 stop_loads = ["MAR0817B", "MAR1117A", "APR0217B", "SEP0917C"]
 
+
 class TestArgs(object):
     """
     A mock-up of a command-line parser object to be used with
@@ -121,6 +122,7 @@ data_dtype = {'temperatures': {'names': ('time', 'date', 'temperature'),
                         }
              }
 
+
 def exception_catcher(test, old, new, data_type, **kwargs):
     if new.dtype.kind == "S":
         new = new.astype("U")
@@ -131,16 +133,17 @@ def exception_catcher(test, old, new, data_type, **kwargs):
     except AssertionError:
         raise AssertionError("%s are not the same!" % data_type)
 
+
 class RegressionTester(object):
     def __init__(self, msid, name, model_path, valid_limits,
-                 hist_limit, make_model, atc_class=None,
+                 hist_limit, calc_model, atc_class=None,
                  atc_kwargs=None):
         self.msid = msid
         self.name = name
         self.model_path = model_path
         self.valid_limits = valid_limits
         self.hist_limit = hist_limit
-        self.make_model = make_model
+        self.calc_model = calc_model
         if atc_kwargs is None:
             atc_kwargs = {}
         self.atc_kwargs = atc_kwargs
@@ -148,24 +151,26 @@ class RegressionTester(object):
             atc_class = ACISThermalCheck
         self.atc_class = atc_class
 
-    def run_test_arrays(self, generate_answers, exclude_images=None, 
-                        state_builder='acis', run_start=None):
+    def run_test_arrays(self, generate_answers, state_builder='acis',
+                        run_start=None):
         for load_week in normal_loads:
-            self.load_test_template(load_week, generate_answers, interrupt=False, 
-                                    exclude_images=exclude_images, 
-                                    state_builder=state_builder, run_start=run_start)
+            self.load_test_template(load_week, generate_answers,
+                                    interrupt=False,
+                                    state_builder=state_builder,
+                                    run_start=run_start)
         for load_week in too_loads:
-            self.load_test_template(load_week, generate_answers, interrupt=True, 
-                                    exclude_images=exclude_images, 
-                                    state_builder=state_builder, run_start=run_start)
+            self.load_test_template(load_week, generate_answers,
+                                    interrupt=True,
+                                    state_builder=state_builder,
+                                    run_start=run_start)
         for load_week in stop_loads:
-            self.load_test_template(load_week, generate_answers, interrupt=True, 
-                                    exclude_images=exclude_images, 
-                                    state_builder=state_builder, run_start=run_start)
+            self.load_test_template(load_week, generate_answers,
+                                    interrupt=True,
+                                    state_builder=state_builder,
+                                    run_start=run_start)
 
     def load_test_template(self, load_week, generate_answers, run_start=None,
-                           state_builder='acis', interrupt=False, 
-                           exclude_images=None):
+                           state_builder='acis', interrupt=False):
         if generate_answers is not None:
             generate_answers = os.path.join(os.path.abspath(generate_answers),
                                             self.name, load_week)
@@ -175,11 +180,12 @@ class RegressionTester(object):
         curdir = os.getcwd()
         os.chdir(tmpdir)
         out_dir = self.name+"_test"
-        args = TestArgs(self.name, out_dir, self.model_path, run_start=run_start,
-                        load_week=load_week, interrupt=interrupt,
-                        state_builder=state_builder)
+        args = TestArgs(self.name, out_dir, self.model_path,
+                        run_start=run_start, load_week=load_week,
+                        interrupt=interrupt, state_builder=state_builder)
         msid_check = self.atc_class(self.msid, self.name, self.valid_limits,
-                                    self.hist_limit, self.make_model, args,
+                                    self.hist_limit, args, 
+                                    calc_model=self.calc_model,
                                     **self.atc_kwargs)
         msid_check.run()
         self.run_answer_test(load_week, out_dir, generate_answers)
