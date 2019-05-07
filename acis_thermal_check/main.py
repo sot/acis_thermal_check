@@ -70,10 +70,6 @@ class ACISThermalCheck(object):
     args : ArgumentParser arguments
         The command-line options object, which has the options
         attached to it as attributes
-    calc_model : function, optional
-        The ACISThermalCheck class has its own calc_model
-        method which is used to drive Xija and run the
-        thermal model. The function supplied here 
     other_telem : list of strings, optional
         A list of other MSIDs that may need to be obtained from
         the engineering archive for validation purposes. The
@@ -95,8 +91,8 @@ class ACISThermalCheck(object):
         "less_equal" Defaults to "greater_equal" for all values 
         in *hist_limit*. 
     """
-    def __init__(self, msid, name, validation_limits, hist_limit, 
-                 args, calc_model=None, other_telem=None, other_map=None,
+    def __init__(self, msid, name, validation_limits, hist_limit,
+                 args, other_telem=None, other_map=None,
                  flag_cold_viols=False, hist_ops=None):
         self.msid = msid
         self.name = name
@@ -112,7 +108,6 @@ class ACISThermalCheck(object):
             self.plan_limit_lo = self.yellow_lo+self.margin
         self.validation_limits = validation_limits
         self.hist_limit = hist_limit
-        self._calc_model = calc_model
         self.other_telem = other_telem
         self.other_map = other_map
         self.args = args
@@ -138,7 +133,7 @@ class ACISThermalCheck(object):
         tstart, tstop, tnow = self._determine_times(self.args.run_start,
                                                     is_weekly_load)
 
-        # Store off the start date, and, if yiou have it, the 
+        # Store off the start date, and, if you have it, the
         # stop date in proc
         proc["datestart"] = DateTime(tstart).date
         if tstop is not None:
@@ -158,7 +153,8 @@ class ACISThermalCheck(object):
         # Validation
         # Make the validation plots
         plots_validation = self.make_validation_plots(tlm, self.args.model_spec,
-                                                      self.args.outdir, self.args.run_start)
+                                                      self.args.outdir, 
+                                                      self.args.run_start)
         proc["op"] = [op_map[op] for op in self.hist_ops]
 
         # Determine violations of temperature validation
@@ -283,6 +279,9 @@ class ACISThermalCheck(object):
         return dict(states=states, times=model.times, temps=temps,
                     plots=plots, viols=viols)
 
+    def _calc_model(self, model, state_times, states, ephem_times, ephem):
+        pass
+
     def calc_model(self, model_spec, states, tstart, tstop, state0=None):
         """
         This method sets up the model and runs it. "make_model" is
@@ -309,11 +308,11 @@ class ACISThermalCheck(object):
         ephem_times, ephem = self.get_ephemeris(tstart, tstop)
         model = xija.ThermalModel(self.name, start=tstart, stop=tstop,
                                   model_spec=model_spec)
-        times = np.array([states['tstart'], states['tstop']])
-        model.comp['sim_z'].set_data(states['simpos'], times)
+        state_times = np.array([states['tstart'], states['tstop']])
+        model.comp['sim_z'].set_data(states['simpos'], state_times)
         model.comp['eclipse'].set_data(False)
         for name in ('ccd_count', 'fep_count', 'vid_board', 'clocking'):
-            model.comp[name].set_data(states[name], times)
+            model.comp[name].set_data(states[name], state_times)
         pitch, roll = calc_pitch_roll(ephem_times, ephem, states)
         model.comp['roll'].set_data(roll, ephem_times)
         model.comp['pitch'].set_data(pitch, ephem_times)
@@ -328,12 +327,13 @@ class ACISThermalCheck(object):
             dh_heater = htrb['dahtbon'].astype(bool)
             model.comp['dh_heater'].set_data(dh_heater, dh_heater_times)
 
-        self._calc_model(model)
-
         model.comp[self.msid].set_data(start_msid, None)
+
+        self._calc_model(model, state_times, states, ephem_times, ephem)
 
         model.make()
         model.calc()
+
         return model
 
     def make_validation_viols(self, plots_validation):
@@ -1027,13 +1027,12 @@ class ACISThermalCheck(object):
 
 class DPABoardTempCheck(ACISThermalCheck):
     def __init__(self, msid, name, validation_limits, hist_limit,
-                 args, calc_model=None, other_telem=None, other_map=None):
+                 args, other_telem=None, other_map=None):
         hist_ops = ["greater_equal", "less_equal"]
         super(DPABoardTempCheck, self).__init__(msid, name,
                                                 validation_limits,
                                                 hist_limit, args,
-                                                calc_model=calc_model,
                                                 other_telem=other_telem,
                                                 other_map=other_map,
-                                                flag_cold_viols=True, 
+                                                flag_cold_viols=True,
                                                 hist_ops=hist_ops)
