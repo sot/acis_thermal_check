@@ -261,7 +261,7 @@ class ACISThermalCheck(object):
         # calc_model actually does the model calculation by running
         # model-specific code.
         model = self.calc_model(model_spec, states, state0['tstart'],
-                                tstop, state0=state0)
+                                tstop, T_init=state0)
 
         self.predict_model = model
 
@@ -282,10 +282,10 @@ class ACISThermalCheck(object):
         return dict(states=states, times=model.times, temps=temps,
                     plots=plots, viols=viols)
 
-    def _calc_model(self, model, state_times, states, ephem_times, ephem):
+    def _calc_model_supp(self, model, state_times, states, ephem_times, ephem, T_init):
         pass
 
-    def calc_model(self, model_spec, states, tstart, tstop, state0=None):
+    def calc_model(self, model_spec, states, tstart, tstop, T_init=None):
         """
         This method sets up the model and runs it. "make_model" is
         provided by the specific model instances.
@@ -300,14 +300,12 @@ class ACISThermalCheck(object):
             The start time of the model run.
         tstop : float
             The end time of the model run. 
-        state0 : initial state dictionary, optional
-            This state is used to set the initial temperature.
+        T_init : initial temperature, optional
+            This is used to set the initial temperature. It's a dictionary
+            indexed by MSID name so that more than one can be input if 
+            necessary. 
         """
         import xija
-        if state0 is None:
-            start_msid = None
-        else:
-            start_msid = state0[self.msid]
         ephem_times, ephem = self.get_ephemeris(tstart, tstop)
         model = xija.ThermalModel(self.name, start=tstart, stop=tstop,
                                   model_spec=model_spec)
@@ -320,7 +318,7 @@ class ACISThermalCheck(object):
         model.comp['roll'].set_data(roll, ephem_times)
         model.comp['pitch'].set_data(pitch, ephem_times)
 
-        if self.name in ["psmc", "acisfp"] and state0 is not None:
+        if self.name in ["psmc", "acisfp"] and T_init is not None:
             # Detector housing heater contribution to heating
             htrbfn = os.path.join(TASK_DATA, 'acis_thermal_check', 'data',
                                   'dahtbon_history.rdb')
@@ -330,9 +328,10 @@ class ACISThermalCheck(object):
             dh_heater = htrb['dahtbon'].astype(bool)
             model.comp['dh_heater'].set_data(dh_heater, dh_heater_times)
 
-        model.comp[self.msid].set_data(start_msid, None)
+        model.comp[self.msid].set_data(T_init[self.msid], None)
 
-        self._calc_model(model, state_times, states, ephem_times, ephem)
+        self._calc_model_supp(model, state_times, states, ephem_times, ephem,
+                              T_init)
 
         model.make()
         model.calc()
