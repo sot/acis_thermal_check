@@ -6,6 +6,7 @@ import Chandra.cmd_states as cmd_states
 import logging
 from Ska.File import get_globfiles
 
+
 class StateBuilder(object):
     """
     This is the base class for all StateBuilder objects. It

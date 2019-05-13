@@ -110,27 +110,30 @@ class ACISThermalCheck(object):
         self.hist_limit = hist_limit
         self.other_telem = other_telem
         self.other_map = other_map
-        self.args = args
-        # Record the selected state builder in a class attribute
-        self.state_builder = make_state_builder(args.state_builder, args)
+        # Initially, the state_builder is set to None, as it will get
+        # set up later
+        self.state_builder = None
         self.flag_cold_viols = flag_cold_viols
         if hist_ops is None:
             hist_ops = ["greater_equal"]*len(hist_limit)
         self.hist_ops = hist_ops
 
-    def run(self):
+    def run(self, args):
         """
         The main interface to all of ACISThermalCheck's functions.
         This method must be called by the particular thermal model
         implementation to actually run the code and make the webpage.
         """
-        proc = self._setup_proc_and_logger(self.args)
+        # First, record the selected state builder in its class attribute
+        self.state_builder = make_state_builder(args.state_builder, args)
+
+        proc = self._setup_proc_and_logger(args)
 
         # Determine the start and stop times either from whatever was
         # stored in state_builder or punt by using NOW and None for
         # tstart and tstop.
-        is_weekly_load = self.args.backstop_file is not None
-        tstart, tstop, tnow = self._determine_times(self.args.run_start,
+        is_weekly_load = args.backstop_file is not None
+        tstart, tstop, tnow = self._determine_times(args.run_start,
                                                     is_weekly_load)
 
         # Store off the start date, and, if you have it, the
@@ -141,26 +144,26 @@ class ACISThermalCheck(object):
 
         # Get the telemetry values which will be used
         # for prediction and validation. Args default value is 21 days.
-        tlm = self.get_telem_values(min(tstart, tnow), days=self.args.days)
+        tlm = self.get_telem_values(min(tstart, tnow), days=args.days)
 
         # make predictions on a backstop file if defined
-        if self.args.backstop_file is not None:
-            pred = self.make_week_predict(tstart, tstop, tlm, self.args.T_init,
-                                          self.args.model_spec, self.args.outdir)
+        if args.backstop_file is not None:
+            pred = self.make_week_predict(tstart, tstop, tlm, args.T_init,
+                                          args.model_spec, args.outdir)
         else:
             pred = defaultdict(lambda: None)
 
         # Validation
         # Make the validation plots
-        plots_validation = self.make_validation_plots(tlm, self.args.model_spec,
-                                                      self.args.outdir, 
-                                                      self.args.run_start)
+        plots_validation = self.make_validation_plots(tlm, args.model_spec,
+                                                      args.outdir,
+                                                      args.run_start)
         proc["op"] = [op_map[op] for op in self.hist_ops]
 
         # Determine violations of temperature validation
         valid_viols = self.make_validation_viols(plots_validation)
         if len(valid_viols) > 0:
-            mylog.info('validation warning(s) in output at %s' % self.args.outdir)
+            mylog.info('validation warning(s) in output at %s' % args.outdir)
 
         # Write everything to the web page.
         # First, write the reStructuredText file.
@@ -173,10 +176,10 @@ class ACISThermalCheck(object):
                    'proc': proc,
                    'plots_validation': plots_validation,
                    'flag_cold': self.flag_cold_viols}
-        self.write_index_rst(self.bsdir, self.args.outdir, context)
+        self.write_index_rst(self.bsdir, args.outdir, context)
 
         # Second, convert reST to HTML
-        self.rst_to_html(self.args.outdir, proc)
+        self.rst_to_html(args.outdir, proc)
 
         return
 
