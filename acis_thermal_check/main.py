@@ -113,6 +113,7 @@ class ACISThermalCheck(object):
         # Initially, the state_builder is set to None, as it will get
         # set up later
         self.state_builder = None
+        self.ephem_file = None
         self.flag_cold_viols = flag_cold_viols
         if hist_ops is None:
             hist_ops = ["greater_equal"]*len(hist_limit)
@@ -126,6 +127,7 @@ class ACISThermalCheck(object):
         """
         # First, record the selected state builder in its class attribute
         self.state_builder = make_state_builder(args.state_builder, args)
+        self.ephem_file = self.args.ephem_file
 
         proc = self._setup_proc_and_logger(args)
 
@@ -186,12 +188,12 @@ class ACISThermalCheck(object):
     def get_ephemeris(self, start, stop):
         msids = ['orbitephem0_{}'.format(axis) for axis in "xyz"]
         msids += ['solarephem0_{}'.format(axis) for axis in "xyz"]
-        if self.args.ephem_file is None:
+        if self.ephem_file is None:
             e = fetch.MSIDset(msids, start - 2000.0, stop + 2000.0)
             ephem = dict((k, e[k].values) for k in msids)
             return e["orbitephem0_x"].times, ephem
         else:
-            ephem_t = ascii.read(self.args.ephem_file)
+            ephem_t = ascii.read(self.ephem_file)
             times = date2secs(ephem_t["dates"])
             idxs = np.logical_and(times >= start - 2000.0,
                                   times <= stop + 2000.0)
