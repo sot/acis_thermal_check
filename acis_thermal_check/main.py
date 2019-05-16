@@ -131,7 +131,7 @@ class ACISThermalCheck(object):
         # First, record the selected state builder and ephemeris file
         # (if there is one) in class attributes
         self.state_builder = make_state_builder(args.state_builder, args)
-        self.ephem_file = self.args.ephem_file
+        self.ephem_file = args.ephem_file
 
         proc = self._setup_proc_and_logger(args)
 
@@ -194,7 +194,7 @@ class ACISThermalCheck(object):
         msids += ['solarephem0_{}'.format(axis) for axis in "xyz"]
         if self.ephem_file is None:
             e = fetch.MSIDset(msids, start - 2000.0, stop + 2000.0)
-            ephem = dict((k, e[k].values) for k in msids)
+            ephem = dict((k, e[k].vals) for k in msids)
             return e["orbitephem0_x"].times, ephem
         else:
             ephem_t = ascii.read(self.ephem_file)
@@ -334,7 +334,8 @@ class ACISThermalCheck(object):
             dh_heater = htrb['dahtbon'].astype(bool)
             model.comp['dh_heater'].set_data(dh_heater, dh_heater_times)
 
-        model.comp[self.msid].set_data(T_init[self.msid], None)
+        if T_init is not None:
+            model.comp[self.msid].set_data(T_init[self.msid], None)
 
         self._calc_model_supp(model, state_times, states, ephem_times, ephem,
                               T_init)
@@ -470,7 +471,6 @@ class ACISThermalCheck(object):
         """
         outfile = os.path.join(outdir, 'states.dat')
         mylog.info('Writing states to %s' % outfile)
-        out = open(outfile, 'w')
         states_table = Table(states, copy=False)
         states_table['pitch'].format = '%.2f'
         states_table['tstart'].format = '%.2f'
