@@ -67,9 +67,6 @@ class ACISThermalCheck(object):
         temperatures which will be included in the validation
         histogram. The number of colored histograms on the plot
         will correspond to the number of values in this list.
-    args : ArgumentParser arguments
-        The command-line options object, which has the options
-        attached to it as attributes
     other_telem : list of strings, optional
         A list of other MSIDs that may need to be obtained from
         the engineering archive for validation purposes. The
@@ -92,7 +89,7 @@ class ACISThermalCheck(object):
         in *hist_limit*. 
     """
     def __init__(self, msid, name, validation_limits, hist_limit,
-                 args, other_telem=None, other_map=None,
+                 other_telem=None, other_map=None,
                  flag_cold_viols=False, hist_ops=None):
         self.msid = msid
         self.name = name
@@ -124,8 +121,15 @@ class ACISThermalCheck(object):
         The main interface to all of ACISThermalCheck's functions.
         This method must be called by the particular thermal model
         implementation to actually run the code and make the webpage.
+
+        Parameters
+        ----------
+        args : ArgumentParser arguments
+            The command-line options object, which has the options
+            attached to it as attributes
         """
-        # First, record the selected state builder in its class attribute
+        # First, record the selected state builder and ephemeris file
+        # (if there is one) in class attributes
         self.state_builder = make_state_builder(args.state_builder, args)
         self.ephem_file = self.args.ephem_file
 
