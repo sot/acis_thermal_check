@@ -277,7 +277,7 @@ class ACISThermalCheck(object):
         plt.rc("ytick", labelsize=10)
         temps = {self.name: model.comp[self.msid].mvals}
         # make_prediction_plots runs the validation of the model against previous telemetry
-        plots = self.make_prediction_plots(outdir, states, model, model.times, temps, tstart)
+        plots = self.make_prediction_plots(outdir, states, model.times, temps, tstart)
         # make_prediction_viols determines the violations and prints them out
         viols = self.make_prediction_viols(model.times, temps, tstart)
         # write_states writes the commanded states to states.dat
@@ -501,8 +501,7 @@ class ACISThermalCheck(object):
         temp_table.write(outfile, format='ascii', delimiter='\t')
 
     def _make_state_plots(self, plots, num_figs, w1, plot_start,
-                          outdir, states, model, load_start, 
-                          figsize=(8.5, 4.0)):
+                          outdir, states, load_start, figsize=(8.5, 4.0)):
         # Make a plot of ACIS CCDs and SIM-Z position
         plots['pow_sim'] = plot_two(
             fig_id=num_figs+1,
@@ -529,8 +528,8 @@ class ACISThermalCheck(object):
             fig_id=num_figs+2,
             title='Off-Nominal Roll',
             xlabel='Date',
-            x=model.times,
-            y=model.comp["roll"].mvals,
+            x=self.predict_model.times,
+            y=self.predict_model.comp["roll"].mvals,
             xmin=plot_start,
             ylabel='Roll Angle (deg)',
             ylim=(-20.0, 20.0),
@@ -541,7 +540,7 @@ class ACISThermalCheck(object):
         plots['roll']['fig'].savefig(outfile)
         plots['roll']['filename'] = filename
 
-    def make_prediction_plots(self, outdir, states, model, times, temps, load_start):
+    def make_prediction_plots(self, outdir, states, times, temps, load_start):
         """
         Make plots of the thermal prediction as well as associated 
         commanded states.
@@ -571,8 +570,8 @@ class ACISThermalCheck(object):
         w1 = None
         mylog.info('Making temperature prediction plots')
         plots[self.name] = plot_two(fig_id=1, x=times, y=temps[self.name],
-                                    x2=pointpair(states['tstart'], states['tstop']),
-                                    y2=pointpair(states['pitch']),
+                                    x2=self.predict_model.times,
+                                    y2=self.predict_model.comp["pitch"].mvals,
                                     title=self.msid.upper(), xmin=plot_start,
                                     xlabel='Date', ylabel='Temperature (C)',
                                     ylabel2='Pitch (deg)', ylim2=(40, 180),
@@ -602,7 +601,7 @@ class ACISThermalCheck(object):
         w1, _ = plots[self.name]['fig'].get_size_inches()
 
         self._make_state_plots(plots, 1, w1, plot_start,
-                               outdir, states, model, load_start)
+                               outdir, states, load_start)
 
         plots['default'] = plots[self.name]
 
