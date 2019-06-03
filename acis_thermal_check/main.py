@@ -279,7 +279,7 @@ class ACISThermalCheck(object):
         # make_prediction_plots runs the validation of the model against previous telemetry
         plots = self.make_prediction_plots(outdir, states, temps, tstart)
         # make_prediction_viols determines the violations and prints them out
-        viols = self.make_prediction_viols(model.times, temps, tstart)
+        viols = self.make_prediction_viols(temps, tstart)
         # write_states writes the commanded states to states.dat
         self.write_states(outdir, states)
         # write_temps writes the temperatures to temperatures.dat
@@ -551,9 +551,6 @@ class ACISThermalCheck(object):
             The path to the output directory.
         states : NumPy record array
             Commanded states
-        times : NumPy array
-            Times in seconds from the beginning of the mission for the
-            temperature arrays
         temps : dict of NumPy arrays
             Dictionary of temperature arrays
         load_start : float
@@ -578,7 +575,7 @@ class ACISThermalCheck(object):
                                     title=self.msid.upper(), xmin=plot_start,
                                     xlabel='Date', ylabel='Temperature (C)',
                                     ylabel2='Pitch (deg)', ylim2=(40, 180),
-                                    figsize=(8.0, 4.0), width=w1, load_start=load_start)
+                                    width=w1, load_start=load_start)
         # Add horizontal lines for the planning and caution limits
         ymin, ymax = plots[self.name]['ax'].get_ylim()
         ymax = max(self.yellow_hi+1, ymax)
