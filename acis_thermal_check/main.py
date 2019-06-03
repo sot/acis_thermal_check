@@ -394,9 +394,8 @@ class ACISThermalCheck(object):
 
         return viols
 
-    def _make_prediction_viols(self, temp, load_start, limit, lim_name,
+    def _make_prediction_viols(self, times, temp, load_start, limit, lim_name,
                                lim_type):
-        times = self.predict_model.times
         viols = []
         if lim_type == "min":
             bad = temp <= limit
@@ -451,12 +450,13 @@ class ACISThermalCheck(object):
         mylog.info('Checking for limit violations')
 
         temp = temps[self.name]
+        times = self.predict_model.times
 
-        viols = {"hi": self._make_prediction_viols(temp, load_start,
+        viols = {"hi": self._make_prediction_viols(times, temp, load_start,
                                                    self.plan_limit_hi,
                                                    "planning", "max")}
         if self.flag_cold_viols:
-            viols["lo"] = self._make_prediction_viols(temp, load_start,
+            viols["lo"] = self._make_prediction_viols(times, temp, load_start,
                                                       self.plan_limit_lo,
                                                       "planning", "min")
         return viols
