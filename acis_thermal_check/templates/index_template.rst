@@ -111,7 +111,6 @@ Note: {{proc.name}} residual histograms include only points where {{proc.msid}} 
 Red = telemetry, blue = model
 
 .. image:: {{plot.lines}}
-.. image:: {{plot.histlog}}
-.. image:: {{plot.histlin}}
+.. image:: {{plot.hist}}
 
 {% endfor %}

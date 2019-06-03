@@ -33,7 +33,6 @@ op_map = {"greater": ">",
           "less": "<",
           "less_equal": "<="}
 
-
 class ACISThermalCheck(object):
     r"""
     ACISThermalCheck class for making thermal model predictions
@@ -272,9 +271,14 @@ class ACISThermalCheck(object):
         self.predict_model = model
 
         # Make the limit check plots and data files
-        plt.rc("axes", labelsize=10, titlesize=12)
-        plt.rc("xtick", labelsize=10)
-        plt.rc("ytick", labelsize=10)
+        plt.rc("axes", labelsize=14, titlesize=16, linewidth=1.5)
+        plt.rc("xtick", labelsize=14)
+        plt.rc("xtick.major", width=1.5, size=4)
+        plt.rc("xtick.minor", width=1.5, size=2)
+        plt.rc("ytick", labelsize=14)
+        plt.rc("ytick.major", width=1.5, size=4)
+        plt.rc("grid", linewidth=1.5)
+
         temps = {self.name: model.comp[self.msid].mvals}
         # make_prediction_plots runs the validation of the model against previous telemetry
         plots = self.make_prediction_plots(outdir, states, temps, tstart)
@@ -579,16 +583,16 @@ class ACISThermalCheck(object):
         # Add horizontal lines for the planning and caution limits
         ymin, ymax = plots[self.name]['ax'].get_ylim()
         ymax = max(self.yellow_hi+1, ymax)
-        plots[self.name]['ax'].axhline(self.yellow_hi, linestyle='-', color='y',
+        plots[self.name]['ax'].axhline(self.yellow_hi, linestyle='-', color='gold',
                                        linewidth=2.0)
-        plots[self.name]['ax'].axhline(self.plan_limit_hi, linestyle='--', 
-                                       color='y', linewidth=2.0)
+        plots[self.name]['ax'].axhline(self.plan_limit_hi, linestyle='-', 
+                                       color='C2', linewidth=2.0)
         if self.flag_cold_viols:
             ymin = min(self.yellow_lo-1, ymin)
-            plots[self.name]['ax'].axhline(self.yellow_lo, linestyle='-', color='y',
+            plots[self.name]['ax'].axhline(self.yellow_lo, linestyle='-', color='gold',
                                            linewidth=2.0)
-            plots[self.name]['ax'].axhline(self.plan_limit_lo, linestyle='--',
-                                           color='y', linewidth=2.0)
+            plots[self.name]['ax'].axhline(self.plan_limit_lo, linestyle='-',
+                                           color='C2', linewidth=2.0)
         plots[self.name]['ax'].set_ylim(ymin, ymax)
         filename = self.msid.lower() + '.png'
         outfile = os.path.join(outdir, filename)
@@ -725,13 +729,14 @@ class ACISThermalCheck(object):
                                                  tlm[msid][~good_mask] / scale,
                                                  fig=fig, fmt='.c')
             ax.set_title(msid.upper() + ' validation')
+            ax.set_xlabel("Date")
             ax.set_ylabel(labels[msid])
             ax.grid()
             # add lines for perigee passages
             for rz in rzs:
                 ptimes = cxctime2plotdate([rz.tstart, rz.tstop])
                 for ptime in ptimes:
-                    ax.axvline(ptime, ls='--', color='g')
+                    ax.axvline(ptime, ls='--', color='C2', linewidth=2)
             # Add horizontal lines for the planning and caution limits
             # or the limits for the focal plane model. Make sure we can
             # see all of the limits.
@@ -739,12 +744,12 @@ class ACISThermalCheck(object):
                 ymin, ymax = ax.get_ylim()
                 if msid == "fptemp":
                     fp_sens, acis_s, acis_i = get_acis_limits("fptemp")
-                    ax.axhline(acis_i, linestyle='-.', color='purple')
-                    ax.axhline(acis_s, linestyle='-.', color='blue')
+                    ax.axhline(acis_i, linestyle='-.', color='purple', linewidth=2)
+                    ax.axhline(acis_s, linestyle='-.', color='blue', linewidth=2)
                     ymax = max(acis_i+1, ymax)
                 else:
-                    ax.axhline(self.yellow_hi, linestyle='-', color='y')
-                    ax.axhline(self.plan_limit_hi, linestyle='--', color='y')
+                    ax.axhline(self.yellow_hi, linestyle='-', color='gold', linewidth=2)
+                    ax.axhline(self.plan_limit_hi, linestyle='-', color='C2', linewidth=2)
                     ymax = max(self.yellow_hi+1, ymax)
                     if self.flag_cold_viols:
                         ax.axhline(self.yellow_lo, linestyle='-', color='y')
@@ -781,23 +786,22 @@ class ACISThermalCheck(object):
             quant_table += quant_line + "\n"
             # We make two histogram plots for each validation,
             # one with linear and another with log scaling.
-            for histscale in ('log', 'lin'):
-                fig = plt.figure(20 + fig_id, figsize=(4, 3))
-                fig.clf()
-                ax = fig.gca()
+            fig = plt.figure(20 + fig_id, figsize=(12.0, 3.5))
+            for i, histscale in enumerate(('log', 'lin')):
+                ax = fig.add_subplot(121+i)
                 ax.hist(diff / scale, bins=50, log=(histscale == 'log'),
-                        histtype='step', color='b')
+                        histtype='step', color='b', linewidth=1.5)
                 if ok2.any():
                     ax.hist(diff2 / scale, bins=50, log=(histscale == 'log'),
-                            color='red', histtype='step')
+                            color='red', histtype='step', linewidth=1.5)
                 ax.set_title(msid.upper() + ' residuals: data - model')
                 ax.set_xlabel(labels[msid])
-                fig.subplots_adjust(bottom=0.18)
-                filename = '%s_valid_hist_%s.png' % (msid, histscale)
-                outfile = os.path.join(outdir, filename)
-                mylog.info('Writing plot file %s' % outfile)
-                fig.savefig(outfile)
-                plot['hist' + histscale] = filename
+            fig.subplots_adjust(bottom=0.18, left=0.15, wspace=0.6)
+            filename = '%s_valid_hist.png' % msid
+            outfile = os.path.join(outdir, filename)
+            mylog.info('Writing plot file %s' % outfile)
+            fig.savefig(outfile)
+            plot['hist'] = filename
 
             plots.append(plot)
 
