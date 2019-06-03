@@ -111,7 +111,7 @@ def plot_one(fig_id, x, y, yy=None, linestyle='-',
              ll='--', color='blue', xmin=None,
              xmax=None, ylim=None, 
              xlabel='', ylabel='', title='',
-             figsize=(7, 3.5), load_start=None,
+             figsize=(12, 6), load_start=None,
              width=None):
     """
     Plot one quantities with a date x-axis and a left
@@ -195,7 +195,7 @@ def plot_two(fig_id, x, y, x2, y2, yy=None,
              color='blue', color2='magenta',
              xmin=None, xmax=None, ylim=None, ylim2=None,
              xlabel='', ylabel='', ylabel2='', title='',
-             figsize=(7, 3.5), load_start=None, width=None):
+             figsize=(12, 6), load_start=None, width=None):
     """
     Plot two quantities with a date x-axis, one on the left
     y-axis and the other on the right y-axis.

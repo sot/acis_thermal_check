@@ -500,7 +500,7 @@ class ACISThermalCheck(object):
         temp_table.write(outfile, format='ascii', delimiter='\t')
 
     def _make_state_plots(self, plots, num_figs, w1, plot_start,
-                          outdir, states, load_start, figsize=(8.5, 4.0)):
+                          outdir, states, load_start, figsize=(12, 6)):
         # Make a plot of ACIS CCDs and SIM-Z position
         plots['pow_sim'] = plot_two(
             fig_id=num_figs+1,
@@ -716,7 +716,7 @@ class ACISThermalCheck(object):
         xmin, xmax = cxctime2plotdate(model.times)[[0, -1]]
         for fig_id, msid in enumerate(pred.keys()):
             plot = dict(msid=msid.upper())
-            fig = plt.figure(10 + fig_id, figsize=(7, 3.5))
+            fig = plt.figure(10 + fig_id, figsize=(12, 6))
             fig.clf()
             scale = scales.get(msid, 1.0)
             ticklocs, fig, ax = plot_cxctime(model.times, tlm[msid] / scale,
