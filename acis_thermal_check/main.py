@@ -474,7 +474,7 @@ class ACISThermalCheck(object):
         states_table['pitch'].format = '%.2f'
         states_table['tstart'].format = '%.2f'
         states_table['tstop'].format = '%.2f'
-        states_table.write(outfile, format='ascii', delimiter='\t')
+        states_table.write(outfile, format='ascii', delimiter='\t', overwrite=True)
 
     def write_temps(self, outdir, times, temps):
         """
@@ -497,7 +497,7 @@ class ACISThermalCheck(object):
                            copy=False)
         temp_table['time'].format = '%.2f'
         temp_table[self.msid].format = '%.2f'
-        temp_table.write(outfile, format='ascii', delimiter='\t')
+        temp_table.write(outfile, format='ascii', delimiter='\t', overwrite=True)
 
     def _make_state_plots(self, plots, num_figs, w1, plot_start,
                           outdir, states, load_start, figsize=(12, 6)):
