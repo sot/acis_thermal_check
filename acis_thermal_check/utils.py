@@ -387,8 +387,8 @@ def get_acis_limits(msid):
 
     if msid == "fptemp":
         fp_sens = -118.7
-        acis_i = -114.0
-        acis_s = -112.0
+        acis_i = -112.0
+        acis_s = -111.0
         return fp_sens, acis_i, acis_s
 
     yellow_lo = None
