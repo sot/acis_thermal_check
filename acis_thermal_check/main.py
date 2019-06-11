@@ -201,7 +201,7 @@ class ACISThermalCheck(object):
             idxs = np.logical_and(times >= start - 2000.0,
                                   times <= stop + 2000.0)
             ephem = dict((k, ephem_t[k].data[idxs]*1000.0) for k in msids)
-            return ephem_t["times"].data[idxs], ephem
+            return times[idxs], ephem
 
     def get_states(self, tlm, T_init):
         """
