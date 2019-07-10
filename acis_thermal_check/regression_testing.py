@@ -18,6 +18,7 @@ def pytest_addoption(parser):
 def answer_store(request):
     return request.config.getoption('--answer_store')
 
+
 months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
           "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
 
@@ -182,8 +183,8 @@ class RegressionTester(object):
                         run_start=run_start, load_week=load_week,
                         interrupt=interrupt, state_builder=state_builder)
         msid_check = self.atc_class(self.msid, self.name, self.valid_limits,
-                                    self.hist_limit, args, **self.atc_kwargs)
-        msid_check.run()
+                                    self.hist_limit, **self.atc_kwargs)
+        msid_check.run(args)
         self.run_answer_test(load_week, out_dir, generate_answers)
         os.chdir(curdir)
         shutil.rmtree(tmpdir)
