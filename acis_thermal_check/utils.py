@@ -444,7 +444,7 @@ def get_acis_limits(msid):
     yellow_lo = None
     yellow_hi = None
 
-    margins = {"1dpamzt": 2.0, 
+    margins = {"1dpamzt": 2.0,
                "1deamzt": 2.0,
                "1pdeaat": 4.5,
                "tmp_fep1_mong": 2.0,
@@ -453,15 +453,17 @@ def get_acis_limits(msid):
 
     margin = margins[msid]
 
-    pmon_file = "PMON/pmon_limits.txt"
-    eng_file = "Thermal/MSID_Limits.txt"
-    file_root = "/proj/web-cxc-dmz/htdocs/acis/"
+    pmon_file = "pmon_limits.txt"
+    eng_file = "MSID_Limits.txt"
+    file_root = "/data/acis/Thermal"
 
     if msid.startswith("tmp_"):
+        root = "PMON"
         limits_file = pmon_file
         cols = (4, 5)
         msid = "ADC_"+msid.upper()
     else:
+        root = "Thermal"
         limits_file = eng_file
         cols = (2, 3)
 
@@ -472,7 +474,7 @@ def get_acis_limits(msid):
         f.close()
     else:
         loc = "remote"
-        url = "http://cxc.cfa.harvard.edu/acis/"+limits_file
+        url = "http://cxc.cfa.harvard.edu/acis/{}/{}".format(root, limits_file)
         u = requests.get(url)
         lines = u.text.split("\n")
 
