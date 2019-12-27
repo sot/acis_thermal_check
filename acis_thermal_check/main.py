@@ -255,7 +255,7 @@ class ACISThermalCheck(object):
         # calc_model actually does the model calculation by running
         # model-specific code.
         model = self.calc_model(model_spec, states, state0['tstart'],
-                                tstop, T_init=state0)
+                                tstop, state0=state0)
 
         self.predict_model = model
 
@@ -281,10 +281,10 @@ class ACISThermalCheck(object):
         return dict(states=states, times=model.times, temps=temps,
                     plots=plots, viols=viols)
 
-    def _calc_model_supp(self, model, state_times, states, ephem_times, ephem, T_init):
+    def _calc_model_supp(self, model, state_times, states, ephem, state0):
         pass
 
-    def calc_model(self, model_spec, states, tstart, tstop, T_init=None):
+    def calc_model(self, model_spec, states, tstart, tstop, state0=None):
         """
         This method sets up the model and runs it. "make_model" is
         provided by the specific model instances.
@@ -299,7 +299,7 @@ class ACISThermalCheck(object):
             The start time of the model run.
         tstop : float
             The end time of the model run. 
-        T_init : initial temperature, optional
+        state0 : dict, optional
             This is used to set the initial temperature. It's a dictionary
             indexed by MSID name so that more than one can be input if 
             necessary. 
@@ -317,7 +317,7 @@ class ACISThermalCheck(object):
         model.comp['roll'].set_data(roll, ephem["orbitephem0_x"].times)
         model.comp['pitch'].set_data(pitch, ephem["orbitephem0_x"].times)
 
-        if self.name in ["psmc", "acisfp"] and T_init is not None:
+        if self.name in ["psmc", "acisfp"] and state0 is not None:
             # Detector housing heater contribution to heating
             htrbfn = os.path.join(TASK_DATA, 'acis_thermal_check', 'data',
                                   'dahtbon_history.rdb')
@@ -327,10 +327,10 @@ class ACISThermalCheck(object):
             dh_heater = htrb['dahtbon'].astype(bool)
             model.comp['dh_heater'].set_data(dh_heater, dh_heater_times)
 
-        if T_init is not None:
-            model.comp[self.msid].set_data(T_init[self.msid], None)
+        if state0 is not None:
+            model.comp[self.msid].set_data(state0[self.msid], None)
 
-        self._calc_model_supp(model, state_times, states, ephem, T_init)
+        self._calc_model_supp(model, state_times, states, ephem, state0)
 
         model.make()
         model.calc()
