@@ -9,6 +9,11 @@ import six
 
 TASK_DATA = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
+if "DATA_ACIS" in os.environ:
+    data_acis = os.environ["DATA_ACIS"]
+else:
+    data_acis = "/data/acis"
+
 mylog = logging.getLogger('acis_thermal_check')
 
 thermal_blue = 'C0'
@@ -365,7 +370,7 @@ def get_options(name, model_path, opts=None):
     parser.add_argument("--version", action='store_true', help="Print version")
     # Argument pointing to the NLET file the model should use for this run
     parser.add_argument("--nlet_file",
-                        default='/data/acis/LoadReviews/NonLoadTrackedEvents.txt',
+                        default='{}/LoadReviews/NonLoadTrackedEvents.txt'.format(data_acis),
                         help="Full path to the Non-Load Event Tracking file that should be "
                              "used for this model run.")
     if opts is not None:
