@@ -11,6 +11,8 @@ TASK_DATA = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 mylog = logging.getLogger('acis_thermal_check')
 
+thermal_blue = 'C0'
+thermal_red = 'C3'
 
 def calc_pitch_roll(ephem, states):
     """Calculate the normalized sun vector in body coordinates.
@@ -107,9 +109,9 @@ def config_logging(outdir, verbose):
 
 
 def plot_one(fig_id, x, y, yy=None, linestyle='-',
-             ll='--', color='blue', xmin=None,
-             xmax=None, ylim=None, 
-             xlabel='', ylabel='', title='',
+             ll='--', color=thermal_blue, 
+             linewidth=2, xmin=None, xmax=None, 
+             ylim=None, xlabel='', ylabel='', title='',
              figsize=(12, 6), load_start=None,
              width=None):
     """
@@ -134,6 +136,8 @@ def plot_one(fig_id, x, y, yy=None, linestyle='-',
         The style of the second line for the left y-axis.
     color : string, optional
         The color of the line for the left y-axis.
+    linewidth : string, optional
+        The width of the lines. Default: 2
     xmin : float, optional
         The left-most value of the x-axis.
     xmax : float, optional
@@ -155,9 +159,11 @@ def plot_one(fig_id, x, y, yy=None, linestyle='-',
     fig.clf()
     ax = fig.add_subplot(1, 1, 1)
     # Plot left y-axis
-    ax.plot_date(xt, y, fmt='-', linestyle=linestyle, color=color)
+    ax.plot_date(xt, y, fmt='-', linestyle=linestyle, linewidth=linewidth, 
+                 color=color)
     if yy is not None:
-        ax.plot_date(xt, yy, fmt='-', linestyle=ll, color=color)
+        ax.plot_date(xt, yy, fmt='-', linestyle=ll, linewidth=linewidth, 
+                     color=color)
     if xmin is None:
         xmin = min(xt)
     if xmax is None:
@@ -189,9 +195,9 @@ def plot_one(fig_id, x, y, yy=None, linestyle='-',
     return {'fig': fig, 'ax': ax}
 
 
-def plot_two(fig_id, x, y, x2, y2, yy=None,
+def plot_two(fig_id, x, y, x2, y2, yy=None, linewidth=2,
              linestyle='-', linestyle2='-', ll='--', 
-             color='blue', color2='magenta',
+             color=thermal_blue, color2='orchid',
              xmin=None, xmax=None, ylim=None, ylim2=None,
              xlabel='', ylabel='', ylabel2='', title='',
              figsize=(12, 6), load_start=None, width=None):
@@ -216,6 +222,8 @@ def plot_two(fig_id, x, y, x2, y2, yy=None,
     yy : NumPy array, optional
         A second quantity to plot against the times on the 
         left x-axis. Default: None
+    linewidth : string, optional
+        The width of the lines. Default: 2
     linestyle : string, optional
         The style of the line for the left y-axis.
     linestyle2 : string, optional
@@ -251,9 +259,11 @@ def plot_two(fig_id, x, y, x2, y2, yy=None,
     fig.clf()
     ax = fig.add_subplot(1, 1, 1)
     # Plot left y-axis
-    ax.plot_date(xt, y, fmt='-', linestyle=linestyle, color=color)
+    ax.plot_date(xt, y, fmt='-', linestyle=linestyle, linewidth=linewidth,
+                 color=color)
     if yy is not None:
-        ax.plot_date(xt, yy, fmt='-', linestyle=ll, color=color)
+        ax.plot_date(xt, yy, fmt='-', linestyle=ll, linewidth=linewidth,
+                     color=color)
     if xmin is None:
         xmin = min(xt)
     if xmax is None:
@@ -270,7 +280,8 @@ def plot_two(fig_id, x, y, x2, y2, yy=None,
 
     ax2 = ax.twinx()
     xt2 = cxctime2plotdate(x2)
-    ax2.plot_date(xt2, y2, fmt='-', linestyle=linestyle2, color=color2)
+    ax2.plot_date(xt2, y2, fmt='-', linestyle=linestyle2, linewidth=linewidth,
+                  color=color2)
     ax2.set_xlim(xmin, xmax)
     if ylim2:
         ax2.set_ylim(*ylim2)
@@ -293,6 +304,9 @@ def plot_two(fig_id, x, y, x2, y2, yy=None,
         lm = fig.subplotpars.left * width / w2
         rm = fig.subplotpars.right * width / w2
         fig.subplots_adjust(left=lm, right=rm)
+
+    ax.set_zorder(10)
+    ax.patch.set_visible(False)
 
     return {'fig': fig, 'ax': ax, 'ax2': ax2}
 

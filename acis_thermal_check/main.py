@@ -24,7 +24,8 @@ version = acis_thermal_check.__version__
 from acis_thermal_check.utils import \
     config_logging, TASK_DATA, plot_two, \
     mylog, plot_one, get_acis_limits, \
-    make_state_builder, calc_pitch_roll
+    make_state_builder, calc_pitch_roll, \
+    thermal_blue, thermal_red
 from kadi import events
 from astropy.table import Table
 
@@ -495,7 +496,7 @@ class ACISThermalCheck(object):
         # Make a plot of ACIS CCDs and SIM-Z position
         plots['pow_sim'] = plot_two(
             fig_id=num_figs+1,
-            title='ACIS CCD/FEPs and SIM-Z position',
+            title='ACIS CCDs/FEPs and SIM-Z position',
             xlabel='Date',
             x=pointpair(states['tstart'], states['tstop']),
             y=pointpair(states['ccd_count']),
@@ -561,7 +562,7 @@ class ACISThermalCheck(object):
         w1 = None
         mylog.info('Making temperature prediction plots')
         plots[self.name] = plot_two(fig_id=1, x=times, y=temps[self.name],
-                                    x2=times,
+                                    x2=times, 
                                     y2=self.predict_model.comp["pitch"].mvals,
                                     title=self.msid.upper(), xmin=plot_start,
                                     xlabel='Date', ylabel='Temperature (C)',
@@ -708,9 +709,9 @@ class ACISThermalCheck(object):
             fig.clf()
             scale = scales.get(msid, 1.0)
             ticklocs, fig, ax = plot_cxctime(model.times, tlm[msid] / scale,
-                                             fig=fig, fmt='-r')
+                                             fig=fig, ls='-', lw=2, color=thermal_blue)
             ticklocs, fig, ax = plot_cxctime(model.times, pred[msid] / scale,
-                                             fig=fig, fmt='-b')
+                                             fig=fig, ls='-', lw=2, color=thermal_red)
             if np.any(~good_mask):
                 ticklocs, fig, ax = plot_cxctime(model.times[~good_mask], 
                                                  tlm[msid][~good_mask] / scale,
@@ -777,10 +778,10 @@ class ACISThermalCheck(object):
             for i, histscale in enumerate(('log', 'lin')):
                 ax = fig.add_subplot(121+i)
                 ax.hist(diff / scale, bins=50, log=(histscale == 'log'),
-                        histtype='step', color='b', linewidth=1.5)
+                        histtype='step', color=thermal_blue, linewidth=2)
                 if ok2.any():
                     ax.hist(diff2 / scale, bins=50, log=(histscale == 'log'),
-                            color='red', histtype='step', linewidth=1.5)
+                            color=thermal_red, histtype='step', linewidth=2)
                 ax.set_title(msid.upper() + ' residuals: data - model')
                 ax.set_xlabel(labels[msid])
             fig.subplots_adjust(bottom=0.18, left=0.15, wspace=0.6)
