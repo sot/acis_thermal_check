@@ -12,15 +12,14 @@ TASK_DATA = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 mylog = logging.getLogger('acis_thermal_check')
 
 
-def calc_pitch_roll(ephem_times, ephem, states):
+def calc_pitch_roll(ephem, states):
     """Calculate the normalized sun vector in body coordinates.
     Shamelessly copied from Ska.engarchive.derived.pcad but 
     modified to use commanded states quaternions
 
     Parameters
     ----------
-    ephem_times : times at which ephemeris is evaluated
-    ephem : object with orbitephem and solarephem info with dict-like access
+    ephem : orbitephem and solarephem info 
     states : commanded states NumPy recarray
 
     Returns
@@ -29,15 +28,15 @@ def calc_pitch_roll(ephem_times, ephem, states):
     """
     from Ska.engarchive.derived.pcad import arccos_clip, qrotate
     idxs = Ska.Numpy.interpolate(np.arange(len(states)), states['tstart'],
-                                 ephem_times, method='nearest')
+                                 ephem['orbitephem0_x'].times, method='nearest')
     states = states[idxs]
 
-    chandra_eci = np.array([ephem['orbitephem0_x'],
-                            ephem['orbitephem0_y'],
-                            ephem['orbitephem0_z']])
-    sun_eci = np.array([ephem['solarephem0_x'],
-                        ephem['solarephem0_y'],
-                        ephem['solarephem0_z']])
+    chandra_eci = np.array([ephem['orbitephem0_x'].vals,
+                            ephem['orbitephem0_y'].vals,
+                            ephem['orbitephem0_z'].vals])
+    sun_eci = np.array([ephem['solarephem0_x'].vals,
+                        ephem['solarephem0_y'].vals,
+                        ephem['solarephem0_z'].vals])
     sun_vec = -chandra_eci + sun_eci
     est_quat = np.array([states['q1'],
                          states['q2'],
@@ -355,9 +354,6 @@ def get_options(name, model_path, opts=None):
                         default='/data/acis/LoadReviews/NonLoadTrackedEvents.txt',
                         help="Full path to the Non-Load Event Tracking file that should be "
                              "used for this model run.")
-    parser.add_argument("--ephem_file",
-                        help="Path to a file containing an ephemeris for the period "
-                             "under consideration. Useful for testing purposes.")
     if opts is not None:
         for opt_name, opt in opts:
             parser.add_argument("--%s" % opt_name, **opt)

@@ -109,7 +109,6 @@ class ACISThermalCheck(object):
         # Initially, the state_builder is set to None, as it will get
         # set up later
         self.state_builder = None
-        self.ephem_file = None
         self.flag_cold_viols = flag_cold_viols
         if hist_ops is None:
             hist_ops = ["greater_equal"]*len(hist_limit)
@@ -127,10 +126,8 @@ class ACISThermalCheck(object):
             The command-line options object, which has the options
             attached to it as attributes
         """
-        # First, record the selected state builder and ephemeris file
-        # (if there is one) in class attributes
+        # First, record the selected state builder in the class attributes
         self.state_builder = make_state_builder(args.state_builder, args)
-        self.ephem_file = args.ephem_file
 
         proc = self._setup_proc_and_logger(args)
 
@@ -191,17 +188,8 @@ class ACISThermalCheck(object):
     def get_ephemeris(self, start, stop):
         msids = ['orbitephem0_{}'.format(axis) for axis in "xyz"]
         msids += ['solarephem0_{}'.format(axis) for axis in "xyz"]
-        if self.ephem_file is None:
-            e = fetch.MSIDset(msids, start - 2000.0, stop + 2000.0)
-            ephem = dict((k, e[k].vals) for k in msids)
-            return e["orbitephem0_x"].times, ephem
-        else:
-            ephem_t = ascii.read(self.ephem_file)
-            times = date2secs(ephem_t["dates"])
-            idxs = np.logical_and(times >= start - 2000.0,
-                                  times <= stop + 2000.0)
-            ephem = dict((k, ephem_t[k].data[idxs]) for k in msids)
-            return times[idxs], ephem
+        e = fetch.MSIDset(msids, start - 2000.0, stop + 2000.0)
+        return e
 
     def get_states(self, tlm, T_init):
         """
@@ -316,7 +304,7 @@ class ACISThermalCheck(object):
             necessary. 
         """
         import xija
-        ephem_times, ephem = self.get_ephemeris(tstart, tstop)
+        ephem = self.get_ephemeris(tstart, tstop)
         model = xija.ThermalModel(self.name, start=tstart, stop=tstop,
                                   model_spec=model_spec)
         state_times = np.array([states['tstart'], states['tstop']])
@@ -324,9 +312,9 @@ class ACISThermalCheck(object):
         model.comp['eclipse'].set_data(False)
         for name in ('ccd_count', 'fep_count', 'vid_board', 'clocking'):
             model.comp[name].set_data(states[name], state_times)
-        pitch, roll = calc_pitch_roll(ephem_times, ephem, states)
-        model.comp['roll'].set_data(roll, ephem_times)
-        model.comp['pitch'].set_data(pitch, ephem_times)
+        pitch, roll = calc_pitch_roll(ephem, states)
+        model.comp['roll'].set_data(roll, ephem["orbitephem0_x"].times)
+        model.comp['pitch'].set_data(pitch, ephem["orbitephem0_x"].times)
 
         if self.name in ["psmc", "acisfp"] and T_init is not None:
             # Detector housing heater contribution to heating
@@ -341,8 +329,7 @@ class ACISThermalCheck(object):
         if T_init is not None:
             model.comp[self.msid].set_data(T_init[self.msid], None)
 
-        self._calc_model_supp(model, state_times, states, ephem_times, ephem,
-                              T_init)
+        self._calc_model_supp(model, state_times, states, ephem, T_init)
 
         model.make()
         model.calc()
