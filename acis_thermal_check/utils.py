@@ -16,8 +16,9 @@ else:
 
 mylog = logging.getLogger('acis_thermal_check')
 
-thermal_blue = 'C0'
-thermal_red = 'C3'
+thermal_blue = 'blue'
+thermal_red = 'red'
+
 
 def calc_pitch_roll(ephem, states):
     """Calculate the normalized sun vector in body coordinates.
@@ -202,7 +203,7 @@ def plot_one(fig_id, x, y, yy=None, linestyle='-',
 
 def plot_two(fig_id, x, y, x2, y2, yy=None, linewidth=2,
              linestyle='-', linestyle2='-', ll='--', 
-             color=thermal_blue, color2='orchid',
+             color=thermal_blue, color2='magenta',
              xmin=None, xmax=None, ylim=None, ylim2=None,
              xlabel='', ylabel='', ylabel2='', title='',
              figsize=(12, 6), load_start=None, width=None):

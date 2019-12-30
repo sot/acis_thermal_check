@@ -578,9 +578,9 @@ class ACISThermalCheck(object):
         if self.flag_cold_viols:
             ymin = min(self.yellow_lo-1, ymin)
             plots[self.name]['ax'].axhline(self.yellow_lo, linestyle='-', color='gold',
-                                           linewidth=2.0)
+                                           linewidth=2.0, zorder=-8)
             plots[self.name]['ax'].axhline(self.plan_limit_lo, linestyle='-',
-                                           color='C2', linewidth=2.0)
+                                           color='C2', linewidth=2.0, zorder=-8)
         plots[self.name]['ax'].set_ylim(ymin, ymax)
         filename = self.msid.lower() + '.png'
         outfile = os.path.join(outdir, filename)
@@ -709,14 +709,14 @@ class ACISThermalCheck(object):
             fig.clf()
             scale = scales.get(msid, 1.0)
             ticklocs, fig, ax = plot_cxctime(model.times, tlm[msid] / scale,
-                                             fig=fig, ls='-', lw=2, color=thermal_blue)
-            ticklocs, fig, ax = plot_cxctime(model.times, pred[msid] / scale,
                                              fig=fig, ls='-', lw=2, color=thermal_red)
+            ticklocs, fig, ax = plot_cxctime(model.times, pred[msid] / scale,
+                                             fig=fig, ls='-', lw=2, color=thermal_blue)
             if np.any(~good_mask):
                 ticklocs, fig, ax = plot_cxctime(model.times[~good_mask], 
                                                  tlm[msid][~good_mask] / scale,
                                                  fig=fig, fmt='.c')
-            ax.set_title(msid.upper() + ' validation')
+            ax.set_title(msid.upper() + ' validation; data: red, model: blue')
             ax.set_xlabel("Date")
             ax.set_ylabel(labels[msid])
             ax.grid()
@@ -724,7 +724,8 @@ class ACISThermalCheck(object):
             for rz in rzs:
                 ptimes = cxctime2plotdate([rz.tstart, rz.tstop])
                 for ptime in ptimes:
-                    ax.axvline(ptime, ls='--', color='C2', linewidth=2)
+                    ax.axvline(ptime, ls='--', color='C2', 
+                               linewidth=2, zorder=-10)
             # Add horizontal lines for the planning and caution limits
             # or the limits for the focal plane model. Make sure we can
             # see all of the limits.
@@ -732,12 +733,16 @@ class ACISThermalCheck(object):
                 ymin, ymax = ax.get_ylim()
                 if msid == "fptemp":
                     fp_sens, acis_s, acis_i = get_acis_limits("fptemp")
-                    ax.axhline(acis_i, linestyle='-.', color='purple', linewidth=2)
-                    ax.axhline(acis_s, linestyle='-.', color='blue', linewidth=2)
+                    ax.axhline(acis_i, linestyle='-.', color='purple', zorder=-8,
+                               linewidth=2)
+                    ax.axhline(acis_s, linestyle='-.', color='blue', zorder=-8,
+                               linewidth=2)
                     ymax = max(acis_i+1, ymax)
                 else:
-                    ax.axhline(self.yellow_hi, linestyle='-', color='gold', linewidth=2)
-                    ax.axhline(self.plan_limit_hi, linestyle='-', color='C2', linewidth=2)
+                    ax.axhline(self.yellow_hi, linestyle='-', color='gold', 
+                               zorder=-8, linewidth=2)
+                    ax.axhline(self.plan_limit_hi, linestyle='-', color='C2', 
+                               zorder=-8, linewidth=2)
                     ymax = max(self.yellow_hi+1, ymax)
                     if self.flag_cold_viols:
                         ax.axhline(self.yellow_lo, linestyle='-', color='y')
