@@ -68,8 +68,6 @@ Note: {{proc.name}} residual histograms include points where {{proc.msid}} > {{p
 Note: {{proc.name}} residual histograms include only points where {{proc.msid}} > {{proc.hist_limit.0}} degC.
 {% endif %}
 
-Red = telemetry, blue = model
-
 .. image:: {{plot.lines}}
 .. image:: {{plot.histlog}}
 .. image:: {{plot.histlin}}
