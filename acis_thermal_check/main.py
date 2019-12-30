@@ -904,6 +904,7 @@ class ACISThermalCheck(object):
             The command-line options object, which has the options
             attached to it as attributes
         """
+        import inspect
         if not os.path.exists(args.outdir):
             os.mkdir(args.outdir)
 
@@ -922,8 +923,9 @@ class ACISThermalCheck(object):
             proc["msid_limit"] = self.yellow_hi - self.margin
         mylog.info('##############################'
                    '#######################################')
-        mylog.info('# %s_check run at %s by %s'
-                   % (self.name, proc['run_time'], proc['run_user']))
+        m = inspect.getmodule(inspect.stack()[-2][0])
+        mylog.info('# %s_check (version %s) run at %s by %s'
+                   % (self.name, m.__version__, proc['run_time'], proc['run_user']))
         mylog.info('# acis_thermal_check version = %s' % version)
         mylog.info('# model_spec file = %s' % os.path.abspath(args.model_spec))
         mylog.info('###############################'
