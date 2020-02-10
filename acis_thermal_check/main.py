@@ -391,8 +391,8 @@ class ACISThermalCheck(object):
         elif lim_type == "max":
             bad = temp >= limit
         op = getattr(np, lim_type)
-        # The NumPy black magic of the next two lines is to figure 
-        # out which time periods have planning limit violations and 
+        # The NumPy black magic of the next two lines is to figure
+        # out which time periods have planning limit violations and
         # to find the bounding indexes of these times. This will also
         # find violations which happen for one discrete time value also.
         bad = np.concatenate(([False], bad, [False]))
@@ -685,8 +685,8 @@ class ACISThermalCheck(object):
                 'tscpos': '%d',
                 'roll': '%.3f'}
 
-        # Set up a mask of "good times" for which the validation is 
-        # "valid", e.g., not during situations where we expect in 
+        # Set up a mask of "good times" for which the validation is
+        # "valid", e.g., not during situations where we expect in
         # advance that telemetry and model data will not match. This
         # is so we do not flag violations during these times
         good_mask = np.ones(len(tlm), dtype='bool')
@@ -712,9 +712,9 @@ class ACISThermalCheck(object):
             fig = plt.figure(10 + fig_id, figsize=(12, 6))
             fig.clf()
             scale = scales.get(msid, 1.0)
-            ticklocs, fig, ax = plot_cxctime(model.times, tlm[msid] / scale,
-                                             fig=fig, ls='-', lw=2, color=thermal_red)
             ticklocs, fig, ax = plot_cxctime(model.times, pred[msid] / scale,
+                                             fig=fig, ls='-', lw=4, color=thermal_red)
+            ticklocs, fig, ax = plot_cxctime(model.times, tlm[msid] / scale,
                                              fig=fig, ls='-', lw=2, color=thermal_blue)
             if np.any(~good_mask):
                 ticklocs, fig, ax = plot_cxctime(model.times[~good_mask], 
