@@ -34,6 +34,7 @@ op_map = {"greater": ">",
           "less": "<",
           "less_equal": "<="}
 
+
 class ACISThermalCheck(object):
     r"""
     ACISThermalCheck class for making thermal model predictions
@@ -509,6 +510,9 @@ class ACISThermalCheck(object):
             ylabel2='SIM-Z (steps)',
             ylim2=(-105000, 105000),
             figsize=figsize, width=w1, load_start=load_start)
+        plots['pow_sim']['ax'].lines[0].set_label('CCDs')
+        plots['pow_sim']['ax'].lines[1].set_label('FEPs')
+        plots['pow_sim']['ax'].legend(fancybox=True, framealpha=0.5)
         filename = 'pow_sim.png'
         outfile = os.path.join(outdir, filename)
         mylog.info('Writing plot file %s' % outfile)
