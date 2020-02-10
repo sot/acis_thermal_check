@@ -809,7 +809,7 @@ class ACISThermalCheck(object):
         ticklocs, fig, ax = plot_cxctime(model.times, model.comp['fep_count'].dvals,
                                          fig=fig, ls='--', lw=2, color=thermal_blue)
         ax.set_ylim(0, 6.5)
-        ax.set_title("CCD/FEP Count")
+        ax.set_title("ACIS CCD/FEPs")
         ax.set_xlabel("Date")
         ax.set_ylabel("CCD/FEP Count")
         ax.grid()
