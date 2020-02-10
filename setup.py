@@ -12,7 +12,6 @@ setup(name='acis_thermal_check',
       author='John ZuHone',
       author_email='john.zuhone@cfa.harvard.edu',
       url='http://github.com/acisops/acis_thermal_check',
-      download_url=url,
       data_files=[('templates', templates)],
       include_package_data=True,
       )
