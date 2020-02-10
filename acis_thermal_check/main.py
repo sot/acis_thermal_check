@@ -512,7 +512,7 @@ class ACISThermalCheck(object):
             figsize=figsize, width=w1, load_start=load_start)
         plots['pow_sim']['ax'].lines[0].set_label('CCDs')
         plots['pow_sim']['ax'].lines[1].set_label('FEPs')
-        plots['pow_sim']['ax'].legend(fancybox=True, framealpha=0.5)
+        plots['pow_sim']['ax'].legend(fancybox=True, framealpha=0.5, loc=2)
         filename = 'pow_sim.png'
         outfile = os.path.join(outdir, filename)
         mylog.info('Writing plot file %s' % outfile)
@@ -801,6 +801,31 @@ class ACISThermalCheck(object):
             plot['hist'] = filename
 
             plots.append(plot)
+
+        fig = plt.figure(10+fig_id, figsize=(12, 6))
+        fig.clf()
+        ticklocs, fig, ax = plot_cxctime(model.times, model.comp['ccd_count'].dvals,
+                                         fig=fig, ls='-', lw=2, color=thermal_blue)
+        ticklocs, fig, ax = plot_cxctime(model.times, model.comp['fep_count'].dvals,
+                                         fig=fig, ls='--', lw=2, color=thermal_blue)
+        ax.set_ylim(0, 6.5)
+        ax.set_title("CCD/FEP Count")
+        ax.set_xlabel("Date")
+        ax.set_ylabel("CCD/FEP Count")
+        ax.grid()
+        ax.set_xlim(xmin, xmax)
+        ax.lines[0].set_label('CCDs')
+        ax.lines[1].set_label('FEPs')
+        ax.legend(fancybox=True, framealpha=0.5, loc=2)
+        filename = 'ccd_count_valid.png'
+        outfile = os.path.join(outdir, filename)
+        mylog.info('Writing plot file %s' % outfile)
+        fig.savefig(outfile)
+
+        plot = {"msid": "ccd_count",
+                "lines": filename}
+
+        plots.append(plot)
 
         # Write quantile tables to a CSV file
         filename = os.path.join(outdir, 'validation_quant.csv')

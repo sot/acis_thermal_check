@@ -97,6 +97,14 @@ No Validation Violations
 
 
 {% for plot in plots_validation %}
+{% if loop.last %}
+
+CCD/FEP Count
+-------------
+
+.. image:: {{plot.lines}}
+
+{% else %}
 {{ plot.msid }}
 -----------------------
 
@@ -111,4 +119,6 @@ Note: {{proc.name}} residual histograms include only points where {{proc.msid}} 
 .. image:: {{plot.lines}}
 .. image:: {{plot.hist}}
 
+{% endif %}
 {% endfor %}
+
