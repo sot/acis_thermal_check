@@ -105,7 +105,7 @@ CCD/FEP Count
 
 .. image:: {{plot.lines}}
 
-{% elif plot.msid == "earth_solid_angle" %}
+{% elif plot.msid == "earthheat__fptemp" %}
 
 Earth Solid Angle
 -----------------

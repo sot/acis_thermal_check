@@ -829,11 +829,11 @@ class ACISThermalCheck(object):
 
         fig_id += 1
 
-        if "earth_solid_angle" in model.comp:
+        if 'earthheat__fptemp' in model.comp:
 
             fig = plt.figure(10 + fig_id, figsize=(12, 6))
             fig.clf()
-            ticklocs, fig, ax = plot_cxctime(model.times, model.comp['earth_solid_angle'].dvals,
+            ticklocs, fig, ax = plot_cxctime(model.times, model.comp['earthheat__fptemp'].dvals,
                                              fig=fig, ls='-', lw=2, color=thermal_blue)
             ax.set_title("Earth Solid Angle in Rad FOV")
             ax.set_xlabel("Date")
@@ -841,13 +841,13 @@ class ACISThermalCheck(object):
             ax.set_yscale("log")
             ax.grid()
             ax.set_xlim(xmin, xmax)
-            ax.set_ylim(1.0e-3, 0.1)
-            filename = 'eart_solid_angle_valid.png'
+            ax.set_ylim(1.0e-3, 1.0)
+            filename = 'earth_solid_angle_valid.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
             fig.savefig(outfile)
 
-            plot = {"msid": "earth_solid_angle",
+            plot = {"msid": 'earthheat__fptemp',
                     "lines": filename}
 
             plots.append(plot)
@@ -960,7 +960,7 @@ class ACISThermalCheck(object):
             The command-line options object, which has the options
             attached to it as attributes
         """
-        import inspect
+        import ska_helpers
         if not os.path.exists(args.outdir):
             os.mkdir(args.outdir)
 
@@ -977,11 +977,11 @@ class ACISThermalCheck(object):
                     hist_limit=self.hist_limit)
         if self.msid != "fptemp":
             proc["msid_limit"] = self.yellow_hi - self.margin
+        pkg_version = ska_helpers.get_version("{}_check".format(self.name))
         mylog.info('##############################'
                    '#######################################')
-        m = inspect.getmodule(inspect.stack()[-2][0])
         mylog.info('# %s_check (version %s) run at %s by %s'
-                   % (self.name, m.__version__, proc['run_time'], proc['run_user']))
+                   % (self.name, pkg_version, proc['run_time'], proc['run_user']))
         mylog.info('# acis_thermal_check version = %s' % version)
         mylog.info('# model_spec file = %s' % os.path.abspath(args.model_spec))
         mylog.info('###############################'
