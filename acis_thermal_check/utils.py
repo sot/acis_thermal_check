@@ -9,11 +9,6 @@ import six
 
 TASK_DATA = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-if "DATA_ACIS" in os.environ:
-    data_acis = os.environ["DATA_ACIS"]
-else:
-    data_acis = "/data/acis"
-
 mylog = logging.getLogger('acis_thermal_check')
 
 thermal_blue = 'blue'
@@ -371,7 +366,7 @@ def get_options(name, model_path, opts=None):
     parser.add_argument("--version", action='store_true', help="Print version")
     # Argument pointing to the NLET file the model should use for this run
     parser.add_argument("--nlet_file",
-                        default='{}/LoadReviews/NonLoadTrackedEvents.txt'.format(data_acis),
+                        default='/data/acis/LoadReviews/NonLoadTrackedEvents.txt',
                         help="Full path to the Non-Load Event Tracking file that should be "
                              "used for this model run.")
     if opts is not None:
@@ -469,17 +464,15 @@ def get_acis_limits(msid):
 
     margin = margins[msid]
 
-    pmon_file = "pmon_limits.txt"
-    eng_file = "MSID_Limits.txt"
-    file_root = "/data/acis/Thermal"
+    pmon_file = "PMON/pmon_limits.txt"
+    eng_file = "Thermal/MSID_Limits.txt"
+    file_root = "/proj/web-cxc/htdocs/acis/"
 
     if msid.startswith("tmp_"):
-        root = "PMON"
         limits_file = pmon_file
         cols = (4, 5)
         msid = "ADC_"+msid.upper()
     else:
-        root = "Thermal"
         limits_file = eng_file
         cols = (2, 3)
 
@@ -490,7 +483,7 @@ def get_acis_limits(msid):
         f.close()
     else:
         loc = "remote"
-        url = "http://cxc.cfa.harvard.edu/acis/{}/{}".format(root, limits_file)
+        url = "http://cxc.cfa.harvard.edu/acis/{}".format(limits_file)
         u = requests.get(url)
         lines = u.text.split("\n")
 
