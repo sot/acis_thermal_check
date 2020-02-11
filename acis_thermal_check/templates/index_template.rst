@@ -97,14 +97,23 @@ No Validation Violations
 
 
 {% for plot in plots_validation %}
-{% if loop.last %}
+
+{% if plot.msid == "ccd_count" %}
 
 CCD/FEP Count
 -------------
 
 .. image:: {{plot.lines}}
 
+{% elif plot.msid == "earth_solid_angle" %}
+
+Earth Solid Angle
+-----------------
+
+.. image:: {{plot.lines}}
+
 {% else %}
+
 {{ plot.msid }}
 -----------------------
 
@@ -120,5 +129,6 @@ Note: {{proc.name}} residual histograms include only points where {{proc.msid}} 
 .. image:: {{plot.hist}}
 
 {% endif %}
+
 {% endfor %}
 

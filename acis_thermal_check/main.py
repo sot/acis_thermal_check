@@ -827,6 +827,33 @@ class ACISThermalCheck(object):
 
         plots.append(plot)
 
+        fig_id += 1
+
+        if "earth_solid_angle" in model.comp:
+
+            fig = plt.figure(10 + fig_id, figsize=(12, 6))
+            fig.clf()
+            ticklocs, fig, ax = plot_cxctime(model.times, model.comp['earth_solid_angle'].dvals,
+                                             fig=fig, ls='-', lw=2, color=thermal_blue)
+            ax.set_title("Earth Solid Angle in Rad FOV")
+            ax.set_xlabel("Date")
+            ax.set_ylabel("Earth Solid Angle (sr)")
+            ax.set_yscale("log")
+            ax.grid()
+            ax.set_xlim(xmin, xmax)
+            ax.set_ylim(1.0e-3, 0.1)
+            filename = 'eart_solid_angle_valid.png'
+            outfile = os.path.join(outdir, filename)
+            mylog.info('Writing plot file %s' % outfile)
+            fig.savefig(outfile)
+
+            plot = {"msid": "earth_solid_angle",
+                    "lines": filename}
+
+            plots.append(plot)
+
+            fig_id += 1
+
         # Write quantile tables to a CSV file
         filename = os.path.join(outdir, 'validation_quant.csv')
         mylog.info('Writing quantile table %s' % filename)
