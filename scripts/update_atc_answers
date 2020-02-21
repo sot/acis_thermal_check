@@ -58,7 +58,7 @@ for model in models:
             print("Please enter y or n.")
         else:
             break
-    if response == "N":
+    if response == "Y":
         print("Updating the answers for the %s model." % model)
         gold_model_dir = os.path.join(gold_standard, model)
         new_model_dir = os.path.join(answer_dir, model)
