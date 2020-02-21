@@ -1,4 +1,3 @@
-from six.moves import cPickle as pickle
 import os
 from numpy.testing import assert_array_equal, \
     assert_allclose
@@ -6,7 +5,7 @@ import shutil
 import numpy as np
 import tempfile
 from .main import ACISThermalCheck
-import six
+import pickle
 
 months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
           "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
@@ -66,11 +65,6 @@ class TestArgs(object):
                  state_builder='acis', cmd_states_db="sqlite", verbose=0,
                  model_spec=None):
         from datetime import datetime
-        if cmd_states_db is None:
-            if six.PY2:
-                cmd_states_db = "sybase"
-            else:
-                cmd_states_db = "sqlite"
         self.load_week = load_week
         if run_start is None:
             year = 2000 + int(load_week[5:7])
@@ -136,19 +130,18 @@ def exception_catcher(test, old, new, data_type, **kwargs):
 
 
 class RegressionTester(object):
-    def __init__(self, msid, name, model_path, valid_limits,
-                 hist_limit, atc_class=None, atc_kwargs=None):
-        self.msid = msid
-        self.name = name
+    def __init__(self, atc_class, model_path, atc_args=None,
+                 atc_kwargs=None):
         self.model_path = model_path
-        self.valid_limits = valid_limits
-        self.hist_limit = hist_limit
+        if atc_args is None:
+            atc_args = ()
         if atc_kwargs is None:
             atc_kwargs = {}
-        self.atc_kwargs = atc_kwargs
-        if atc_class is None:
-            atc_class = ACISThermalCheck
-        self.atc_class = atc_class
+        self.atc_obj = atc_class(*atc_args, **atc_kwargs)
+        self.msid = self.atc_obj.msid
+        self.name = self.atc_obj.name
+        self.valid_limits = self.atc_obj.validation_limits
+        self.hist_limit = self.atc_obj.hist_limits
         self.curdir = os.getcwd()
         self.tmpdir = tempfile.mkdtemp()
         self.outdir = os.path.abspath(os.path.join(self.tmpdir, self.name+"_test"))
@@ -188,10 +181,7 @@ class RegressionTester(object):
                         load_week=load_week, interrupt=interrupt,
                         state_builder=state_builder, cmd_states_db=cmd_states_db,
                         model_spec=model_spec)
-        msid_check = self.atc_class(self.msid, self.name, self.valid_limits,
-                                    self.hist_limit, self.calc_model, args,
-                                    **self.atc_kwargs)
-        msid_check.run(override_limits=override_limits)
+        self.atc_obj.run(args, override_limits=override_limits)
 
     def run_models(self, normal=True, interrupt=True, run_start=None,
                    state_builder='acis', cmd_states_db='sqlite'):
@@ -288,8 +278,7 @@ class RegressionTester(object):
         new_results = pickle.load(open(new_answer_file, "rb"))
         old_answer_file = os.path.join(test_data_dir, self.name, load_week,
                                        filenames[0])
-        kwargs = {} if six.PY2 else {'encoding': 'latin1'}
-        old_results = pickle.load(open(old_answer_file, "rb"), **kwargs)
+        old_results = pickle.load(open(old_answer_file, "rb"))
         # Compare predictions
         new_pred = new_results["pred"]
         old_pred = old_results["pred"]
