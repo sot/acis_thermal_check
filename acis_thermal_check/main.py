@@ -8,7 +8,7 @@ from pprint import pformat
 from collections import OrderedDict, defaultdict
 import re
 import time
-from six.moves import cPickle as pickle
+import pickle
 import numpy as np
 import Ska.DBI
 import Ska.Numpy
