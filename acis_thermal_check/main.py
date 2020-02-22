@@ -801,9 +801,9 @@ class ACISThermalCheck(object):
             quant_table += quant_line + "\n"
             # We make two histogram plots for each validation,
             # one with linear and another with log scaling.
-            fig = plt.figure(20 + fig_id, figsize=(12.0, 3.5))
+            fig, axes = plt.subplots(ncols=2, num=20+fig_id, figsize=(12.0, 3.5))
             for i, histscale in enumerate(('log', 'lin')):
-                ax = fig.add_subplot(121+i)
+                ax = axes[i]
                 ax.hist(diff / scale, bins=50, log=(histscale == 'log'),
                         histtype='step', color=thermal_blue, linewidth=2)
                 if ok2.any():
