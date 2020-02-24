@@ -94,7 +94,7 @@ class SQLStateBuilder(StateBuilder):
     be used for validation only.
     """
     def __init__(self, interrupt=False, backstop_file=None, 
-                 cmd_states_db="sybase", logger=None):
+                 logger=None):
         """
         Give the SQLStateBuilder arguments that were passed in 
         from the command line, and set up the connection to the 
@@ -107,20 +107,16 @@ class SQLStateBuilder(StateBuilder):
         backstop_file : string
             Path to the backstop file. If a directory, the backstop 
             file will be searched for within this directory.
-        cmd_states_db : string
-            Commanded states database server (sybase|sqlite). Default:
-            sybase
         logger : Logger object, optional
             The Python Logger object to be used when logging.
         """
         super(SQLStateBuilder, self).__init__(logger=logger)
         self.interrupt = interrupt
         self.backstop_file = backstop_file
-        # Connect to database (NEED TO USE aca_read for sybase; user is ignored for sqlite)
-        server = ('sybase' if cmd_states_db == 'sybase' else
-                  os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3'))
+        # Connect to database 
+        server = os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3')
         self.logger.info('Connecting to {} to get cmd_states'.format(server))
-        self.db = Ska.DBI.DBI(dbi=cmd_states_db, server=server, user='aca_read',
+        self.db = Ska.DBI.DBI(dbi="sqlite", server=server, user='aca_read',
                               database='aca')
         if self.backstop_file is not None:
             self._get_bs_cmds()
@@ -214,7 +210,8 @@ class SQLStateBuilder(StateBuilder):
 #-------------------------------------------------------------------------------
 class ACISStateBuilder(StateBuilder):
 
-    def __init__(self, interrupt=False, backstop_file=None, nlet_file = None, cmd_states_db="sybase", logger=None):
+    def __init__(self, interrupt=False, backstop_file=None, nlet_file=None, 
+                 logger=None):
         """
         Give the ACISStateBuilder arguments that were passed in 
         from the command line, and set up the connection to the 
@@ -227,10 +224,8 @@ class ACISStateBuilder(StateBuilder):
         backstop_file : string
             Path to the backstop file. If a directory, the backstop 
             file will be searched for within this directory.
-        nlet_file : full path to the Non-Load Event Tracking file
-        cmd_states_db : string
-            Commanded states database server (sybase|acisite). Default:
-            sybase
+        nlet_file : string
+            full path to the Non-Load Event Tracking file
         logger : Logger object, optional
             The Python Logger object to be used when logging.
         """
@@ -270,12 +265,10 @@ class ACISStateBuilder(StateBuilder):
 
         # Connect to database (NEED TO USE aca_read for sybase; user is ignored for sqlite)
         # We only need this as the quick way to get the validation states.
-        server = ('sybase' if cmd_states_db == 'sybase' else
-                  os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3'))
+        server = os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3')
         self.logger.info('Connecting to {} to get cmd_states'.format(server))
-        self.db = Ska.DBI.DBI(dbi=cmd_states_db, server=server, user='aca_read',
+        self.db = Ska.DBI.DBI(dbi="sqlite", server=server, user='aca_read',
                               database='aca')
-
 
     def get_prediction_states(self, tbegin):
         """

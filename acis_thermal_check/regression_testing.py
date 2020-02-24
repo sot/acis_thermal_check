@@ -46,9 +46,6 @@ class TestArgs(object):
     state_builder : string, optional
         The mode used to create the list of commanded states. "sql" or
         "acis", default "acis".
-    cmd_states_db : string, optional
-        The mode of database access for the commanded states database.
-        "sqlite" or "sybase". Default: "sqlite"
     verbose : integer, optional
         The verbosity of the output. Default: 0
     model_spec : string, optional
@@ -57,8 +54,7 @@ class TestArgs(object):
     """
     def __init__(self, name, outdir, model_path, run_start=None,
                  load_week=None, days=21.0, T_init=None, interrupt=False,
-                 state_builder='acis', cmd_states_db="sqlite", verbose=0,
-                 model_spec=None):
+                 state_builder='acis', verbose=0, model_spec=None):
         from datetime import datetime
         self.load_week = load_week
         if run_start is None:
@@ -79,7 +75,6 @@ class TestArgs(object):
         self.nlet_file = '/data/acis/LoadReviews/NonLoadTrackedEvents.txt'
         self.interrupt = interrupt
         self.state_builder = state_builder
-        self.cmd_states_db = cmd_states_db
         self.T_init = T_init
         self.traceback = True
         self.verbose = verbose
@@ -145,8 +140,7 @@ class RegressionTester(object):
             os.mkdir(self.outdir)
 
     def run_model(self, load_week, run_start=None, state_builder='acis',
-                  interrupt=False, cmd_states_db="sqlite", model_spec=None,
-                  override_limits=None):
+                  interrupt=False, override_limits=None):
         """
         Run a thermal model in test mode for a single load week.
 
@@ -162,11 +156,6 @@ class RegressionTester(object):
             "acis", default "acis".
         interrupt : boolean, optional
             Whether or not this is an interrupt load. Default: False
-        cmd_states_db : string, optional
-            The mode of database access for the commanded states database.
-            "sqlite" or "sybase". Default: "sqlite"
-        model_spec : string, optional
-            The path to the model specification file to use. Default is to
         use the model specification file stored in the model package.
             override_limits : dict, optional
             Override any margin by setting a new value to its name
@@ -175,12 +164,11 @@ class RegressionTester(object):
         out_dir = os.path.join(self.outdir, load_week)
         args = TestArgs(self.name, out_dir, self.model_path, run_start=run_start,
                         load_week=load_week, interrupt=interrupt,
-                        state_builder=state_builder, cmd_states_db=cmd_states_db,
-                        model_spec=self.test_model_spec)
+                        state_builder=state_builder, model_spec=self.test_model_spec)
         self.atc_obj.run(args, override_limits=override_limits)
 
     def run_models(self, normal=True, interrupt=True, run_start=None,
-                   state_builder='acis', cmd_states_db='sqlite'):
+                   state_builder='acis'):
         """
         Run the internally set list of models for regression testing.
 
@@ -196,20 +184,15 @@ class RegressionTester(object):
         state_builder : string, optional
             The mode used to create the list of commanded states. "sql" or
             "acis", default "acis".
-        cmd_states_db : string, optional
-            The mode of database access for the commanded states database.
-            "sqlite" or "sybase". Default: "sqlite"
         """
         if normal:
             for load in test_loads["normal"]:
                 self.run_model(load, run_start=run_start,
-                               state_builder=state_builder,
-                               cmd_states_db=cmd_states_db)
+                               state_builder=state_builder)
         if interrupt:
             for load in test_loads["interrupt"]:
                 self.run_model(load, interrupt=True, run_start=run_start,
-                               state_builder=state_builder,
-                               cmd_states_db=cmd_states_db)
+                               state_builder=state_builder)
 
     def _set_answer_dir(self, load_week):
         answer_dir = os.path.join(self.model_path, "tests/answers",
@@ -388,7 +371,6 @@ class RegressionTester(object):
                 viol_data["obsids"] = []
         load_year = "20%s" % load_week[-3:-1]
         self.run_model(load_week, run_start=viol_data['run_start'], 
-                       model_spec=self.test_model_spec,
                        override_limits=viol_data['limits'])
         out_dir = os.path.join(self.outdir, load_week)
         os.system("cp %s /Users/jzuhone" % os.path.join(out_dir, "index.rst"))

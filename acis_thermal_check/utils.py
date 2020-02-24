@@ -5,7 +5,6 @@ import os
 import matplotlib.pyplot as plt
 from Ska.Matplotlib import cxctime2plotdate
 import Ska.Numpy
-import six
 
 TASK_DATA = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -358,9 +357,6 @@ def get_options(name, model_path, opts=None):
     parser.add_argument("--T-init", type=float,
                         help="Starting temperature (degC or degF, depending on the model). "
                              "Default is to compute it from telemetry.")
-    parser.add_argument("--cmd-states-db", default="sqlite",
-                        help="Commanded states database server (sybase|sqlite). "
-                             "Default: sqlite")
     parser.add_argument("--state-builder", default="acis",
                         help="StateBuilder to use (sql|acis). Default: acis")
     parser.add_argument("--version", action='store_true', help="Print version")
@@ -377,13 +373,6 @@ def get_options(name, model_path, opts=None):
 
     if args.oflsdir is not None:
         args.backstop_file = args.oflsdir
-
-    if args.cmd_states_db not in ('sybase', 'sqlite'):
-        raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
-
-    # Enforce sqlite cmd states db for Python 3
-    if six.PY3 and args.cmd_states_db == 'sybase':
-        args.cmd_states_db = 'sqlite'
 
     return args
 
@@ -415,7 +404,6 @@ def make_state_builder(name, args):
     if name == "sql":
         state_builder = builder_class(interrupt=args.interrupt,
                                       backstop_file=args.backstop_file,
-                                      cmd_states_db=args.cmd_states_db,
                                       logger=mylog)
 
     # Instantiate the ACIS OPS History Builder: ACISStateBuilder
@@ -425,7 +413,6 @@ def make_state_builder(name, args):
         state_builder = builder_class(interrupt=args.interrupt,
                                       backstop_file=args.backstop_file,
                                       nlet_file=args.nlet_file,
-                                      cmd_states_db=args.cmd_states_db,
                                       logger=mylog)
     else:
         raise RuntimeError("No such state builder with name %s!" % name)
