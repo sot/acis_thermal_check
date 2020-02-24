@@ -3,7 +3,6 @@ from setuptools import setup
 import glob
 
 templates = glob.glob("templates/*")
-scripts = glob.glob("scripts/*")
 
 setup(name='acis_thermal_check',
       packages=["acis_thermal_check"],
@@ -14,6 +13,5 @@ setup(name='acis_thermal_check',
       author_email='john.zuhone@cfa.harvard.edu',
       url='http://github.com/acisops/acis_thermal_check',
       data_files=[('templates', templates)],
-      scripts=scripts,
       include_package_data=True,
       )

@@ -135,7 +135,7 @@ class RegressionTester(object):
         self.curdir = os.getcwd()
         self.tmpdir = tempfile.mkdtemp()
         self.outdir = os.path.abspath(os.path.join(self.tmpdir, self.name+"_test"))
-        self.test_model_spec = os.path.join(model_path, "tests/answers", model_spec)
+        self.test_model_spec = os.path.join(model_path, "tests", model_spec)
         if not os.path.exists(self.outdir):
             os.mkdir(self.outdir)
 
