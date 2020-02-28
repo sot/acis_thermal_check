@@ -738,7 +738,7 @@ class ACISThermalCheck(object):
                 ticklocs, fig, ax = plot_cxctime(model.times[~good_mask], 
                                                  tlm[msid][~good_mask] / scale,
                                                  fig=fig, fmt='.c')
-            ax.set_title(msid.upper() + ' validation; data: red, model: blue')
+            ax.set_title(msid.upper() + ' validation; data: blue, model: red')
             ax.set_xlabel("Date")
             ax.set_ylabel(labels[msid])
             ax.grid()
