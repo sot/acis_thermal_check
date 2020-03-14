@@ -247,7 +247,7 @@ class ACISStateBuilder(StateBuilder):
         self.interrupt = interrupt
         self.backstop_file = backstop_file
 
-        # if the user supplied a full path to the backstop file then 
+        # if the user supplied a full path to the backstop file then
         # capture the backstop file name and the commands within the backstop file.
         if backstop_file is not None:
             # Get tstart, tstop, commands from backstop file in args.oflsdir
@@ -256,12 +256,12 @@ class ACISStateBuilder(StateBuilder):
             # commands that are not of interest as sot/cmd_states/get_cmds does.
             rev_bs_cmds,  self.rev_bs_name = self.BSC.get_bs_cmds(self.backstop_file)
 
-        # Store the Review Load backstop commands in the class attribute and
-        # also capture the Review load time of first command (TOFC) and
-        # Time of Last Command (TOLC).
-        self.bs_cmds = rev_bs_cmds
-        self.tstart = rev_bs_cmds[0]['time']
-        self.tstop = rev_bs_cmds[-1]['time']
+            # Store the Review Load backstop commands in the class attribute and
+            # also capture the Review load time of first command (TOFC) and
+            # Time of Last Command (TOLC).
+            self.bs_cmds = rev_bs_cmds
+            self.tstart = rev_bs_cmds[0]['time']
+            self.tstop = rev_bs_cmds[-1]['time']
 
         # Connect to database (NEED TO USE aca_read for sybase; user is ignored for sqlite)
         # We only need this as the quick way to get the validation states.
