@@ -1107,7 +1107,7 @@ class ACISThermalCheck(object):
 
 class DPABoardTempCheck(ACISThermalCheck):
     def __init__(self, msid, name, validation_limits, hist_limit,
-                 args, other_telem=None, other_map=None):
+                 other_telem=None, other_map=None):
         hist_ops = ["greater_equal", "less_equal"]
         super(DPABoardTempCheck, self).__init__(msid, name,
                                                 validation_limits,
