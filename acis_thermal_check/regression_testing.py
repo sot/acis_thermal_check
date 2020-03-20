@@ -373,7 +373,6 @@ class RegressionTester(object):
         self.run_model(load_week, run_start=viol_data['run_start'], 
                        override_limits=viol_data['limits'])
         out_dir = os.path.join(self.outdir, load_week)
-        os.system("cp %s /Users/jzuhone" % os.path.join(out_dir, "index.rst"))
         with open(os.path.join(out_dir, "index.rst"), 'r') as myfile:
             i = 0
             for line in myfile.readlines():
