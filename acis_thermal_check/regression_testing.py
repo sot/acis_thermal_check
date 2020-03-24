@@ -373,7 +373,8 @@ class RegressionTester(object):
         self.run_model(load_week, run_start=viol_data['run_start'], 
                        override_limits=viol_data['limits'])
         out_dir = os.path.join(self.outdir, load_week)
-        with open(os.path.join(out_dir, "index.rst"), 'r') as myfile:
+        index_rst = os.path.join(out_dir, "index.rst")
+        with open(index_rst, 'r') as myfile:
             i = 0
             for line in myfile.readlines():
                 if line.startswith("Model status"):
@@ -387,11 +388,15 @@ class RegressionTester(object):
                         if self.msid == "fptemp":
                             viol_data["obsids"].append(words[3])
                     else:
-                        assert viol_data["datestarts"][i] in line
-                        assert viol_data["datestops"][i] in line
-                        assert viol_data["temps"][i] in line
-                        if self.msid == "fptemp":
-                            assert viol_data["obsids"][i] in line
+                        try:
+                            assert viol_data["datestarts"][i] in line
+                            assert viol_data["datestops"][i] in line
+                            assert viol_data["temps"][i] in line
+                            if self.msid == "fptemp":
+                                assert viol_data["obsids"][i] in line
+                        except AssertionError:
+                            raise AssertionError("Comparison failed. Check file at "
+                                                 "%s." % index_rst)
                     i += 1
         if answer_store:
             with open(viol_json, "w") as f:
