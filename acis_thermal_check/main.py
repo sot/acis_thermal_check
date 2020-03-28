@@ -979,6 +979,9 @@ class ACISThermalCheck(object):
             attached to it as attributes
         """
         import ska_helpers
+        import hashlib
+        import json
+
         if not os.path.exists(args.outdir):
             os.mkdir(args.outdir)
 
@@ -995,6 +998,9 @@ class ACISThermalCheck(object):
                     hist_limit=self.hist_limit)
         if self.msid != "fptemp":
             proc["msid_limit"] = self.yellow_hi - self.margin
+        # Figure out the MD5 sum of model spec file
+        model_json = json.dumps(args.model_spec, sort_keys=True, indent=4).encode("utf-8")
+        md5sum = hashlib.md5(model_json).hexdigest()
         pkg_version = ska_helpers.get_version("{}_check".format(self.name))
         mylog.info('##############################'
                    '#######################################')
@@ -1002,6 +1008,7 @@ class ACISThermalCheck(object):
                    % (self.name, pkg_version, proc['run_time'], proc['run_user']))
         mylog.info('# acis_thermal_check version = %s' % version)
         mylog.info('# model_spec file = %s' % os.path.abspath(args.model_spec))
+        mylog.info('# model_spec file MD5sum = %s' % md5sum)
         mylog.info('###############################'
                    '######################################\n')
         mylog.info('Command line options:\n%s\n' % pformat(args.__dict__))
