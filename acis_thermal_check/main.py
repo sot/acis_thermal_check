@@ -834,6 +834,12 @@ class ACISThermalCheck(object):
         ax.set_xlim(xmin, xmax)
         ax.lines[0].set_label('CCDs')
         ax.lines[1].set_label('FEPs')
+        # add lines for perigee passages
+        for rz in rzs:
+            ptimes = cxctime2plotdate([rz.tstart, rz.tstop])
+            for ptime in ptimes:
+                ax.axvline(ptime, ls='--', color='C2',
+                           linewidth=2, zorder=-10)
         ax.legend(fancybox=True, framealpha=0.5, loc=2)
         filename = 'ccd_count_valid.png'
         outfile = os.path.join(outdir, filename)
@@ -860,6 +866,12 @@ class ACISThermalCheck(object):
             ax.grid()
             ax.set_xlim(xmin, xmax)
             ax.set_ylim(1.0e-3, 1.0)
+            # add lines for perigee passages
+            for rz in rzs:
+                ptimes = cxctime2plotdate([rz.tstart, rz.tstop])
+                for ptime in ptimes:
+                    ax.axvline(ptime, ls='--', color='C2',
+                               linewidth=2, zorder=-10)
             filename = 'earth_solid_angle_valid.png'
             outfile = os.path.join(outdir, filename)
             mylog.info('Writing plot file %s' % outfile)
