@@ -14,13 +14,14 @@ thermal_blue = 'blue'
 thermal_red = 'red'
 
 
-def calc_pitch_roll(ephem, states):
+def calc_pitch_roll(times, ephem, states):
     """Calculate the normalized sun vector in body coordinates.
     Shamelessly copied from Ska.engarchive.derived.pcad but 
     modified to use commanded states quaternions
 
     Parameters
     ----------
+    times : NumPy array of times in seconds
     ephem : orbitephem and solarephem info 
     states : commanded states NumPy recarray
 
@@ -30,15 +31,15 @@ def calc_pitch_roll(ephem, states):
     """
     from Ska.engarchive.derived.pcad import arccos_clip, qrotate
     idxs = Ska.Numpy.interpolate(np.arange(len(states)), states['tstart'],
-                                 ephem['orbitephem0_x'].times, method='nearest')
+                                 times, method='nearest')
     states = states[idxs]
 
-    chandra_eci = np.array([ephem['orbitephem0_x'].vals,
-                            ephem['orbitephem0_y'].vals,
-                            ephem['orbitephem0_z'].vals])
-    sun_eci = np.array([ephem['solarephem0_x'].vals,
-                        ephem['solarephem0_y'].vals,
-                        ephem['solarephem0_z'].vals])
+    chandra_eci = np.array([ephem['orbitephem0_x'],
+                            ephem['orbitephem0_y'],
+                            ephem['orbitephem0_z']])
+    sun_eci = np.array([ephem['solarephem0_x'],
+                        ephem['solarephem0_y'],
+                        ephem['solarephem0_z']])
     sun_vec = -chandra_eci + sun_eci
     est_quat = np.array([states['q1'],
                          states['q2'],

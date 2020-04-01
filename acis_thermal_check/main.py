@@ -205,11 +205,15 @@ class ACISThermalCheck(object):
 
         return
 
-    def get_ephemeris(self, start, stop):
+    def get_ephemeris(self, start, stop, times):
         msids = ['orbitephem0_{}'.format(axis) for axis in "xyz"]
         msids += ['solarephem0_{}'.format(axis) for axis in "xyz"]
         e = fetch.MSIDset(msids, start - 2000.0, stop + 2000.0)
-        return e
+        ephem = {}
+        for msid in msids:
+            ephem[msid] = Ska.Numpy.interpolate(e[msid].vals, e[msid].times,
+                                                times)
+        return ephem
 
     def get_states(self, tlm, T_init):
         """
@@ -324,17 +328,17 @@ class ACISThermalCheck(object):
             necessary. 
         """
         import xija
-        ephem = self.get_ephemeris(tstart, tstop)
         model = xija.ThermalModel(self.name, start=tstart, stop=tstop,
                                   model_spec=model_spec)
+        ephem = self.get_ephemeris(tstart, tstop, model.times)
         state_times = np.array([states['tstart'], states['tstop']])
         model.comp['sim_z'].set_data(states['simpos'], state_times)
         model.comp['eclipse'].set_data(False)
         for name in ('ccd_count', 'fep_count', 'vid_board', 'clocking'):
             model.comp[name].set_data(states[name], state_times)
-        pitch, roll = calc_pitch_roll(ephem, states)
-        model.comp['roll'].set_data(roll, ephem["orbitephem0_x"].times)
-        model.comp['pitch'].set_data(pitch, ephem["orbitephem0_x"].times)
+        pitch, roll = calc_pitch_roll(model.times, ephem, states)
+        model.comp['roll'].set_data(roll, model.times)
+        model.comp['pitch'].set_data(pitch, model.times)
 
         if self.name in ["psmc", "acisfp"] and state0 is not None:
             # Detector housing heater contribution to heating
