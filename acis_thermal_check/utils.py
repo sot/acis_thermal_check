@@ -352,7 +352,8 @@ def get_options(name, model_path, opts=None):
                                             "use the current time.")
     parser.add_argument("--interrupt", help="Set this flag if this is an interrupt load.",
                         action='store_true')
-    parser.add_argument("--traceback", default=True, help='Enable tracebacks. Default: True')
+    parser.add_argument("--traceback", action='store_false', help='Enable tracebacks. Default: True')
+    parser.add_argument("--pred-only", action='store_true', help='Only make predictions. Default: False')
     parser.add_argument("--verbose", type=int, default=1,
                         help="Verbosity (0=quiet, 1=normal, 2=debug)")
     parser.add_argument("--T-init", type=float,
@@ -374,6 +375,9 @@ def get_options(name, model_path, opts=None):
 
     if args.oflsdir is not None:
         args.backstop_file = args.oflsdir
+
+    if args.pred_only and args.backstop_file is None:
+        raise RuntimeError("You turned off both prediction and validation!!")
 
     return args
 

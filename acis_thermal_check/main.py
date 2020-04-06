@@ -176,16 +176,24 @@ class ACISThermalCheck(object):
             pred = defaultdict(lambda: None)
 
         # Validation
-        # Make the validation plots
-        plots_validation = self.make_validation_plots(tlm, args.model_spec,
-                                                      args.outdir,
-                                                      args.run_start)
-        proc["op"] = [op_map[op] for op in self.hist_ops]
 
-        # Determine violations of temperature validation
-        valid_viols = self.make_validation_viols(plots_validation)
-        if len(valid_viols) > 0:
-            mylog.info('validation warning(s) in output at %s' % args.outdir)
+        if args.pred_only:
+
+            # Make the validation plots
+            plots_validation = self.make_validation_plots(tlm, args.model_spec,
+                                                          args.outdir,
+                                                          args.run_start)
+            proc["op"] = [op_map[op] for op in self.hist_ops]
+
+            # Determine violations of temperature validation
+            valid_viols = self.make_validation_viols(plots_validation)
+            if len(valid_viols) > 0:
+                mylog.info('validation warning(s) in output at %s' % args.outdir)
+
+        else:
+
+            valid_viols = defaultdict(lambda: None)
+            plots_validation = defaultdict(lambda: None)
 
         # Write everything to the web page.
         # First, write the reStructuredText file.
@@ -196,9 +204,11 @@ class ACISThermalCheck(object):
                    'plots': pred["plots"],
                    'valid_viols': valid_viols,
                    'proc': proc,
+                   'pred_only': args.pred_only,
                    'plots_validation': plots_validation,
                    'flag_cold': self.flag_cold_viols}
-        self.write_index_rst(self.bsdir, args.outdir, context)
+
+        self.write_index_rst(args.outdir, context)
 
         # Second, convert reST to HTML
         self.rst_to_html(args.outdir, proc)
@@ -947,17 +957,13 @@ class ACISThermalCheck(object):
         outtext = del_colgroup.sub('', open(outfile).read())
         open(outfile, 'w').write(outtext)
 
-    def write_index_rst(self, bsdir, outdir, context):
+    def write_index_rst(self, outdir, context):
         """
         Make output text (in ReST format) in outdir, using jinja2
         to fill out the template. 
 
         Parameters
         ----------
-        bsdir : string
-            Path to the directory containing the backstop file that was 
-            used when running the model. May be None if that was not 
-            the case.
         outdir : string
             Path to the location where the outputs will be written.
         context : dict
@@ -973,11 +979,8 @@ class ACISThermalCheck(object):
         outfile = os.path.join(outdir, 'index.rst')
         mylog.info('Writing report file %s' % outfile)
         # Open up the reST template and send the context to it using jinja2
-        index_template_file = ('index_template.rst'
-                               if bsdir else
-                               'index_template_val_only.rst')
-        index_template = open(os.path.join(template_path, 
-                                           index_template_file)).read()
+        index_template = open(os.path.join(template_path,
+                                           'index_template.rst')).read()
         index_template = re.sub(r' %}\n', ' %}', index_template)
         template = jinja2.Template(index_template)
         # Render the template and write it to a file

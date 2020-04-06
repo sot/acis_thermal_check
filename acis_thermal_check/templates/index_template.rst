@@ -9,6 +9,8 @@ Processing Errors
 .. class:: red
 {% endif %}
 
+{% if bsdir %}
+
 Summary
 --------         
 .. class:: borderless
@@ -59,6 +61,10 @@ No {{proc.msid}} Cold Violations
 .. image:: {{plots.default.filename}}
 .. image:: {{plots.pow_sim.filename}}
 .. image:: {{plots.roll.filename}}
+
+{% endif %}
+
+{% if not pred_only %}
 
 ==============================
 {{proc.name}} Model Validation
@@ -132,3 +138,4 @@ Note: {{proc.name}} residual histograms include only points where {{proc.msid}} 
 
 {% endfor %}
 
+{% endif %}
