@@ -177,7 +177,7 @@ class ACISThermalCheck(object):
 
         # Validation
 
-        if args.pred_only:
+        if not args.pred_only:
 
             # Make the validation plots
             plots_validation = self.make_validation_plots(tlm, args.model_spec,
