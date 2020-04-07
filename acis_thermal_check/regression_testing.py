@@ -75,6 +75,7 @@ class TestArgs(object):
         self.nlet_file = '/data/acis/LoadReviews/NonLoadTrackedEvents.txt'
         self.interrupt = interrupt
         self.state_builder = state_builder
+        self.pred_only = False
         self.T_init = T_init
         self.traceback = True
         self.verbose = verbose
