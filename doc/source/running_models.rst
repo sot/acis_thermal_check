@@ -4,14 +4,15 @@ Running a Thermal Model with ``acis_thermal_check``
 ---------------------------------------------------
 
 ``acis_thermal_check`` models are adapted to each use case and run from the
-command line. This section provides a brief description on how to use 
+command line. This section provides a brief description on how to run the 
+models, including what the various options are. 
 
 Base Command-Line Arguments
 +++++++++++++++++++++++++++
 
 The following is a brief description of the base collection of command-line 
-arguments accepted by a model using ``acis_thermal_check``. Additional
-arguments may be added by individual models in the call to 
+arguments accepted by a model using ``acis_thermal_check``. Additional arguments
+may be added by individual models in the call to 
 :func:`~acis_thermal_check.utils.get_options`, as further detailed in
 :ref:`developing-models`. 
 
@@ -40,10 +41,10 @@ arguments may be added by individual models in the call to
   --T-init T_INIT       Starting temperature (degC or degF, depending on the
                         model). Default is to compute it from telemetry.
   --cmd-states-db CMD_STATES_DB
-                        Commanded states database server (sybase|sqlite). Only
-                        used if state-builder=legacy. Default: sybase
+                        Commanded states database server (sybase|sqlite).
+                        Default: sybase
   --state-builder STATE_BUILDER
-                        StateBuilder to use (legacy|acis|hdf5). Default:
+                        StateBuilder to use (legacy|acis). Default:
                         legacy
   --version             Print version
 
@@ -66,19 +67,20 @@ due to a TOO, or any other interrupt, the thermal model should be run with the
 
     [~]$ dpa_check --backstop_file=/data/acis/LoadReviews/2017/AUG3017 --interrupt --outdir=dpa_aug3017
 
-By default, the initial temperature for the model will be set using an average of 
-telemetry in a few minutes around the run start time. However, the model can be started
-with a specific temperature value using the ``--T-init`` argument, which is assumed to
-be in the same units of the temperature in the model (degrees C or F):
+By default, the initial temperature for the model will be set using an average 
+of telemetry in a few minutes around the run start time. However, the model can
+be started with a specific temperature value using the ``--T-init`` argument, 
+which is assumed to be in the same units of the temperature in the model 
+(degrees C or F):
 
 .. code-block:: bash
 
     [~]$ dpa_check --backstop_file=/data/acis/LoadReviews/2017/OCT1617 --outdir=dpa_oct1617 --T-init=22.0
 
-If one is using the legacy state builder, one can also choose to access the 
-commanded states database via Sybase or SQLite. The former only works with Python 2, so
-if Python 3 is used, the latter will be chosen automatically. To choose which one to use
-(if you have the option), set the ``--cmd-states-db`` flag:
+One can also choose to access the commanded states database via Sybase or 
+SQLite. The former only works with Python 2, so if Python 3 is used, the latter
+will be chosen automatically. To choose which one to use, set the 
+``--cmd-states-db`` flag:
 
 .. code-block:: bash
 

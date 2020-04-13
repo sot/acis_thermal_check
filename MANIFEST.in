@@ -1,1 +1,2 @@
 include acis_thermal_check/templates/*
+include acis_thermal_check/data/*

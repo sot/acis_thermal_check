@@ -9,6 +9,8 @@ Processing Errors
 .. class:: red
 {% endif %}
 
+{% if bsdir %}
+
 Summary
 --------         
 .. class:: borderless
@@ -60,6 +62,10 @@ No {{proc.msid}} Cold Violations
 .. image:: {{plots.pow_sim.filename}}
 .. image:: {{plots.roll.filename}}
 
+{% endif %}
+
+{% if not pred_only %}
+
 ==============================
 {{proc.name}} Model Validation
 ==============================
@@ -97,6 +103,23 @@ No Validation Violations
 
 
 {% for plot in plots_validation %}
+
+{% if plot.msid == "ccd_count" %}
+
+CCD/FEP Count
+-------------
+
+.. image:: {{plot.lines}}
+
+{% elif plot.msid == "earthheat__fptemp" %}
+
+Earth Solid Angle
+-----------------
+
+.. image:: {{plot.lines}}
+
+{% else %}
+
 {{ plot.msid }}
 -----------------------
 
@@ -108,10 +131,11 @@ Note: {{proc.name}} residual histograms include only points where {{proc.msid}} 
 {% endif %}
 {% endif %}
 
-Red = telemetry, blue = model
-
 .. image:: {{plot.lines}}
-.. image:: {{plot.histlog}}
-.. image:: {{plot.histlin}}
+.. image:: {{plot.hist}}
+
+{% endif %}
 
 {% endfor %}
+
+{% endif %}

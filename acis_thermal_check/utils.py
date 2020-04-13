@@ -4,28 +4,58 @@ import logging
 import os
 import matplotlib.pyplot as plt
 from Ska.Matplotlib import cxctime2plotdate
-import six
+import Ska.Numpy
 
 TASK_DATA = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 mylog = logging.getLogger('acis_thermal_check')
 
-def calc_off_nom_rolls(states):
-    """
-    Calculate the off-nominal rolls from commanded states, which
-    include for a given state its start and stop times and the
-    attitude quaternion.
+thermal_blue = 'blue'
+thermal_red = 'red'
 
-    states : NumPy record array
-        The commanded states to compute the off-nominal rolls
-        from.
+
+def calc_pitch_roll(times, ephem, states):
+    """Calculate the normalized sun vector in body coordinates.
+    Shamelessly copied from Ska.engarchive.derived.pcad but 
+    modified to use commanded states quaternions
+
+    Parameters
+    ----------
+    times : NumPy array of times in seconds
+    ephem : orbitephem and solarephem info 
+    states : commanded states NumPy recarray
+
+    Returns
+    -------
+    3 NumPy arrays: time, pitch and roll
     """
-    off_nom_rolls = []
-    for i, state in enumerate(states):
-        att = [state[x] for x in ['q1', 'q2', 'q3', 'q4']]
-        time = (state['tstart'] + state['tstop']) / 2
-        off_nom_rolls.append(Ska.Sun.off_nominal_roll(att, time))
-    return np.array(off_nom_rolls)
+    from Ska.engarchive.derived.pcad import arccos_clip, qrotate
+    idxs = Ska.Numpy.interpolate(np.arange(len(states)), states['tstart'],
+                                 times, method='nearest')
+    states = states[idxs]
+
+    chandra_eci = np.array([ephem['orbitephem0_x'],
+                            ephem['orbitephem0_y'],
+                            ephem['orbitephem0_z']])
+    sun_eci = np.array([ephem['solarephem0_x'],
+                        ephem['solarephem0_y'],
+                        ephem['solarephem0_z']])
+    sun_vec = -chandra_eci + sun_eci
+    est_quat = np.array([states['q1'],
+                         states['q2'],
+                         states['q3'],
+                         states['q4']])
+
+    sun_vec_b = qrotate(est_quat, sun_vec)  # Rotate into body frame
+    magnitude = np.sqrt((sun_vec_b ** 2).sum(axis=0))
+    magnitude[magnitude == 0.0] = 1.0
+    sun_vec_b = sun_vec_b / magnitude  # Normalize
+
+    pitch = np.degrees(arccos_clip(sun_vec_b[0, :]))
+    roll = np.degrees(np.arctan2(-sun_vec_b[1, :], -sun_vec_b[2, :]))
+
+    return pitch, roll
+
 
 def config_logging(outdir, verbose):
     """
@@ -78,11 +108,12 @@ def config_logging(outdir, verbose):
         filehandler.setLevel(logging.DEBUG)
     logger.addHandler(filehandler)
 
-def plot_one(fig_id, x, y, linestyle='-', 
-             color='blue', xmin=None,
-             xmax=None, ylim=None, 
-             xlabel='', ylabel='', title='',
-             figsize=(7, 3.5), load_start=None,
+
+def plot_one(fig_id, x, y, yy=None, linestyle='-',
+             ll='--', color=thermal_blue, 
+             linewidth=2, xmin=None, xmax=None, 
+             ylim=None, xlabel='', ylabel='', title='',
+             figsize=(12, 6), load_start=None,
              width=None):
     """
     Plot one quantities with a date x-axis and a left
@@ -97,10 +128,17 @@ def plot_one(fig_id, x, y, linestyle='-',
         the left y-axis quantity.
     y : NumPy array
         Quantity to plot against the times on the left x-axis.
+    yy : NumPy array, optional
+        A second quantity to plot against the times on the 
+        left x-axis. Default: None
     linestyle : string, optional
         The style of the line for the left y-axis.
+    ll : string, optional
+        The style of the second line for the left y-axis.
     color : string, optional
         The color of the line for the left y-axis.
+    linewidth : string, optional
+        The width of the lines. Default: 2
     xmin : float, optional
         The left-most value of the x-axis.
     xmax : float, optional
@@ -122,7 +160,11 @@ def plot_one(fig_id, x, y, linestyle='-',
     fig.clf()
     ax = fig.add_subplot(1, 1, 1)
     # Plot left y-axis
-    ax.plot_date(xt, y, fmt='-', linestyle=linestyle, color=color)
+    ax.plot_date(xt, y, fmt='-', linestyle=linestyle, linewidth=linewidth, 
+                 color=color)
+    if yy is not None:
+        ax.plot_date(xt, yy, fmt='-', linestyle=ll, linewidth=linewidth, 
+                     color=color)
     if xmin is None:
         xmin = min(xt)
     if xmax is None:
@@ -153,12 +195,13 @@ def plot_one(fig_id, x, y, linestyle='-',
 
     return {'fig': fig, 'ax': ax}
 
-def plot_two(fig_id, x, y, x2, y2,
-             linestyle='-', linestyle2='-',
-             color='blue', color2='magenta',
+
+def plot_two(fig_id, x, y, x2, y2, yy=None, linewidth=2,
+             linestyle='-', linestyle2='-', ll='--', 
+             color=thermal_blue, color2='magenta',
              xmin=None, xmax=None, ylim=None, ylim2=None,
              xlabel='', ylabel='', ylabel2='', title='',
-             figsize=(7, 3.5), load_start=None, width=None):
+             figsize=(12, 6), load_start=None, width=None):
     """
     Plot two quantities with a date x-axis, one on the left
     y-axis and the other on the right y-axis.
@@ -177,10 +220,17 @@ def plot_two(fig_id, x, y, x2, y2,
         the right y-axis quantity.
     y2 : NumPy array
         Quantity to plot against the times on the right y-axis.
+    yy : NumPy array, optional
+        A second quantity to plot against the times on the 
+        left x-axis. Default: None
+    linewidth : string, optional
+        The width of the lines. Default: 2
     linestyle : string, optional
         The style of the line for the left y-axis.
     linestyle2 : string, optional
         The style of the line for the right y-axis.
+    ll : string, optional
+        The style of the second line for the left y-axis.
     color : string, optional
         The color of the line for the left y-axis.
     color2 : string, optional
@@ -210,7 +260,11 @@ def plot_two(fig_id, x, y, x2, y2,
     fig.clf()
     ax = fig.add_subplot(1, 1, 1)
     # Plot left y-axis
-    ax.plot_date(xt, y, fmt='-', linestyle=linestyle, color=color)
+    ax.plot_date(xt, y, fmt='-', linestyle=linestyle, linewidth=linewidth,
+                 color=color)
+    if yy is not None:
+        ax.plot_date(xt, yy, fmt='-', linestyle=ll, linewidth=linewidth,
+                     color=color)
     if xmin is None:
         xmin = min(xt)
     if xmax is None:
@@ -227,7 +281,8 @@ def plot_two(fig_id, x, y, x2, y2,
 
     ax2 = ax.twinx()
     xt2 = cxctime2plotdate(x2)
-    ax2.plot_date(xt2, y2, fmt='-', linestyle=linestyle2, color=color2)
+    ax2.plot_date(xt2, y2, fmt='-', linestyle=linestyle2, linewidth=linewidth,
+                  color=color2)
     ax2.set_xlim(xmin, xmax)
     if ylim2:
         ax2.set_ylim(*ylim2)
@@ -251,8 +306,11 @@ def plot_two(fig_id, x, y, x2, y2,
         rm = fig.subplotpars.right * width / w2
         fig.subplots_adjust(left=lm, right=rm)
 
+    ax.set_zorder(10)
+    ax.patch.set_visible(False)
 
     return {'fig': fig, 'ax': ax, 'ax2': ax2}
+
 
 def get_options(name, model_path, opts=None):
     """
@@ -294,23 +352,21 @@ def get_options(name, model_path, opts=None):
                                             "use the current time.")
     parser.add_argument("--interrupt", help="Set this flag if this is an interrupt load.",
                         action='store_true')
-    parser.add_argument("--traceback", default=True, help='Enable tracebacks. Default: True')
+    parser.add_argument("--traceback", action='store_false', help='Enable tracebacks. Default: True')
+    parser.add_argument("--pred-only", action='store_true', help='Only make predictions. Default: False')
     parser.add_argument("--verbose", type=int, default=1,
                         help="Verbosity (0=quiet, 1=normal, 2=debug)")
     parser.add_argument("--T-init", type=float,
                         help="Starting temperature (degC or degF, depending on the model). "
                              "Default is to compute it from telemetry.")
-    parser.add_argument("--cmd-states-db", default="sqlite",
-                        help="Commanded states database server (sybase|sqlite). "
-                             "Default: sqlite")
     parser.add_argument("--state-builder", default="acis",
                         help="StateBuilder to use (sql|acis). Default: acis")
     parser.add_argument("--version", action='store_true', help="Print version")
     # Argument pointing to the NLET file the model should use for this run
     parser.add_argument("--nlet_file",
-                         default='/data/acis/LoadReviews/NonLoadTrackedEvents.txt',
-                        help="Full path to the Non-Load Event Tracking that should be used for this model run")    
-
+                        default='/data/acis/LoadReviews/NonLoadTrackedEvents.txt',
+                        help="Full path to the Non-Load Event Tracking file that should be "
+                             "used for this model run.")
     if opts is not None:
         for opt_name, opt in opts:
             parser.add_argument("--%s" % opt_name, **opt)
@@ -320,14 +376,11 @@ def get_options(name, model_path, opts=None):
     if args.oflsdir is not None:
         args.backstop_file = args.oflsdir
 
-    if args.cmd_states_db not in ('sybase', 'sqlite'):
-        raise ValueError('--cmd-states-db must be one of "sybase" or "sqlite"')
-
-    # Enforce sqlite cmd states db for Python 3
-    if six.PY3 and args.cmd_states_db == 'sybase':
-        args.cmd_states_db = 'sqlite'
+    if args.pred_only and args.backstop_file is None:
+        raise RuntimeError("You turned off both prediction and validation!!")
 
     return args
+
 
 def make_state_builder(name, args):
     """
@@ -348,16 +401,14 @@ def make_state_builder(name, args):
 
     builder_class = state_builders[name]
 
-
-    # Build the appropriate state_builder depending upon the 
+    # Build the appropriate state_builder depending upon the
     # value of the passed in parameter "name" which was
-    # originally the --state-builder="sql"|"acis"" input argument
+    # originally the --state-builder="sql"|"acis" input argument
     #
-    #  Instantiate the SQL History Builder: SQLStateBuilder
+    # Instantiate the SQL History Builder: SQLStateBuilder
     if name == "sql":
         state_builder = builder_class(interrupt=args.interrupt,
                                       backstop_file=args.backstop_file,
-                                      cmd_states_db=args.cmd_states_db,
                                       logger=mylog)
 
     # Instantiate the ACIS OPS History Builder: ACISStateBuilder
@@ -367,10 +418,12 @@ def make_state_builder(name, args):
         state_builder = builder_class(interrupt=args.interrupt,
                                       backstop_file=args.backstop_file,
                                       nlet_file=args.nlet_file,
-                                      cmd_states_db=args.cmd_states_db,
                                       logger=mylog)
+    else:
+        raise RuntimeError("No such state builder with name %s!" % name)
 
     return state_builder
+
 
 def get_acis_limits(msid):
     """
@@ -394,7 +447,7 @@ def get_acis_limits(msid):
     yellow_lo = None
     yellow_hi = None
 
-    margins = {"1dpamzt": 2.0, 
+    margins = {"1dpamzt": 2.0,
                "1deamzt": 2.0,
                "1pdeaat": 4.5,
                "tmp_fep1_mong": 2.0,
@@ -405,7 +458,7 @@ def get_acis_limits(msid):
 
     pmon_file = "PMON/pmon_limits.txt"
     eng_file = "Thermal/MSID_Limits.txt"
-    file_root = "/proj/web-cxc-dmz/htdocs/acis/"
+    file_root = "/proj/web-cxc/htdocs/acis/"
 
     if msid.startswith("tmp_"):
         limits_file = pmon_file
@@ -422,7 +475,7 @@ def get_acis_limits(msid):
         f.close()
     else:
         loc = "remote"
-        url = "http://cxc.cfa.harvard.edu/acis/"+limits_file
+        url = "http://cxc.cfa.harvard.edu/acis/{}".format(limits_file)
         u = requests.get(url)
         lines = u.text.split("\n")
 
