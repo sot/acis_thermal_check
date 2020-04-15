@@ -361,12 +361,12 @@ def get_options(name, model_path, opts=None):
                              "Default is to compute it from telemetry.")
     parser.add_argument("--state-builder", default="acis",
                         help="StateBuilder to use (sql|acis). Default: acis")
-    parser.add_argument("--version", action='store_true', help="Print version")
-    # Argument pointing to the NLET file the model should use for this run
     parser.add_argument("--nlet_file",
                         default='/data/acis/LoadReviews/NonLoadTrackedEvents.txt',
                         help="Full path to the Non-Load Event Tracking file that should be "
                              "used for this model run.")
+    parser.add_argument("--version", action='store_true', help="Print version")
+
     if opts is not None:
         for opt_name, opt in opts:
             parser.add_argument("--%s" % opt_name, **opt)
