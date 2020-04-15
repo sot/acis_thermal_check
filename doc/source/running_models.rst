@@ -12,8 +12,7 @@ Base Command-Line Arguments
 
 The following is a brief description of the base collection of command-line 
 arguments accepted by a model using ``acis_thermal_check``. Additional arguments
-may be added by individual models in the call to 
-:func:`~acis_thermal_check.utils.get_options`, as further detailed in
+may be added by individual models in the call to, as further detailed in
 :ref:`developing-models`. 
 
 .. code-block:: text
@@ -37,19 +36,20 @@ may be added by individual models in the call to
   --interrupt           Set this flag if this is an interrupt load.
   --traceback TRACEBACK
                         Enable tracebacks. Default: True
+  --pred-only           Only make predictions. Default: False
   --verbose VERBOSE     Verbosity (0=quiet, 1=normal, 2=debug)
-  --T-init T_INIT       Starting temperature (degC or degF, depending on the
-                        model). Default is to compute it from telemetry.
-  --cmd-states-db CMD_STATES_DB
-                        Commanded states database server (sybase|sqlite).
-                        Default: sybase
+  --T-init T_INIT       Starting temperature (degC). Default is to compute it 
+                        from telemetry.
   --state-builder STATE_BUILDER
                         StateBuilder to use (legacy|acis). Default:
                         legacy
+  --nlet_file NLET_FILE
+                        Full path to the Non-Load Event Tracking that should
+                        be used for this model run
   --version             Print version
 
-Running Thermal Models for a Load Review
-++++++++++++++++++++++++++++++++++++++++
+Running Thermal Models: Examples
+++++++++++++++++++++++++++++++++
 
 The most common application for any model based on ``acis_thermal_check`` is to
 run the model for a load. In this case, the minimum command-line arguments are
@@ -57,34 +57,39 @@ the path to the backstop file and the output directory for the files:
 
 .. code-block:: bash
 
-    [~]$ dpa_check --backstop_file=/data/acis/LoadReviews/2017/OCT1617 --outdir=dpa_oct1617 
+    [~]$ dpa_check --backstop_file=/data/acis/LoadReviews/2017/OCT1617/ofls --outdir=dpa_oct1617 
 
-If the load being reviewed is a return to science from a shutdown, or a replan
-due to a TOO, or any other interrupt, the thermal model should be run with the
-``--interrupt`` flag to ensure commanded states are properly determined:
+In this case, we only supplied the directory containing the backstop file, 
+assuming that there is only one present. If the load being reviewed is a return 
+to science from a shutdown, or a replan due to a TOO, or any other interrupt, 
+the thermal model should be run with the ``--interrupt`` flag to ensure 
+commanded states are properly determined:
 
 .. code-block:: bash
 
-    [~]$ dpa_check --backstop_file=/data/acis/LoadReviews/2017/AUG3017 --interrupt --outdir=dpa_aug3017
+    [~]$ psmc_check --backstop_file=/data/acis/LoadReviews/2017/AUG3017/ofls --interrupt --outdir=psmc_aug3017
 
 By default, the initial temperature for the model will be set using an average 
 of telemetry in a few minutes around the run start time. However, the model can
 be started with a specific temperature value using the ``--T-init`` argument, 
-which is assumed to be in the same units of the temperature in the model 
-(degrees C or F):
+which is assumed to be in degrees C:
 
 .. code-block:: bash
 
-    [~]$ dpa_check --backstop_file=/data/acis/LoadReviews/2017/OCT1617 --outdir=dpa_oct1617 --T-init=22.0
+    [~]$ acisfp_check --backstop_file=/data/acis/LoadReviews/2017/OCT1617/ofls --outdir=acisfp_oct1617 --T-init=22.0
 
-One can also choose to access the commanded states database via Sybase or 
-SQLite. The former only works with Python 2, so if Python 3 is used, the latter
-will be chosen automatically. To choose which one to use, set the 
-``--cmd-states-db`` flag:
+If necessary, thermal model runs can be run for a particular load for predictions only,
+using the ``--pred-only`` flag:
 
 .. code-block:: bash
 
-    [~]$ dpa_check --backstop_file=/data/acis/LoadReviews/2017/OCT1617 --outdir=dpa_oct1617 --cmd-states-db=sqlite
+    [~]$ dea_check --backstop_file=/data/acis/LoadReviews/2017/AUG3017/ofls --outdir=dea_aug3017 --pred-only
 
-Running Thermal Models for Validation Only
-++++++++++++++++++++++++++++++++++++++++++
+Finally, if one wishes to run validation without prediction for a specific load,
+simply omit the ``backstop_file`` argument. It may make sense here to supply a 
+``run_start`` argument, if one wants a different time than the current time to 
+validate:
+
+.. code-block:: bash
+
+    [~]$ dpa_check --run-start=2019:300:12:50:00 --outdir=validate_dec2019
