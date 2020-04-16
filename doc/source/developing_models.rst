@@ -46,7 +46,8 @@ package and looks like this:
     .gitattributes
     .git_archival.txt
 
-At the top level, we have ``setup.py``, ``MANIFEST.in``, and ``.gitignore``. 
+At the top level, we have ``setup.py``, ``MANIFEST.in``, and three git-related
+files. 
 
 ``setup.py`` is the file that is used to determine how the package should be
 installed. It has a fairly boilerplate structure, but there are some items that
@@ -123,6 +124,33 @@ and ``.git_archival.txt`` only needs to contain this:
 
     ref-names: $Format:%D$
 
+Package Initialization File
+===========================
+
+This file defines the public API for the model package and sets up some other 
+important information. It must use ``ska_helpers`` to obtain the version number
+of the package, import some basic objects for public use, and provide a hook
+for testing. The manner in which this is done for the 1DPAMZT model is shown
+here:
+
+.. code-block:: python
+
+    import ska_helpers
+    
+    __version__ = ska_helpers.get_version(__package__)
+    
+    from .dpa_check import \
+        DPACheck, main, \
+        model_path
+    
+    
+    def test(*args, **kwargs):
+        """
+        Run py.test unit tests.
+        """
+        import testr
+        return testr.test(*args, **kwargs)
+
 The Main Script
 ===============
 
@@ -168,7 +196,85 @@ script is for, the latter of which should be modified for your model case.
 Subclassing ``ACISThermalCheck``
 ++++++++++++++++++++++++++++++++
 
-The bulk of the script is contained
+The bulk of the script is contained in a subclass of the ``ACISThermalCheck``
+class that is model-specific. This subclass will contain information specific
+to the model. In the case of the 1DPAMZT model, this class is called 
+``DPACheck``. 
+
+This class definition will require an ``__init__`` method which takes no 
+arguments beyond ``self``. Inside it, validation limits for various MSIDs should
+be specified, which correspond to limits on the differences between the data and
+the model. Violations of these limits will be flagged in the validation report 
+on the web page. For each MSID, the violation limits are given as a list of 
+tuples, where the first item in each tuple is the percentile of the distribution
+of the model error, and the second item is the amount of allowed error 
+corresponding to that percentile. These are specified in the ``valid_limits`` 
+dictionary, which is defined in ``__init__``.
+
+Also, the histograms produced as a part of the validation report do not 
+display the histogram for all temperatures, but only for those temperatures 
+greater than a lower limit, which is contained in the ``hist_limit`` list. This
+should also be defined in ``__init__``. 
+
+The example of this class definition for the 1DPAMZT model is shown here. Both
+limit objects that were created are passed to the ``__init__`` of the superclass.
+
+.. code-block:: python
+
+    class DPACheck(ACISThermalCheck):
+        def __init__(self):
+            # Specify the validation limits 
+            valid_limits = {'1DPAMZT': [(1, 2.0), (50, 1.0), (99, 2.0)],
+                            'PITCH': [(1, 3.0), (99, 3.0)],
+                            'TSCPOS': [(1, 2.5), (99, 2.5)]
+                            }
+            # Specify the validation histogram limits
+            hist_limit = [20.0]
+            # Call the superclass' __init__ with the arguments
+            super(DPACheck, self).__init__("1dpamzt", "dpa", valid_limits,
+                                           hist_limit)
+                                           
+The ``_calc_model_supp`` Method
++++++++++++++++++++++++++++++++
+
+The subclass of the ``ACISThermalCheck`` class will probably require a 
+``_calc_model_supp`` method to be defined. For the default ``ACISThermalCheck``
+class, this method does nothing. But in the case of each individual model, it 
+will set up states, components, or nodes which are specific to that model.
+
+The next thing to do is to supply a ``_calc_model`` function that actually 
+performs the ``xija`` model calculation. If your thermal model is sensitive to 
+the spacecraft roll angle, ``acis_thermal_check`` also provides the 
+``calc_off_nom_rolls`` function which can be used in ``calc_model``. The example
+of how to set up this method for the 1DPAMZT model is shown below:
+
+.. code-block:: python
+
+    def _calc_model_supp(self, model, state_times, states, ephem, state0):
+        """
+        Update to initialize the dpa0 pseudo-node. If 1dpamzt
+        has an initial value (T_dpa) - which it does at
+        prediction time (gets it from state0), then T_dpa0 
+        is set to that.  If we are running the validation,
+        T_dpa is set to None so we use the dvals in model.comp
+
+        NOTE: If you change the name of the dpa0 pseudo node you
+              have to edit the new name into the if statement
+              below.
+        """
+        if 'dpa0' in model.comp:
+            if state0 is None:
+                T_dpa0 = model.comp["1dpamzt"].dvals
+            else:
+                T_dpa0 = state0["1dpamzt"]
+            model.comp['dpa0'].set_data(T_dpa0, model.times)
+
+Note that the method requires the ``XijaModel model`` object, the array of 
+``state_times``, the commanded ``states`` array, the ephemeris ``MSIDSet`` 
+``ephem``, and the ``state0`` dictionary providing the initial state. These
+are all defined and set up in ``ACISThermalCheck``, so the model developer 
+does not need to do this. The ``_calc_model_supp`` method must have this 
+exact signature. 
 
 ``main`` Function
 +++++++++++++++++
@@ -200,96 +306,6 @@ can control whether or not the traceback is printed to screen via the
     # This ensures main() is called when run from the command line
     if __name__ == '__main__':
         main()
-
-
-
-
-
-Set Up Limits
-+++++++++++++
-
-First, ``acis_thermal_check`` needs to know two "health and safety" limits for 
-the modeled temperature in question: the yellow/caution limit and the "planning"
-limit, which is defined as a margin away from the yellow limit. These limits are
-handled by the ``get_acis_limits`` function which is in the 
-``acis_thermal_check.utils`` module. If you have a brand-new model which 
-``get_acis_limits`` does not 
-
-It is also necessary to specify validation limits, which correspond to limits on
-the differences between the data and the model. Violations of these limits will
-be flagged in the validation report on the web page. For each MSID, the 
-violation limits are given as a list of tuples, where the first item in each 
-tuple is the percentile of the distribution of the model error, and the second
-item is the amount of allowed error corresponding to that percentile. These are
-specified in the ``VALIDATION_LIMITS`` dictionary, which should be specified at
-the top of the script. 
-
-Lastly, the histograms produced as a part of the validation report do not 
-display the histogram for all temperatures, but only for those temperatures 
-greater than a lower limit, which is contained in the ``HIST_LIMIT`` list. 
-
-Including the necessary imports, the top of the script should look like this:
-
-.. code-block:: python
-
-    from __future__ import print_function
-
-    import matplotlib
-    matplotlib.use('Agg')
-    
-    import numpy as np
-    import xija
-    import sys
-    from acis_thermal_check import \
-        ACISThermalCheck, \
-        calc_off_nom_rolls, \
-        get_options
-    import os
-
-    # These are validation limits for various MSIDs.
-    VALIDATION_LIMITS = {'1DPAMZT': [(1, 2.0), (50, 1.0), (99, 2.0)],
-                         'PITCH': [(1, 3.0), (99, 3.0)],
-                         'TSCPOS': [(1, 2.5), (99, 2.5)]
-                         }
-    
-    # These are the temperatures above which histograms of data-model will be
-    # displayed. Multiple values in this list will result in multiple 
-    # histograms with different colors on the same plot. 
-    HIST_LIMIT = [20.]
-
-
-Define ``_calc_model_supp`` Method
-++++++++++++++++++++++++++++++++++
-
-The next thing to do is to supply a ``calc_model`` function that actually 
-performs the ``xija`` model calculation. If your thermal model is sensitive to 
-the spacecraft roll angle, ``acis_thermal_check`` also provides the 
-``calc_off_nom_rolls`` function which can be used in ``calc_model``. The example
-of how to set up the DPA model is shown below:
-
-.. code-block:: python
-
-    def calc_model(model_spec, states, start, stop, T_dpa=None, T_dpa_times=None,
-                   dh_heater=None, dh_heater_times=None):
-        model = xija.ThermalModel('dpa', start=start, stop=stop,
-                                  model_spec=model_spec)
-        times = np.array([states['tstart'], states['tstop']])
-        model.comp['sim_z'].set_data(states['simpos'], times)
-        model.comp['eclipse'].set_data(False)
-        model.comp['1dpamzt'].set_data(T_dpa, T_dpa_times)
-        model.comp['roll'].set_data(calc_off_nom_rolls(states), times)
-        for name in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
-            model.comp[name].set_data(states[name], times)
-    
-        model.make()
-        model.calc()
-        return model
-
-The ``calc_model`` function must have this exact signature, with the first four
-required arguments and the last four optional arguments. Note that even though 
-this particular model does not depend on the state of the detector housing 
-heater, the optional arguments are still required in the signature of the 
-function. 
 
 The Full Script
 +++++++++++++++
@@ -372,5 +388,23 @@ of the 1DPAMZT model is shown below:
     if __name__ == '__main__':
         main()
 
-Testing Files
--------------
+Testing Scripts and Data
+------------------------
+
+Several files are required to ensure that the model package can run tests. 
+First, the ``conftest.py`` file which ``pytest`` uses to configure the tests
+must be set up like this at the top level of the package:
+
+.. code-block::
+
+    from acis_thermal_check.conftest import *
+
+All this does is import the relevant testing configuration machinery from the
+``acis_thermal_check`` package itself. 
+
+Second, within the package's code directory, there should be a ``tests``
+directory, with an empty ``__init__.py``, an initially empty ``answers``
+directory, a model specification file, and three Python scripts for testing.
+These include: 
+
+
