@@ -357,8 +357,7 @@ def get_options(name, model_path, opts=None):
     parser.add_argument("--verbose", type=int, default=1,
                         help="Verbosity (0=quiet, 1=normal, 2=debug)")
     parser.add_argument("--T-init", type=float,
-                        help="Starting temperature (degC or degF, depending on the model). "
-                             "Default is to compute it from telemetry.")
+                        help="Starting temperature (degC). Default is to compute it from telemetry.")
     parser.add_argument("--state-builder", default="acis",
                         help="StateBuilder to use (sql|acis). Default: acis")
     parser.add_argument("--nlet_file",
