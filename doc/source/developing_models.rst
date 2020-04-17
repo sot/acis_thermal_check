@@ -483,7 +483,27 @@ is a test of that. The example for the 1DPAMZT model is shown below:
 
 Finally, tests of thermal violation flagging should also be generated. These 
 tests check if violations of planning limits during model predictions are
-flagged appropriately. They test a single load, and 
+flagged appropriately. They test a single load, and require a new JSON file 
+to be stored in the ``tests/answers`` subdirectory which contain the details
+of the test. For this, you need to select a load, and then create a JSON file
+which contains the ``run_start`` for the model (this is to ensure 
+reproducibility) and new ``limits`` for the model run, to ensure that a 
+violation actually occurs. These should be set a few degrees lower than the 
+real limits. For the 1DPAMZT model, the file is named ``JUL3018A_viol.json``
+and looks like this:
+
+.. code-block:: json
+
+    {
+        "run_start": "2018:205:00:42:38.816",
+        "limits": {
+            "yellow_hi": 37.2,
+            "plan_limit_hi": 35.2
+        }
+    }
+
+The JUL3018A load was selected for this test. The script to run this test looks
+like this:
 
 .. code-block:: python
 
@@ -500,3 +520,35 @@ flagged appropriately. They test a single load, and
                                    "JUL3018A_viol.json")
         dpa_rt.check_violation_reporting("JUL3018A", answer_data,
                                          answer_store=answer_store)
+
+After the test is run, the JSON file will look like this:
+
+.. code-block:: json
+
+    {
+        "datestarts": [
+            "2018:212:16:23:26.816",
+            "2018:213:14:42:46.816",
+            "2018:215:04:09:34.816"
+        ],
+        "datestops": [
+            "2018:212:17:29:02.816",
+            "2018:213:16:10:14.816",
+            "2018:215:05:15:10.816"
+        ],
+        "temps": [
+            "35.89",
+            "35.89",
+            "35.72"
+        ],
+        "run_start": "2018:205:00:42:38.816",
+        "limits": {
+            "yellow_hi": 37.2,
+            "plan_limit_hi": 35.2
+        }
+    }
+
+Note that the start and stop times of the violations and the values of the
+maximum temperatures themselves have been added to the JSON file. These are
+the values which will be tested, as well as whether or not the page flags a
+violation. 
