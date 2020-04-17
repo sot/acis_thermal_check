@@ -389,7 +389,12 @@ of the 1DPAMZT model is shown below:
         main()
 
 Testing Scripts and Data
-------------------------
+========================
+
+The ``acis_thermal_check`` testing suite checks either prediction or validation
+outputs against previously generated "gold standard" answers for a number of 
+previously run loads, as well as checking to make sure violations are 
+appropriately flagged. 
 
 Several files are required to ensure that the model package can run tests. 
 First, the ``conftest.py`` file which ``pytest`` uses to configure the tests
@@ -405,6 +410,93 @@ All this does is import the relevant testing configuration machinery from the
 Second, within the package's code directory, there should be a ``tests``
 directory, with an empty ``__init__.py``, an initially empty ``answers``
 directory, a model specification file, and three Python scripts for testing.
-These include: 
+These include a script which tests the "ACIS" state builder, another which
+tests the legacy "SQL" state builder, and another which checks for violations.
+All of these scripts make use of a ``RegressionTester`` class which handles all
+of the testing. 
 
+The "ACIS" state builder script generates a ``RegressionTester`` object
+appropriate to the model to be tested, runs the models using the ``run_models``
+method, called with the appropriate state builder, and then runs prediction
+and validation tests. The ``test_dpa_acis.py`` script for the 1DPAMZT model is
+shown below. Note that both functions ``test_prediction`` and ``test_validation``
+take an extra argument, ``answer_store``, which is a boolean used to determine 
+whether or not the tests should be run or new answers should be generated. The 
+use of this argument is explained in :ref:`test_suite`.
 
+.. code-block:: python
+
+    from ..dpa_check import model_path, DPACheck
+    from acis_thermal_check.regression_testing import \
+        RegressionTester, all_loads
+    import pytest
+    
+    dpa_rt = RegressionTester(DPACheck, model_path, "dpa_test_spec.json")
+    
+    # ACIS state builder tests
+    
+    dpa_rt.run_models(state_builder='acis')
+    
+    # Prediction tests
+    @pytest.mark.parametrize('load', all_loads)
+    def test_prediction(answer_store, load):
+        dpa_rt.run_test("prediction", load, answer_store=answer_store)
+    
+    # Validation tests
+    @pytest.mark.parametrize('load', all_loads)
+    def test_validation(answer_store, load):
+        dpa_rt.run_test("validation", load, answer_store=answer_store)
+    
+The "SQL" state builder tests are nearly identical to the "ACIS" ones, but in
+this case the answers are not generated if ``answer_store = True``. We assume
+that the two state builder methods should generate the same answers, and this 
+is a test of that. The example for the 1DPAMZT model is shown below:
+
+.. code-block:: python
+
+    from ..dpa_check import model_path, DPACheck
+    from acis_thermal_check.regression_testing import \
+        RegressionTester, all_loads
+    import pytest
+    
+    dpa_rt = RegressionTester(DPACheck, model_path, "dpa_test_spec.json")
+    
+    # SQL state builder tests
+    
+    dpa_rt.run_models(state_builder='sql')
+    
+    # Prediction tests
+    @pytest.mark.parametrize('load', all_loads)
+    def test_prediction(answer_store, load):
+        if not answer_store:
+            dpa_rt.run_test("prediction", load)
+        else:
+            pass
+    
+    # Validation tests
+    @pytest.mark.parametrize('load', all_loads)
+    def test_validation(answer_store, load):
+        if not answer_store:
+            dpa_rt.run_test("validation", load)
+        else:
+            pass
+
+Finally, tests of thermal violation flagging should also be generated. These 
+tests check if violations of planning limits during model predictions are
+flagged appropriately. They test a single load, and 
+
+.. code-block:: python
+
+    from ..dpa_check import DPACheck, model_path
+    from acis_thermal_check.regression_testing import \
+        RegressionTester
+    import os
+    
+    dpa_rt = RegressionTester(DPACheck, model_path, "dpa_test_spec.json")
+    
+    
+    def test_JUL3018A_viols(answer_store):
+        answer_data = os.path.join(os.path.dirname(__file__), "answers",
+                                   "JUL3018A_viol.json")
+        dpa_rt.check_violation_reporting("JUL3018A", answer_data,
+                                         answer_store=answer_store)

@@ -20,6 +20,7 @@
 import os
 import sys
 import acis_thermal_check
+from datetime import datetime
 # sys.path.insert(0, os.path.abspath('.'))
 
 sys.path.insert(0, os.path.abspath('../../'))
@@ -44,8 +45,8 @@ html_theme_options = dict(
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.viewcode']
+              'sphinx.ext.intersphinx',
+              'sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -59,9 +60,11 @@ source_suffix = '.rst'
 # The master toctree document.
 master_doc = 'index'
 
+d = datetime.now()
+
 # General information about the project.
 project = 'acis_thermal_check'
-copyright = '2017, John ZuHone'
+copyright = f'{d.year}, CXC/ACIS Operations Team'
 author = 'John ZuHone'
 
 # The version info for the project you're documenting, acts as replacement for

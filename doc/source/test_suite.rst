@@ -1,4 +1,4 @@
-.. _test-suite:
+.. _test_suite:
 
 Using the ``acis_thermal_check`` Regression Testing
 ---------------------------------------------------
@@ -19,15 +19,20 @@ numerical output from model runs against a set of "gold standard" stored
 outputs. The idea is that code developments should not change the values 
 compared to those stored in the gold standard, or if they do, that the reasons
 for the changes are understood and deemed necessary (e.g., you found
-a bug, you added a feature to a model, etc.). The idea is to track the effect
+a bug, you added a feature to a model, etc.). This allows us to track the effect
 of code changes in a systematic way and flag those changes which are not 
 expected to change results but do, so that bugs can be identified and fixed 
 before merging the new code into master. 
 
+A model specification file in JSON format is set aside for testing, and can be
+different from the one currently in use for thermal models. It should only be
+updated sparingly, usually if there are major changes to the structure of a 
+model.
+
 Running the Test Suite for a Particular Model
 +++++++++++++++++++++++++++++++++++++++++++++
 
-There are a few equivalent ways to invoke the ``acis_thermal_check``
+There are two equivalent ways to invoke the ``acis_thermal_check``
 tests for a given model. 
 
 If you are making changes to a model, you can go to the root of the model code
@@ -39,13 +44,18 @@ directory (e.g., ``dpa_check``) and run ``py.test`` like so:
 
     [~]$ py.test -s .
 
-The ``-s`` flag is optionally included so that the output has maximum verbosity.
+The ``-s`` flag is optionally included here so that the output has maximum verbosity.
 
-Adding the Basic Test Suite to a New Model
-++++++++++++++++++++++++++++++++++++++++++
+You can also import any model package from an interactive Python session and run the 
+``test()`` method on it:
 
-Updating the "Gold Standard" Answers
-++++++++++++++++++++++++++++++++++++
+.. code-block:: pycon
+
+    >>> import acisfp_check
+    >>> acisfp_check.test()
+
+Updating the "Gold Standard" Answers for a Particular Model
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 New "gold standard" answers for a given model may need to be generated for two
 reasons. First, you may be making a new model and need to generate the initial 
@@ -63,3 +73,7 @@ working in, and run ``py.test``, with the ``--answer_store`` argument:
     [~]$ cd ~/Source/dpa_check
 
     [~]$ py.test -s . --answer_store
+
+This will overwrite the old answers, but since they are also under git version 
+control you will be able to check any differences before committing the new
+answers. 
