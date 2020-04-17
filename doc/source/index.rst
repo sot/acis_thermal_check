@@ -32,6 +32,7 @@ Documentation Contents
    :maxdepth: 2
        
    install
+   how_it_works
    running_models
    developing_models
    test_suite

@@ -521,7 +521,8 @@ like this:
         dpa_rt.check_violation_reporting("JUL3018A", answer_data,
                                          answer_store=answer_store)
 
-After the test is run, the JSON file will look like this:
+After the test is run with the ``--answer_store`` flag set 
+(see :ref:`test-suite`), the JSON file will look like this:
 
 .. code-block:: json
 
