@@ -17,7 +17,8 @@ may be added by individual models in the call to, as further detailed in
 
 .. code-block:: text
 
-  --outdir OUTDIR       Output directory. Default: 'out'
+  --outdir OUTDIR       Output directory. If it does not exist it will be
+                        created. Default: 'out' 
   --backstop_file BACKSTOP_FILE
                         Path to the backstop file. If a directory, the
                         backstop file will be searched for within this

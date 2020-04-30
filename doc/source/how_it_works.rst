@@ -1,3 +1,5 @@
+.. _how-it-works:
+
 How ``acis_thermal_check`` Works
 --------------------------------
 
@@ -65,5 +67,5 @@ case. However, if one is responding to an interrupt condition, the "ACIS"
 event such as a safing action or a long ECS run occurs, the ACIS on-duty person
 should update the NLET file. See 
 `here <https://asc.harvard.edu/acis/memos/webpage/NonLoadEventTracker.html>`_
-and `here <When To Use the Non-Load Event Tracking GUI (Under Construction)>`_
+and `here <https://cxc.cfa.harvard.edu/acis/memos/webpage/WhenToUseNLETGUI.html>`_
 for more information on how to do this. 

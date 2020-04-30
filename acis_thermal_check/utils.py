@@ -333,7 +333,8 @@ def get_options(name, model_path, opts=None):
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.set_defaults()
-    parser.add_argument("--outdir", default="out", help="Output directory. Default: 'out'")
+    parser.add_argument("--outdir", default="out", help="Output directory. If it does not "
+                                                        "exist it will be created.Default: 'out'")
     parser.add_argument("--backstop_file", help="Path to the backstop file. If a directory, "
                                                 "the backstop file will be searched for within "
                                                 "this directory. Default: None")
