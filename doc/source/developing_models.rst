@@ -7,7 +7,9 @@ To develop a new thermal model for use with ``acis_thermal_check``, the
 following steps should be followed. A new model needs the following:
 
 * A subclass of the ``ACISThermalCheck`` class, e.g. ``DPACheck``.
-* This subclass should have 
+* This subclass should have information about model validation limits,
+  histogram limits, and a method called ``_calc_model_supp`` which implements
+  additional model components specific to this model. 
 * Testing needs to be set up. 
 
 Developing a new thermal model to use with ``acis_thermal_check`` is fairly
