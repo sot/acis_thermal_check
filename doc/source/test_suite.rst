@@ -1,4 +1,4 @@
-.. _test-suite:
+.. _test_suite:
 
 Using the ``acis_thermal_check`` Regression Testing
 ---------------------------------------------------
@@ -9,8 +9,8 @@ outputs for a number of load weeks. This section describes the test suite, how
 to run it, how to add new loads for testing, and how to update the gold standard
 model answers.
 
-A Overview of ``acis_thermal_check`` Regression Testing
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+An Overview of ``acis_thermal_check`` Regression Testing
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 When an ``acis_thermal_check`` model is run, it produces numerical outputs for 
 model prediction and validation in addition to the plots and tables on the 
@@ -19,51 +19,61 @@ numerical output from model runs against a set of "gold standard" stored
 outputs. The idea is that code developments should not change the values 
 compared to those stored in the gold standard, or if they do, that the reasons
 for the changes are understood and deemed necessary (e.g., you found
-a bug, you updated the model specification, or you added a feature to 
-a model). Though this means that the gold standard answers might 
-change regularly (so maybe more of a floating currency), the idea is to
-track the effect of code changes in a systematic way and flag those 
-changes which are not expected to change results but do, so that bugs
-can be identified and fixed before merging the new code into master. 
+a bug, you added a feature to a model, etc.). This allows us to track the effect
+of code changes in a systematic way and flag those changes which are not 
+expected to change results but do, so that bugs can be identified and fixed 
+before merging the new code into master. 
+
+A model specification file in JSON format is set aside for testing, and can be
+different from the one currently in use for thermal models. It should only be
+updated sparingly, usually if there are major changes to the structure of a 
+model.
 
 Running the Test Suite for a Particular Model
 +++++++++++++++++++++++++++++++++++++++++++++
 
-There are a few equivalent ways to invoke the ``acis_thermal_check``
+There are two equivalent ways to invoke the ``acis_thermal_check``
 tests for a given model. 
 
 If you are making changes to a model, you can go to the root of the model code
-directory (e.g., ``dpa_check``) and just run ``py.test``:
+directory (e.g., ``dpa_check``) and run ``py.test`` like so:
 
 .. code-block:: bash
 
-    [~]$ py.test -s 
+    [~]$ cd ~/Source/dpa_check
 
-The ``-s`` flag is optionally included so that the output has maximum verbosity.
+    [~]$ py.test -s .
 
-Adding the Basic Test Suite to a New Model
-++++++++++++++++++++++++++++++++++++++++++
+The ``-s`` flag is optionally included here so that the output has maximum verbosity.
 
-Updating the "Gold Standard" Answers
-++++++++++++++++++++++++++++++++++++
+You can also import any model package from an interactive Python session and run the 
+``test()`` method on it:
 
-If the regression tests failed to pass for one or more models, 
-but you understand the failures and they are due to changes you
-made which need to become part of the software (such as a bugfix
-or a feature enhancement), then the "gold standard" answers need 
-to be updated. In theory, updating these could be as simple as 
-generating new answers and copying them into the appropriate
-directory, but to be safe there is a script, ``update_atc_answers``,
-which handles this for you in a transparent way with prompts and
-outputs to screen so that you are sure you are doing the right thing
-and that you see what is actually being done. 
+.. code-block:: pycon
 
-First, you should change your group to ``acisops``:
+    >>> import acisfp_check
+    >>> acisfp_check.test()
+
+Updating the "Gold Standard" Answers for a Particular Model
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+New "gold standard" answers for a given model may need to be generated for two
+reasons. First, you may be making a new model and need to generate the initial 
+set of answers. Second, if you are updating ACIS code and the regression tests 
+failed to pass for one or more models, but the failures are understood and they 
+are due to changes you made which need to become part of the software (such as 
+a bugfix or a feature enhancement), then the "gold standard" answers need to be
+updated. 
+
+To generate new answers, go to the root of the model code directory that you are
+working in, and run ``py.test``, with the ``--answer_store`` argument:
 
 .. code-block:: bash
-    
-    [~]$ newgrp acisops
 
-This enables you to write to the set of thermal model gold standard answers
-which are owned by the user ``acisdude`` under the group ``acisops``. These 
-are located in the directory ``/data/acis/thermal_model_tests``. 
+    [~]$ cd ~/Source/dpa_check
+
+    [~]$ py.test -s . --answer_store
+
+This will overwrite the old answers, but since they are also under git version 
+control you will be able to check any differences before committing the new
+answers. 

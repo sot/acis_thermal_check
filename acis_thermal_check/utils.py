@@ -333,7 +333,8 @@ def get_options(name, model_path, opts=None):
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.set_defaults()
-    parser.add_argument("--outdir", default="out", help="Output directory. Default: 'out'")
+    parser.add_argument("--outdir", default="out", help="Output directory. If it does not "
+                                                        "exist it will be created. Default: 'out'")
     parser.add_argument("--backstop_file", help="Path to the backstop file. If a directory, "
                                                 "the backstop file will be searched for within "
                                                 "this directory. Default: None")
@@ -357,16 +358,15 @@ def get_options(name, model_path, opts=None):
     parser.add_argument("--verbose", type=int, default=1,
                         help="Verbosity (0=quiet, 1=normal, 2=debug)")
     parser.add_argument("--T-init", type=float,
-                        help="Starting temperature (degC or degF, depending on the model). "
-                             "Default is to compute it from telemetry.")
+                        help="Starting temperature (degC). Default is to compute it from telemetry.")
     parser.add_argument("--state-builder", default="acis",
                         help="StateBuilder to use (sql|acis). Default: acis")
-    parser.add_argument("--version", action='store_true', help="Print version")
-    # Argument pointing to the NLET file the model should use for this run
     parser.add_argument("--nlet_file",
                         default='/data/acis/LoadReviews/NonLoadTrackedEvents.txt',
                         help="Full path to the Non-Load Event Tracking file that should be "
                              "used for this model run.")
+    parser.add_argument("--version", action='store_true', help="Print version")
+
     if opts is not None:
         for opt_name, opt in opts:
             parser.add_argument("--%s" % opt_name, **opt)

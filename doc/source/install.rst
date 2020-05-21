@@ -31,5 +31,23 @@ the source directory itself:
 
 All of the above presumes that you have write access to the Python stack which 
 you are using. If you do not (e.g., it is flight Ska), then you can still 
-install and develop a custom version of the package. You can do that by either
+install and/or develop a custom version of the package. You can do that by using 
+the ``--user`` flag in addition to either of the above options:
+
+.. code-block:: bash
+
+    [~]$ python setup.py install --user
+
+or 
+
+.. code-block:: bash
+
+    [~]$ python setup.py develop --user
+
+This installs packages under the ``$HOME/.local`` directory structure. However, it 
+is much more desirable to test in your own Ska environment. For information on how 
+to create one, go `here <https://github.com/sot/skare3/wiki/Ska3-runtime-environment-for-users>`_. 
+
+
+
 
