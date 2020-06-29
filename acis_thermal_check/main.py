@@ -9,10 +9,11 @@ from collections import OrderedDict, defaultdict
 import re
 import time
 import pickle
+import getpass
 import numpy as np
 import Ska.DBI
 import Ska.Numpy
-from Chandra.Time import DateTime, date2secs, secs2date
+from Chandra.Time import DateTime, date2secs, secs2date, use_noon_day_start
 import matplotlib.pyplot as plt
 from Ska.Matplotlib import cxctime2plotdate, \
     pointpair, plot_cxctime
@@ -33,6 +34,9 @@ op_map = {"greater": ">",
           "greater_equal": ">=",
           "less": "<",
           "less_equal": "<="}
+
+
+use_noon_day_start()
 
 
 class ACISThermalCheck(object):
@@ -78,15 +82,15 @@ class ACISThermalCheck(object):
         names understood by Xija to MSIDs.
     flag_cold_viols : boolean, optional
         If set, violations for the lower planning limit will be
-        checked for and flagged, and 
+        checked for and flagged, and
     hist_ops : list of strings, optional
         This sets the operations which will be used to create the
         error histograms, e.g., including only temperatures above
         or below a certain value. Should be a list equal to the
-        length of the *hist_limit* length. For example, 
+        length of the *hist_limit* length. For example,
         ["greater_equal", "greater_equal"] for two histogram limits.
-        Options are "greater", "less", "greater_equal", 
-        "less_equal" Defaults to "greater_equal" for all values 
+        Options are "greater", "less", "greater_equal",
+        "less_equal" Defaults to "greater_equal" for all values
         in *hist_limit*.
     """
     def __init__(self, msid, name, validation_limits, hist_limit,
@@ -331,11 +335,11 @@ class ACISThermalCheck(object):
         tstart : float
             The start time of the model run.
         tstop : float
-            The end time of the model run. 
+            The end time of the model run.
         state0 : dict, optional
             This is used to set the initial temperature. It's a dictionary
-            indexed by MSID name so that more than one can be input if 
-            necessary. 
+            indexed by MSID name so that more than one can be input if
+            necessary.
         """
         import xija
         model = xija.ThermalModel(self.name, start=tstart, stop=tstop,
@@ -570,7 +574,7 @@ class ACISThermalCheck(object):
 
     def make_prediction_plots(self, outdir, states, temps, load_start):
         """
-        Make plots of the thermal prediction as well as associated 
+        Make plots of the thermal prediction as well as associated
         commanded states.
 
         Parameters
@@ -592,13 +596,13 @@ class ACISThermalCheck(object):
         # Start time of loads being reviewed expressed in units for plotdate()
         load_start = cxctime2plotdate([load_start])[0]
         # Value for left side of plots
-        plot_start = max(load_start-2.0, 
+        plot_start = max(load_start-2.0,
                          cxctime2plotdate([times[0]])[0])
 
         w1 = None
         mylog.info('Making temperature prediction plots')
         plots[self.name] = plot_two(fig_id=1, x=times, y=temps[self.name],
-                                    x2=times, 
+                                    x2=times,
                                     y2=self.predict_model.comp["pitch"].mvals,
                                     title=self.msid.upper(), xmin=plot_start,
                                     xlabel='Date', ylabel='Temperature (C)',
@@ -609,7 +613,7 @@ class ACISThermalCheck(object):
         ymax = max(self.yellow_hi+1, ymax)
         plots[self.name]['ax'].axhline(self.yellow_hi, linestyle='-', color='gold',
                                        linewidth=2.0)
-        plots[self.name]['ax'].axhline(self.plan_limit_hi, linestyle='-', 
+        plots[self.name]['ax'].axhline(self.plan_limit_hi, linestyle='-',
                                        color='C2', linewidth=2.0)
         if self.flag_cold_viols:
             ymin = min(self.yellow_lo-1, ymin)
@@ -638,11 +642,11 @@ class ACISThermalCheck(object):
     def get_histogram_mask(self, tlm, limits):
         """
         This method determines which values of telemetry
-        should be used to construct the temperature 
-        histogram plots, using limits provided by the 
+        should be used to construct the temperature
+        histogram plots, using limits provided by the
         calling program to mask the array via a logical
-        operation. The default implementation is to plot 
-        values above a certain limit. This method may be 
+        operation. The default implementation is to plot
+        values above a certain limit. This method may be
         overriden by subclasses of ACISThermalCheck.
 
         Parameters
@@ -677,7 +681,7 @@ class ACISThermalCheck(object):
         outdir : string
             The directory to write outputs to.
         run_start : string
-            The starting date/time of the run. 
+            The starting date/time of the run.
         """
         start = tlm['date'][0]
         stop = tlm['date'][-1]
@@ -749,7 +753,7 @@ class ACISThermalCheck(object):
             ticklocs, fig, ax = plot_cxctime(model.times, tlm[msid] / scale,
                                              fig=fig, ls='-', lw=2, color=thermal_blue)
             if np.any(~good_mask):
-                ticklocs, fig, ax = plot_cxctime(model.times[~good_mask], 
+                ticklocs, fig, ax = plot_cxctime(model.times[~good_mask],
                                                  tlm[msid][~good_mask] / scale,
                                                  fig=fig, fmt='.c')
             ax.set_title(msid.upper() + ' validation; data: blue, model: red')
@@ -760,7 +764,7 @@ class ACISThermalCheck(object):
             for rz in rzs:
                 ptimes = cxctime2plotdate([rz.tstart, rz.tstop])
                 for ptime in ptimes:
-                    ax.axvline(ptime, ls='--', color='C2', 
+                    ax.axvline(ptime, ls='--', color='C2',
                                linewidth=2, zorder=-10)
             # Add horizontal lines for the planning and caution limits
             # or the limits for the focal plane model. Make sure we can
@@ -779,9 +783,9 @@ class ACISThermalCheck(object):
                                linewidth=2)
                     ymax = max(acis_hot+1, ymax)
                 else:
-                    ax.axhline(self.yellow_hi, linestyle='-', color='gold', 
+                    ax.axhline(self.yellow_hi, linestyle='-', color='gold',
                                zorder=-8, linewidth=2)
-                    ax.axhline(self.plan_limit_hi, linestyle='-', color='C2', 
+                    ax.axhline(self.plan_limit_hi, linestyle='-', color='C2',
                                zorder=-8, linewidth=2)
                     ymax = max(self.yellow_hi+1, ymax)
                     if self.flag_cold_viols:
@@ -927,7 +931,7 @@ class ACISThermalCheck(object):
         Parameters
         ----------
         outdir : string
-            The path to the directory to which the outputs will be 
+            The path to the directory to which the outputs will be
             written to.
         proc : dict
             A dictionary of general information used in the output
@@ -938,7 +942,7 @@ class ACISThermalCheck(object):
         dirname = os.path.dirname(docutils.writers.html4css1.__file__)
         shutil.copy2(os.path.join(dirname, 'html4css1.css'), outdir)
 
-        shutil.copy2(os.path.join(TASK_DATA, 'acis_thermal_check', 'templates', 
+        shutil.copy2(os.path.join(TASK_DATA, 'acis_thermal_check', 'templates',
                                   'acis_thermal_check.css'), outdir)
 
         # Spawn a shell and call rst2html to generate HTML from the reST.
@@ -964,7 +968,7 @@ class ACISThermalCheck(object):
     def write_index_rst(self, outdir, context):
         """
         Make output text (in ReST format) in outdir, using jinja2
-        to fill out the template. 
+        to fill out the template.
 
         Parameters
         ----------
@@ -1013,7 +1017,7 @@ class ACISThermalCheck(object):
         config_logging(args.outdir, args.verbose)
 
         # Store info relevant to processing for use in outputs
-        proc = dict(run_user=os.environ['USER'],
+        proc = dict(run_user=getpass.getuser(),
                     run_time=time.ctime(),
                     errors=[],
                     msid=self.msid.upper(),
