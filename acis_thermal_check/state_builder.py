@@ -191,13 +191,16 @@ class SQLStateBuilder(StateBuilder):
         states = kadi_states.get_states(cmds=cmds, start=tbegin, stop=sched_stop,
                                         state_keys=STATE_KEYS,
                                         merge_identical=False)
+
+        # Need this to generate states.dat output that is consistent with regression
+        # output as of version 3.0.0. Not really used for anything.
         trans_keys_list = []
         for state in states:
             trans_keys = sorted(key for key in state['trans_keys'] if key in STATE_KEYS)
             trans_keys_list.append(','.join(trans_keys))
         states['trans_keys'] = trans_keys_list
-        states = states[sorted(states.colnames)]
 
+        states = states[sorted(states.colnames)]
         state0 = {key: states[0][key] for key in states.colnames}
 
         return states, state0
