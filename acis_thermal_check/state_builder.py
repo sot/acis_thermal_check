@@ -127,7 +127,7 @@ class SQLStateBuilder(StateBuilder):
         # 2020) where there is no RLTT and the first command is AOACRSTD. This
         # indicates the beginning of a maneuver ATS which may overlap by 3 mins
         # with the previous loads because of the AOACRSTD command. So to get
-        # continuity right just drop that command.
+        # continuity right just drop that one command.
         if (bs_cmds[0]['tlmsid'] == 'AOACRSTD'
                 and 'RUNNING_LOAD_TERMINATION_TIME' not in bs_cmds['event_type']):
             bs_cmds = bs_cmds[1:]
@@ -148,28 +148,16 @@ class SQLStateBuilder(StateBuilder):
             The starting date/time from which to obtain states for
             prediction.
         """
-
-        """
-        Get state0 as last cmd_state that starts within available telemetry.
-        The original logic in get_state0() is to return a state that
-        is absolutely, positively reliable by insisting that the
-        returned state is at least ``date_margin`` days old, where the
-        default is 10 days. That is too conservative (given the way
-        commanded states are actually managed) and not what is desired
-        here, which is a recent state from which to start thermal propagation.
-
-        Instead we supply ``date_margin=None`` so that get_state0 will
-        find the newest state consistent with the ``date`` criterion
-        and pcad_mode == 'NPNT'.
-        """
+        # This is a kadi.commands.CommandTable (subclass of astropy Table)
         bs_cmds = self.bs_cmds
         bs_dates = bs_cmds['date']
 
-        # Running loads termination time is the last time of "current running loads"
-        # (or in the case of a safing action, "current approved load commands" in
-        # kadi commands) which should be included in propagation. Starting from
-        # around 2020-April this is included as a commmand in the loads, while prior
-        # to that we just use the first command in the backstop loads.
+        # Running loads termination time is the last time of "current running
+        # loads" (or in the case of a safing action, "current approved load
+        # commands" in kadi commands) which should be included in propagation.
+        # Starting from around 2020-April (backstop 6.9) this is included as a
+        # commmand in the loads, while prior to that we just use the first
+        # command in the backstop loads.
         ok = bs_cmds['event_type'] == 'RUNNING_LOAD_TERMINATION_TIME'
         rltt = DateTime(bs_dates[ok][0] if np.any(ok) else bs_dates[0])
 
@@ -188,12 +176,17 @@ class SQLStateBuilder(StateBuilder):
         # Add in the backstop commands
         cmds = cmds.add_cmds(bs_cmds)
 
-        # Get the continuity (state0) and states for available commands.
+        # Get the states for available commands, boxed by tbegin / sched_stop.
+        # The merge_identical=False is for compatibility with legacy Chandra.cmd_states,
+        # but this could probably be set to True.
         states = kadi_states.get_states(cmds=cmds, start=tbegin, stop=sched_stop,
                                         state_keys=STATE_KEYS,
                                         merge_identical=False)
 
+        # Make the column order match legacy Chandra.cmd_states.
         states = states[sorted(states.colnames)]
+
+        # Get the first state as a dict.
         state0 = {key: states[0][key] for key in states.colnames}
 
         return states, state0
@@ -208,8 +201,8 @@ class ACISStateBuilder(StateBuilder):
                  logger=None):
         """
         Give the ACISStateBuilder arguments that were passed in
-        from the command line, and set up the connection to the
-        commanded states database.
+        from the command line and get the backstop commands from the load
+        under review.
 
         Parameters
         ----------
@@ -268,7 +261,7 @@ class ACISStateBuilder(StateBuilder):
         of that review load backstop file.
 
         The Review Backstop commands already obtained.
-        Telemtry from 21 days back to  the latest in Ska obtained.
+        Telemtry from 21 days back to the latest in Ska obtained.
 
         So now the task is to backchain through the loads and assemble
         any states missing between the end of telemetry through the start
@@ -279,21 +272,8 @@ class ACISStateBuilder(StateBuilder):
         tbegin : string
             The starting date/time from which to obtain states for
             prediction. This is tlm['date'][-5]) or, in other words, the
-            date used is 5 enteries back from the end of the fetched telemetry
-        """
-
-        """
-        Get state0 as last cmd_state that starts within available telemetry.
-        The original logic in get_state0() is to return a state that
-        is absolutely, positively reliable by insisting that the
-        returned state is at least ``date_margin`` days old, where the
-        default is 10 days. That is too conservative (given the way
-        commanded states are actually managed) and not what is desired
-        here, which is a recent state from which to start thermal propagation.
-
-        Instead we supply ``date_margin=None`` so that get_state0 will
-        find the newest state consistent with the ``date`` criterion
-        and pcad_mode == 'NPNT'.
+            date used is approximately 30 minutes before the end of the
+            fetched telemetry
         """
         # If an OFLS directory has been specified, get the backstop commands
         # stored in the backstop file in that directory
@@ -314,11 +294,10 @@ class ACISStateBuilder(StateBuilder):
         # Capture the path to the ofls directory
         present_ofls_dir = copy.copy(self.backstop_file)
 
-        # So long as the earliest command in bs_cmds is after the state0
-        # time, keep concatenating continuity commands to bs_cmds based upon
-        # the type of load.
-        # Note that as you march back in time along the load chain, 
-        # "present_ofls_dir" will change.
+        # So long as the earliest command in bs_cmds is after the state0 time
+        # (which is the same as tbegin), keep concatenating continuity commands
+        # to bs_cmds based upon the type of load. Note that as you march back in
+        # time along the load chain, "present_ofls_dir" will change.
 
         # WHILE
         # The big while loop that backchains through previous loads and concatenates the
@@ -398,7 +377,8 @@ class ACISStateBuilder(StateBuilder):
                 # Now point the operative ofls directory to the Continuity directory
                 present_ofls_dir = cont_load_path
 
-        # Convert from a list of dict to a CommandTable and store in the object
+        # Convert backstop commands from a list of dict to a CommandTable and
+        # store in self.
         bs_cmds = kadi.commands.CommandTable(bs_cmds)
         self.bs_cmds = bs_cmds
 
@@ -407,7 +387,8 @@ class ACISStateBuilder(StateBuilder):
 
         # Scheduled stop time is the end of propagation, either the explicit
         # time as a pseudo-command in the loads or the last backstop command time.
-        # Use the last such command if any are found.
+        # Use the last such command if any are found (which is always the case
+        # since backstop 6.9).
         ok = bs_cmds['event_type'] == 'SCHEDULED_STOP_TIME'
         sched_stop = bs_cmds['date'][ok][-1] if np.any(ok) else bs_cmds['date'][-1]
 
@@ -417,7 +398,11 @@ class ACISStateBuilder(StateBuilder):
         # commands.
         states = kadi_states.get_states(cmds=bs_cmds, start=tbegin, stop=sched_stop,
                                         state_keys=STATE_KEYS)
+
+        # Make the column order match legacy Chandra.cmd_states.
         states = states[sorted(states.colnames)]
+
+        # Get the first state as a dict.
         state0 = {key: states[0][key] for key in states.colnames}
 
         self.logger.debug('state0 at %s is\n%s' % (DateTime(state0['tstart']).date,
