@@ -768,12 +768,14 @@ class ACISThermalCheck(object):
             if self.msid == msid:
                 ymin, ymax = ax.get_ylim()
                 if msid == "fptemp":
-                    fp_sens, acis_s, acis_i = get_acis_limits("fptemp")
+                    fp_sens, acis_s, acis_i, acis_hot = get_acis_limits("fptemp")
                     ax.axhline(acis_i, linestyle='-.', color='purple', zorder=-8,
                                linewidth=2)
                     ax.axhline(acis_s, linestyle='-.', color='blue', zorder=-8,
                                linewidth=2)
-                    ymax = max(acis_i+1, ymax)
+                    ax.axhline(acis_hot, linestyle='-.', color='red', zorder=-8,
+                               linewidth=2)
+                    ymax = max(acis_hot+1, ymax)
                 else:
                     ax.axhline(self.yellow_hi, linestyle='-', color='gold', 
                                zorder=-8, linewidth=2)
