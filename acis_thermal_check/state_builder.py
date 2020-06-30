@@ -38,37 +38,6 @@ class StateBuilder(object):
         """
         raise NotImplementedError("'StateBuilder should be subclassed!")
 
-    def _get_bs_cmds(self):
-        """
-        Internal method used to obtain commands from the backstop
-        file and store them.
-        """
-        if os.path.isdir(self.backstop_file):
-            # Returns a list but requires exactly 1 match
-            backstop_file = get_globfiles(os.path.join(self.backstop_file,
-                                                       'CR*.backstop'))[0]
-            self.backstop_file = backstop_file
-
-        self.logger.info('Using backstop file %s' % self.backstop_file)
-
-        # Read the backstop commands and add a `time` column
-        bs_cmds = kadi.commands.get_cmds_from_backstop(backstop_file)
-
-        # Handle the special case of old loads (prior to backstop 6.9 in April
-        # 2020) where there is no RLTT and the first command is AOACRSTD. This
-        # indicates the beginning of a maneuver ATS which may overlap by 3 mins
-        # with the previous loads because of the AOACRSTD command. So to get
-        # continuity right just drop that command.
-        if (bs_cmds[0]['tlmsid'] == 'AOACRSTD'
-                and 'RUNNING_LOAD_TERMINATION_TIME' not in bs_cmds['event_type']):
-            bs_cmds = bs_cmds[1:]
-
-        bs_cmds['time'] = DateTime(bs_cmds['date']).secs
-
-        self.bs_cmds = bs_cmds
-        self.tstart = bs_cmds[0]['time']
-        self.tstop = bs_cmds[-1]['time']
-
     def get_validation_states(self, datestart, datestop):
         """
         Get states for validation of the thermal model.
@@ -137,6 +106,37 @@ class SQLStateBuilder(StateBuilder):
         self.interrupt = interrupt
         self.backstop_file = backstop_file
         self._get_bs_cmds()
+
+    def _get_bs_cmds(self):
+        """
+        Internal method used to obtain commands from the backstop
+        file and store them.
+        """
+        if os.path.isdir(self.backstop_file):
+            # Returns a list but requires exactly 1 match
+            backstop_file = get_globfiles(os.path.join(self.backstop_file,
+                                                       'CR*.backstop'))[0]
+            self.backstop_file = backstop_file
+
+        self.logger.info('Using backstop file %s' % self.backstop_file)
+
+        # Read the backstop commands and add a `time` column
+        bs_cmds = kadi.commands.get_cmds_from_backstop(backstop_file)
+
+        # Handle the special case of old loads (prior to backstop 6.9 in April
+        # 2020) where there is no RLTT and the first command is AOACRSTD. This
+        # indicates the beginning of a maneuver ATS which may overlap by 3 mins
+        # with the previous loads because of the AOACRSTD command. So to get
+        # continuity right just drop that command.
+        if (bs_cmds[0]['tlmsid'] == 'AOACRSTD'
+                and 'RUNNING_LOAD_TERMINATION_TIME' not in bs_cmds['event_type']):
+            bs_cmds = bs_cmds[1:]
+
+        bs_cmds['time'] = DateTime(bs_cmds['date']).secs
+
+        self.bs_cmds = bs_cmds
+        self.tstart = bs_cmds[0]['time']
+        self.tstop = bs_cmds[-1]['time']
 
     def get_prediction_states(self, tbegin):
         """
