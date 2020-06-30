@@ -1026,8 +1026,7 @@ class ACISThermalCheck(object):
         if self.msid != "fptemp":
             proc["msid_limit"] = self.yellow_hi - self.margin
         # Figure out the MD5 sum of model spec file
-        model_json = json.dumps(args.model_spec, sort_keys=True, indent=4).encode("utf-8")
-        md5sum = hashlib.md5(model_json).hexdigest()
+        md5sum = hashlib.md5(open(args.model_spec, 'rb').read()).hexdigest()
         pkg_version = ska_helpers.get_version("{}_check".format(self.name))
         mylog.info('##############################'
                    '#######################################')
