@@ -268,13 +268,6 @@ class ACISStateBuilder(StateBuilder):
             # At the beginning, it will be the time of the last command in the Review Load
             self.BSC.end_event_time = rev_bs_cmds[-1]['time']
 
-        # Connect to database (NEED TO USE aca_read for sybase; user is ignored for sqlite)
-        # We only need this as the quick way to get the validation states.
-        server = os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3')
-        self.logger.info('Connecting to {} to get cmd_states'.format(server))
-        self.db = Ska.DBI.DBI(dbi="sqlite", server=server, user='aca_read',
-                              database='aca')
-
     def get_prediction_states(self, tbegin):
         """
         Get the states used for the prediction.  This includes both the
@@ -340,12 +333,12 @@ class ACISStateBuilder(StateBuilder):
         # create one for itself and use that. Here, all that really matters
         # is the value of 'tbegin', the specification of the date parameter to be used
         # and the date_margin.
-        state0 = cmd_states.get_state0(tbegin, self.db, datepar='datestart',
-                                       date_margin=None)
+        state0 = kadi_states.get_continuity(tbegin)
+
         # WHILE
         # The big while loop that backchains through previous loads and concatenates the
         # proper load sections to the review load.
-        while state0['tstart'] < bs_start_time:
+        while tbegin < bs_start_time:
 
             # Read the Continuity information of the present ofls directory
             cont_load_path, present_load_type, scs107_date = self.BSC.get_continuity_file_info(present_ofls_dir)
