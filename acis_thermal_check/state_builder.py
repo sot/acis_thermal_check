@@ -192,14 +192,6 @@ class SQLStateBuilder(StateBuilder):
                                         state_keys=STATE_KEYS,
                                         merge_identical=False)
 
-        # Need this to generate states.dat output that is consistent with regression
-        # output as of version 3.0.0. Not really used for anything.
-        trans_keys_list = []
-        for state in states:
-            trans_keys = sorted(key for key in state['trans_keys'] if key in STATE_KEYS)
-            trans_keys_list.append(','.join(trans_keys))
-        states['trans_keys'] = trans_keys_list
-
         states = states[sorted(states.colnames)]
         state0 = {key: states[0][key] for key in states.colnames}
 
@@ -338,7 +330,7 @@ class ACISStateBuilder(StateBuilder):
         # WHILE
         # The big while loop that backchains through previous loads and concatenates the
         # proper load sections to the review load.
-        while tbegin < bs_start_time:
+        while DateTime(tbegin).secs < bs_start_time:
 
             # Read the Continuity information of the present ofls directory
             cont_load_path, present_load_type, scs107_date = self.BSC.get_continuity_file_info(present_ofls_dir)
@@ -418,7 +410,8 @@ class ACISStateBuilder(StateBuilder):
         # get_states trims the list to any command whose time is AFTER the state0 START
         # time and then converts each relevant backstop command, in that resultant list,
         # into a pseudo-commanded states state
-        states = cmd_states.get_states(state0, bs_cmds)
+        states = kadi_states.get_states(continuity=state0,
+                                        cmds=kadi.commands.CommandTable(bs_cmds))
 
         # Get rid of the 2099 placeholder stop date
         states[-1].datestop = bs_cmds[-1]['date']

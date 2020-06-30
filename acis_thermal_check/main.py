@@ -503,7 +503,8 @@ class ACISThermalCheck(object):
         states_table['pitch'].format = '%.2f'
         states_table['tstart'].format = '%.2f'
         states_table['tstop'].format = '%.2f'
-        states_table.write(outfile, format='ascii', delimiter='\t', overwrite=True)
+        states_table.write(outfile, format='ascii', delimiter='\t', overwrite=True,
+                           fast_writer=False)
 
     def write_temps(self, outdir, times, temps):
         """
