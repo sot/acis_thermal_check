@@ -121,17 +121,7 @@ class SQLStateBuilder(StateBuilder):
         self.logger.info('Using backstop file %s' % self.backstop_file)
 
         # Read the backstop commands and add a `time` column
-        bs_cmds = kadi.commands.get_cmds_from_backstop(backstop_file)
-
-        # Handle the special case of old loads (prior to backstop 6.9 in April
-        # 2020) where there is no RLTT and the first command is AOACRSTD. This
-        # indicates the beginning of a maneuver ATS which may overlap by 3 mins
-        # with the previous loads because of the AOACRSTD command. So to get
-        # continuity right just drop that one command.
-        if (bs_cmds[0]['tlmsid'] == 'AOACRSTD'
-                and 'RUNNING_LOAD_TERMINATION_TIME' not in bs_cmds['event_type']):
-            bs_cmds = bs_cmds[1:]
-
+        bs_cmds = kadi.commands.get_cmds_from_backstop(self.backstop_file)
         bs_cmds['time'] = DateTime(bs_cmds['date']).secs
 
         self.bs_cmds = bs_cmds
@@ -159,7 +149,19 @@ class SQLStateBuilder(StateBuilder):
         # commmand in the loads, while prior to that we just use the first
         # command in the backstop loads.
         ok = bs_cmds['event_type'] == 'RUNNING_LOAD_TERMINATION_TIME'
-        rltt = DateTime(bs_dates[ok][0] if np.any(ok) else bs_dates[0])
+        if np.any(ok):
+            rltt = DateTime(bs_dates[ok][0])
+        else:
+            # Handle the case of old loads (prior to backstop 6.9) where there
+            # is no RLTT.  If the first command is AOACRSTD this indicates the
+            # beginning of a maneuver ATS which may overlap by 3 mins with the
+            # previous loads because of the AOACRSTD command. So move the RLTT
+            # forward by 3 minutes (exactly 180.0 sec). If the first command is
+            # not AOACRSTD then that command time is used as RLTT.
+            if bs_cmds['tlmsid'][0] == 'AOACRSTD':
+                rltt = DateTime(bs_cmds['time'][0] + 180)
+            else:
+                rltt = DateTime(bs_cmds['date'][0])
 
         # Scheduled stop time is the end of propagation, either the explicit
         # time as a pseudo-command in the loads or the last backstop command time.
