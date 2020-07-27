@@ -182,7 +182,9 @@ def plot_one(fig_id, x, y, yy=None, linestyle='-',
         ax.axvline(load_start, linestyle='-', color='g', linewidth=2.0)
 
     Ska.Matplotlib.set_time_ticks(ax)
-    [label.set_rotation(30) for label in ax.xaxis.get_ticklabels()]
+    for label in ax.xaxis.get_ticklabels():
+        label.set_rotation(30)
+        label.set_horizontalalignment('left')
 
     fig.subplots_adjust(bottom=0.22, right=0.87)
     # The next several lines ensure that the width of the axes
