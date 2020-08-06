@@ -448,11 +448,11 @@ def get_acis_limits(msid):
     import requests
 
     if msid == "fptemp":
-        fp_sens = -119.5
+        cold_ecs = -119.5
         acis_i = -112.0
         acis_s = -111.0
         acis_hot = -109.0
-        return fp_sens, acis_i, acis_s, acis_hot
+        return cold_ecs, acis_i, acis_s, acis_hot
 
     yellow_lo = None
     yellow_hi = None

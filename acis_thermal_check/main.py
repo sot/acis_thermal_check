@@ -768,7 +768,9 @@ class ACISThermalCheck(object):
             if self.msid == msid:
                 ymin, ymax = ax.get_ylim()
                 if msid == "fptemp":
-                    fp_sens, acis_s, acis_i, acis_hot = get_acis_limits("fptemp")
+                    cold_ecs, acis_s, acis_i, acis_hot = get_acis_limits("fptemp")
+                    ax.axhline(cold_ecs, linestyle='-.', color='dodgerblue', 
+                               zorder=-8, linewidth=2)
                     ax.axhline(acis_i, linestyle='-.', color='purple', zorder=-8,
                                linewidth=2)
                     ax.axhline(acis_s, linestyle='-.', color='blue', zorder=-8,
