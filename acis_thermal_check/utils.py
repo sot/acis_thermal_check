@@ -448,10 +448,10 @@ def get_acis_limits(msid):
     import requests
 
     if msid == "fptemp":
-        cold_ecs = -119.5
-        acis_i = -112.0
-        acis_s = -111.0
-        acis_hot = -109.0
+        cold_ecs = -119.5 # the limit for cold ECS measurements in the science orbit
+        acis_i = -112.0 # the limit for ACIS-I observations
+        acis_s = -111.0 # the limit for normal ACIS-S observations
+        acis_hot = -109.0 # the limit for ACIS-S observations which can go hotter
         return cold_ecs, acis_i, acis_s, acis_hot
 
     yellow_lo = None
