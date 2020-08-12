@@ -182,7 +182,12 @@ def plot_one(fig_id, x, y, yy=None, linestyle='-',
         ax.axvline(load_start, linestyle='-', color='g', linewidth=2.0)
 
     Ska.Matplotlib.set_time_ticks(ax)
-    [label.set_rotation(30) for label in ax.xaxis.get_ticklabels()]
+    for label in ax.xaxis.get_ticklabels():
+        label.set_rotation_mode("anchor")
+        label.set_rotation(30)
+        label.set_horizontalalignment('right')
+    ax.tick_params(which='major', axis='x', length=6)
+    ax.tick_params(which='minor', axis='x', length=3)
 
     fig.subplots_adjust(bottom=0.22, right=0.87)
     # The next several lines ensure that the width of the axes
@@ -294,9 +299,13 @@ def plot_two(fig_id, x, y, x2, y2, yy=None, linewidth=2,
         ax.axvline(load_start, linestyle='-', color='g', linewidth=2.0)
 
     Ska.Matplotlib.set_time_ticks(ax)
-    [label.set_rotation(30) for label in ax.xaxis.get_ticklabels()]
+    for label in ax.xaxis.get_ticklabels():
+        label.set_rotation_mode("anchor")
+        label.set_rotation(30)
+        label.set_horizontalalignment('right')
     [label.set_color(color2) for label in ax2.yaxis.get_ticklabels()]
-
+    ax.tick_params(which='major', axis='x', length=6)
+    ax.tick_params(which='minor', axis='x', length=3)
     fig.subplots_adjust(bottom=0.22, right=0.87)
     # The next several lines ensure that the width of the axes
     # of all the weekly prediction plots are the same
@@ -439,10 +448,11 @@ def get_acis_limits(msid):
     import requests
 
     if msid == "fptemp":
-        fp_sens = -118.7
-        acis_i = -112.0
-        acis_s = -111.0
-        return fp_sens, acis_i, acis_s
+        cold_ecs = -119.5 # the limit for cold ECS measurements in the science orbit
+        acis_i = -112.0 # the limit for ACIS-I observations
+        acis_s = -111.0 # the limit for normal ACIS-S observations
+        acis_hot = -109.0 # the limit for ACIS-S observations which can go hotter
+        return cold_ecs, acis_i, acis_s, acis_hot
 
     yellow_lo = None
     yellow_hi = None
