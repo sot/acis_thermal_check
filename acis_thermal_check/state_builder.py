@@ -263,6 +263,10 @@ class ACISStateBuilder(StateBuilder):
             self.tstart = rev_bs_cmds[0]['time']
             self.tstop = rev_bs_cmds[-1]['time']
 
+            # Initialize the end time attribute for event searches within the BSC object
+            # At the beginningm it will be the time of the last command in the Review Load
+            self.BSC.end_event_time = rev_bs_cmds[-1]['time']
+
         # Connect to database (NEED TO USE aca_read for sybase; user is ignored for sqlite)
         # We only need this as the quick way to get the validation states.
         server = os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3')
@@ -316,13 +320,18 @@ class ACISStateBuilder(StateBuilder):
         import copy
 
         bs_cmds = copy.copy(self.bs_cmds)
+
+        # Capture the start time of the review load
         bs_start_time = bs_cmds[0]['time']
+
+        # Capture the path to the ofls directory
         present_ofls_dir = copy.copy(self.backstop_file)
 
         # So long as the earliest command in bs_cmds is after the state0
         # time, keep concatenating continuity commands to bs_cmds based upon
         # the type of load.
-        # Note that as you march back in time along the load chain, "ofls_dir" will change.
+        # Note that as you march back in time along the load chain, 
+        # "present_ofls_dir" will change.
 
         # First we need a State0 because cmd_states.get_states cannot translate
         # backstop commands into commanded states without one. cmd_states.get_state0
@@ -347,7 +356,8 @@ class ACISStateBuilder(StateBuilder):
                 # Obtain the continuity load commands
                 cont_bs_cmds, cont_bs_name = self.BSC.get_bs_cmds(cont_load_path)
 
-                # Combine the continuity commands with the bs_cmds
+                # Combine the continuity commands with the bs_cmds. The result
+                # is stored in bs_cmds
                 bs_cmds = self.BSC.CombineNormal(cont_bs_cmds, bs_cmds)
 
                 # Reset the backstop collection start time for the While loop
