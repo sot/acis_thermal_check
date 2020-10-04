@@ -264,7 +264,7 @@ class ACISStateBuilder(StateBuilder):
             self.tstop = rev_bs_cmds[-1]['time']
 
             # Initialize the end time attribute for event searches within the BSC object
-            # At the beginningm it will be the time of the last command in the Review Load
+            # At the beginning, it will be the time of the last command in the Review Load
             self.BSC.end_event_time = rev_bs_cmds[-1]['time']
 
         # Connect to database (NEED TO USE aca_read for sybase; user is ignored for sqlite)
