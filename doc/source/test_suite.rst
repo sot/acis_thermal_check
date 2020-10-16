@@ -46,6 +46,17 @@ directory (e.g., ``dpa_check``) and run ``py.test`` like so:
 
 The ``-s`` flag is optionally included here so that the output has maximum verbosity.
 
+Normally, the outputs of the thermal model runs are stored in a temporary directory
+which is discarded after the tests have been carried out. If you want to dump these
+outputs to a different location for later examination, use the ``test_root`` argument
+on the command line:
+
+.. code-block:: bash
+
+    [~]$ cd ~/Source/dpa_check
+
+    [~]$ py.test -s . --test_root=/Users/jzuhone/dpa_tests
+
 You can also import any model package from an interactive Python session and run the 
 ``test()`` method on it:
 
