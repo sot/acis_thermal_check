@@ -129,8 +129,8 @@ def exception_catcher(test, old, new, data_type, **kwargs):
 
 
 class RegressionTester(object):
-    def __init__(self, atc_class, model_path, model_spec, 
-                 atc_args=None, atc_kwargs=None):
+    def __init__(self, atc_class, model_path, model_spec, atc_args=None,
+                 atc_kwargs=None, test_root=None, sub_dir=None):
         self.model_path = model_path
         if atc_args is None:
             atc_args = ()
@@ -142,11 +142,16 @@ class RegressionTester(object):
         self.valid_limits = self.atc_obj.validation_limits
         self.hist_limit = self.atc_obj.hist_limit
         self.curdir = os.getcwd()
-        self.tmpdir = tempfile.mkdtemp()
-        self.outdir = os.path.abspath(os.path.join(self.tmpdir, self.name+"_test"))
+        if test_root is None:
+            rootdir = tempfile.mkdtemp()
+        else:
+            rootdir = test_root
+        if sub_dir is not None:
+            rootdir = os.path.join(rootdir, sub_dir)
+        self.outdir = os.path.abspath(rootdir)
         self.test_model_spec = os.path.join(model_path, "tests", model_spec)
         if not os.path.exists(self.outdir):
-            os.mkdir(self.outdir)
+            os.makedirs(self.outdir, exist_ok=True)
 
     def run_model(self, load_week, run_start=None, state_builder='acis',
                   interrupt=False, override_limits=None):
@@ -165,7 +170,7 @@ class RegressionTester(object):
             "acis", default "acis".
         interrupt : boolean, optional
             Whether or not this is an interrupt load. Default: False
-            override_limits : dict, optional
+        override_limits : dict, optional
             Override any margin by setting a new value to its name
             in this dictionary. SHOULD ONLY BE USED FOR TESTING.
         """
