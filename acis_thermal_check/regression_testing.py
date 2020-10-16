@@ -15,6 +15,8 @@ test_loads = {"normal": ["MAR0617A", "MAR2017E", "JUL3117B", "SEP0417A"],
                             "MAR0817B", "MAR1117A", "APR0217B", "SEP0917C"]}
 all_loads = test_loads["normal"]+test_loads["interrupt"]
 
+nlets = {"MAR0617A", "MAR0817B", "SEP0417A"}
+
 
 class TestArgs(object):
     """
@@ -51,10 +53,14 @@ class TestArgs(object):
     model_spec : string, optional
         The path to the model specification file to use. Default is to
         use the model specification file stored in the model package.
+    nlet_file : string, optional
+        The path to an alternative NLET file to be used. Default: None,
+        which is to use the default one. 
     """
     def __init__(self, name, outdir, model_path, run_start=None,
                  load_week=None, days=21.0, T_init=None, interrupt=False,
-                 state_builder='acis', verbose=0, model_spec=None):
+                 state_builder='acis', verbose=0, model_spec=None,
+                 nlet_file=None):
         from datetime import datetime
         self.load_week = load_week
         if run_start is None:
@@ -72,7 +78,9 @@ class TestArgs(object):
             load_letter = load_week[-1].lower()
             self.backstop_file = "/data/acis/LoadReviews/%s/%s/ofls%s" % (load_year, load_week[:-1], load_letter)
         self.days = days
-        self.nlet_file = '/data/acis/LoadReviews/NonLoadTrackedEvents.txt'
+        if nlet_file is None:
+            nlet_file = '/data/acis/LoadReviews/NonLoadTrackedEvents.txt'
+        self.nlet_file = nlet_file
         self.interrupt = interrupt
         self.state_builder = state_builder
         self.pred_only = False
@@ -157,14 +165,18 @@ class RegressionTester(object):
             "acis", default "acis".
         interrupt : boolean, optional
             Whether or not this is an interrupt load. Default: False
-        use the model specification file stored in the model package.
             override_limits : dict, optional
             Override any margin by setting a new value to its name
             in this dictionary. SHOULD ONLY BE USED FOR TESTING.
         """
         out_dir = os.path.join(self.outdir, load_week)
+        if load_week in nlets:
+            nlet_file = os.path.join(os.path.dirname(__file__), 
+                                     f'data/nlets/TEST_NLET_{load_week}.txt')
+        else:
+            nlet_file = None
         args = TestArgs(self.name, out_dir, self.model_path, run_start=run_start,
-                        load_week=load_week, interrupt=interrupt,
+                        load_week=load_week, interrupt=interrupt, nlet_file=nlet_file,
                         state_builder=state_builder, model_spec=self.test_model_spec)
         self.atc_obj.run(args, override_limits=override_limits)
 
