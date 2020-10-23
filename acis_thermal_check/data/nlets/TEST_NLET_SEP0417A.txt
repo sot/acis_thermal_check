@@ -1,0 +1,703 @@
+################################################################################
+#
+#   Non-Load events file - This file is used to record thermally consequential,
+#                          events such as SCS-107's, BSH and NSM stops,
+#                          long term CTI runs, maneuvers such as pitch changes.
+#                          etc.
+#
+#                          TOO loads and return to science/replan load
+#                          approvals (GO) are load related and listed 
+#
+#                          New events are appended to the end of
+#                          the file.
+#
+#       High Level Format: Permanent Header
+#                          Logged Event 1
+#                          Logged Event 2
+#                              .
+#                          Logged Event N
+#
+#     Logged Event format: Event Header - Header comments start with "#"
+#                          Event Line
+#
+#             Event Types: STOP - Both vehicle and science loads halted 
+#                                 - e.g. Normal Sun Mode
+#
+#                          S107 - SCS-107 where only the science load
+#                                 was halted. Vehicle load still
+#                                 running e.g. radiation shutdown
+#
+#                         LTCTI - ACIS Long term CTI measurement
+#    
+#                           TOO - TOO load that was approved.
+#
+#                            GO - ACIS informational entry. Signifies
+#                                 that a science resumption load was
+#                                 approved.
+#
+#                           MAN - Maneuver such as a maneuver to NSM
+#                                 orientation or a pitch change by the
+#                                 OCC
+#
+#       Event Line Format:
+#
+#         The contents of a logged event line depends upon the type of
+#         event. The format for all events except manuevers (MAN)
+#         is a three column format:
+#
+#            Column 1     Columns 2     Column 3
+#              Time        Event     "information Line"
+#
+#         The format for MAN Events is:
+#
+#          Column 1  Column 2  Column 3     Column 4    Columns 5-8
+#           Time      "MAN"   pitch (deg)    roll     4 Quaternions
+#
+#
+#         The meaning of the columns depends upon the Event Type
+#          
+#         Column 3 for several event types are "Status" lines which
+#         are a comma separated list of a few of the spacecraft status
+#         items:
+#
+#             Focal Plane instrument, 
+#             HETG status, 
+#             LETG status, 
+#             Obsid, 
+#             RADMON status,
+#             Telemetry format
+#             Dither status
+#
+#  Event Line Column Definition:
+#
+#          GO: 2nd column: "GO"
+#
+#         TOO: 1st column: Time of First Command of the Replan Load
+#              2nd column: "TOO"
+#              3rd column: Status line at the time of the event
+#
+#        STOP: 1st column: Time of the NSM or BSH as given by the OCC
+#              2nd column: "STOP"
+#              3rd column: Status line at the time of the event.
+#
+#        S107: 1st column: Time of the SCS-107 as given by the OCC
+#              2nd column: "S107"
+#              3rd column: Status line at the time of the event.
+#
+#       LTCTI: 1st column: Start Time of the LTCTI measurement
+#              2nd column: "LTCTI"
+#              3rd column: CAP Number
+#	       4th column: Name of the RTS file used for this LTCTI
+#	                   run (no extension) e.g. 1_5_CTI
+#              5th column: Duration ddd:hh:mm:ss (number fo days NOT DOY)
+#
+#         MAN: 1st column: Time of the Manuever as given by the OCC
+#              2nd column: "MAN"
+#              3rd column: Pitch
+#              4th column: Roll
+#                Cols 5-8: List of the 4 Target and/or Present Quaternions
+#
+#
+#   NOTES:  1) All lines starting with '#' are comments and can be ignored by 
+#              programs that use this file.
+#
+#           2) Sources of information are ACIS load review and Event tools:
+#
+#                 history-files.pl
+#                 NLET.py - Non-Load Event Tracking tool
+#                      
+#           3) The only events recorded by NLET.py are
+#              ACIS Long Term CTI Runs (LTCTI) and
+#              OCC commanded maneuvers such as a maneuver
+#              to a new pitch after an NSM.
+#
+################################################################################
+#
+#*******************************************************************************
+# Type: STOP
+# Time of Event: 2015:006:08:24:00.00
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,52200,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: NORMAL SUN MODE/IUReset 2015:006:08:24:00.00 DEC2414A Load
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:006:08:24:00.00    STOP   HRC-S,HETG-OUT,LETG-OUT,52200,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: LTCTI
+# Time of Event: 2015:008:00:51:00.00
+# Source: NLET
+# CAP Number: 1339
+# CLD File Path: /data/acis/CAPs/CTI-CLDs/6chip/1A_CTI6_14HR_135.cld
+# Description: Running 14 hour  Long Term CTI duing the NSM shutdown
+#-------------------------------------------------------------------------------
+#       Time            Event   CAP #   RTS file  Duration
+#-------------------------------------------------------------------------------
+2015:008:00:51:00.00    LTCTI   1339  1_CTI06   000:14:00:00
+#
+#*******************************************************************************
+# Type: GO
+# Source: history_files.pl
+# Description: Clearing out STOP markers in History files for NSM
+#-------------------------------------------------------------------------------
+#       Time       Event  
+#-------------------------------------------------------------------------------
+                     GO
+#*******************************************************************************
+# Type: S107
+# Time of Event: 2015:076:04:37:42.00
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,16344,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: Radiation SCS-107 during MAR0615B load
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:076:04:37:42.00    S107   HRC-S,HETG-OUT,LETG-OUT,16344,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: LTCTI
+# Time of Event: 2015:076:22:30:00.00
+# Source: NLET
+# CAP Number: 1345
+# CLD File Path: /data/acis/CAPs/CTI-CLDs/6chip/1A_CTI6_16HR_135.cld
+# Description:  Running a 16 hour LTCTI after the radiation shutdown
+#-------------------------------------------------------------------------------
+#       Time            Event   CAP #  RTS file        Duration
+#-------------------------------------------------------------------------------
+2015:076:22:30:00.00    LTCTI   1345   1_CTI06    000:16:00:00
+#
+#*******************************************************************************
+# Type: GO
+# Source: history_files.pl
+# Description: Clearing history file stop markers after 03/17 SCS-107
+#-------------------------------------------------------------------------------
+#       Time       Event  
+#-------------------------------------------------------------------------------
+                     GO
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2015:159:04:48:28.47
+# Status Array: ACIS-S,HETG-OUT,LETG-OUT,17672,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description:  JUN0815 Replan after TOO(#401633)
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:159:04:48:28.47    TOO   ACIS-S,HETG-OUT,LETG-OUT,17672,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2015:162:03:20:00.00
+# Status Array: ACIS-I,HETG-OUT,LETG-OUT,17670,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: TOO
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:162:03:20:00.00    TOO   ACIS-I,HETG-OUT,LETG-OUT,17670,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: S107
+# Time of Event: 2015:173:22:43:32
+# Status Array: HRC-S,HETG-IN,LETG-OUT,17696,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: Radiation shutdown of the JUN2115A load
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:173:22:43:32    S107   HRC-S,HETG-IN,LETG-OUT,17696,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: GO
+# Source: history_files.pl
+# Description: Resuming science after 06/22/2015 SCS-107
+#-------------------------------------------------------------------------------
+#       Time       Event  
+#-------------------------------------------------------------------------------
+                     GO
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2015:191:15:49:20.73
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,51761,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 07/09/2015 Interrupted JUL0415B load with the JUL1015B
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:191:15:49:20.73    TOO   HRC-S,HETG-OUT,LETG-OUT,51761,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2015:205:20:37:00.00
+# Status Array: ACIS-S,HETG-OUT,LETG-OUT,17663,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: Interrupt JUL2415B load
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:205:20:37:00.00    TOO   ACIS-S,HETG-OUT,LETG-OUT,17663,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2015:236:10:25:00.00
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,51676,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: TOO interrupts AUG2415B load
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:236:10:25:00.00    TOO   HRC-S,HETG-OUT,LETG-OUT,51676,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2015:246:04:21:52.52
+# Status Array: ACIS-S,HETG-OUT,LETG-OUT,17127,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: TOO interrupts AUG2415B with SEP0315A
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:246:04:21:52.52    TOO   ACIS-S,HETG-OUT,LETG-OUT,17127,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: STOP
+# Time of Event: 2015:264:04:35:00.00
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,0,OORMPDS,CSELFMT5,ENAB
+# Source: history_files.pl
+# Description: Fine Sun Sensor Error during the SEP0715A load
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:264:04:35:00.00    STOP   HRC-S,HETG-OUT,LETG-OUT,0,OORMPDS,CSELFMT5,ENAB
+#
+#*******************************************************************************
+# Type: GO
+# Source: history_files.pl
+# Description: Go for SEP2315A Return to Science
+#-------------------------------------------------------------------------------
+#       Time       Event  
+#-------------------------------------------------------------------------------
+                     GO
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2015:289:10:19:09.844
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,51561,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:289:10:19:09.844    TOO   HRC-S,HETG-OUT,LETG-OUT,51561,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2015:325:08:30:30.893
+# Status Array: ACIS-S,HETG-OUT,LETG-OUT,18076,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:325:08:30:30.893    TOO   ACIS-S,HETG-OUT,LETG-OUT,18076,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2015:337:09:30:22.048
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,51453,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:337:09:30:22.048    TOO   HRC-S,HETG-OUT,LETG-OUT,51453,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2015:344:12:15:01.285
+# Status Array: ACIS-I,HETG-OUT,LETG-OUT,18719,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2015:344:12:15:01.285    TOO   ACIS-I,HETG-OUT,LETG-OUT,18719,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2016:035:13:30:01.542
+# Status Array: HRC-S,HETG-IN,LETG-OUT,51281,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:035:13:30:01.542    TOO   HRC-S,HETG-IN,LETG-OUT,51281,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: STOP
+# Time of Event: 2016:063:17:11:30.00
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,0,OORMPDS,CSELFMT5,DISA
+# Source: history_files.pl
+# Description: Fine Sun Sensor error during FEB2216B load
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:063:17:11:30.00    STOP   HRC-S,HETG-OUT,LETG-OUT,0,OORMPDS,CSELFMT5,DISA
+#
+#*******************************************************************************
+# Type: GO
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time       Event  
+#-------------------------------------------------------------------------------
+                     GO
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2016:071:13:00:00.000
+# Status Array: ACIS-I,HETG-OUT,LETG-OUT,18793,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:071:13:00:00.000    TOO   ACIS-I,HETG-OUT,LETG-OUT,18793,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2016:090:07:30:00.000
+# Status Array: ACIS-S,HETG-OUT,LETG-OUT,17047,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:090:07:30:00.000    TOO   ACIS-S,HETG-OUT,LETG-OUT,17047,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2016:177:09:09:02.024
+# Status Array: ACIS-S,HETG-IN,LETG-OUT,18874,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:177:09:09:02.024    TOO   ACIS-S,HETG-IN,LETG-OUT,18874,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2016:184:21:50:07.691
+# Status Array: ACIS-S,HETG-IN,LETG-OUT,18086,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:184:21:50:07.691    TOO   ACIS-S,HETG-IN,LETG-OUT,18086,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: STOP
+# Time of Event: 2016:234:11:38:33.000
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,18625,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: BRIGHT STAR HOLD on 08/21/2016
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:234:11:38:33.000    STOP   HRC-S,HETG-OUT,LETG-OUT,18625,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: GO
+# Source: history_files.pl
+# Description: Resuming science after the FSS error
+#-------------------------------------------------------------------------------
+#       Time       Event  
+#-------------------------------------------------------------------------------
+                     GO
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2016:249:14:28:00.00
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,50726,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:249:14:28:00.00    TOO   HRC-S,HETG-OUT,LETG-OUT,50726,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2016:252:12:00:00.00
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,50719,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:252:12:00:00.00    TOO   HRC-S,HETG-OUT,LETG-OUT,50719,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2016:268:06:56:48.98
+# Status Array: HRC-S,HETG-IN,LETG-OUT,50688,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:268:06:56:48.98    TOO   HRC-S,HETG-IN,LETG-OUT,50688,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2016:277:00:14:32.77
+# Status Array: ACIS-I,HETG-OUT,LETG-OUT,17140,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:277:00:14:32.77    TOO   ACIS-I,HETG-OUT,LETG-OUT,17140,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2016:289:16:09:06.37
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,50618,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:289:16:09:06.37    TOO   HRC-S,HETG-OUT,LETG-OUT,50618,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2016:313:00:55:00.31
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,50573,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: 
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:313:00:55:00.31    TOO   HRC-S,HETG-OUT,LETG-OUT,50573,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: STOP
+# Time of Event: 2016:324:12:59:32.000
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,19942,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: NORMAL SUN MODE during NOV1416B load
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2016:324:12:59:32.000    STOP   HRC-S,HETG-OUT,LETG-OUT,19942,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: GO
+# Source: history_files.pl
+# Description: CAP 1404 was run but not LTCTI
+#-------------------------------------------------------------------------------
+#       Time       Event  
+#-------------------------------------------------------------------------------
+                     GO
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2017:036:03:25:00.000
+# Status Array: ACIS-S,HETG-OUT,LETG-IN,19863,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: FEB0517 Replan load breaking JAN3017A
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2017:036:03:25:00.000    TOO   ACIS-S,HETG-OUT,LETG-IN,19863,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2017:046:11:27:13.856
+# Status Array: ACIS-I,HETG-OUT,LETG-OUT,18273,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: FEB1517 TOO load breaking FEB1317A
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2017:046:11:27:13.856    TOO   ACIS-I,HETG-OUT,LETG-OUT,18273,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2017:058:03:08:36.572
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,50281,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: FEB2717B load a replan of the approved FEB2717A schedule
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2017:058:03:08:36.572    TOO   HRC-S,HETG-OUT,LETG-OUT,50281,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: STOP
+# Time of Event: 2017:066:03:45:41
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,50259,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: NORMAL SUN MODE during MAR0617A load
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2017:066:00:24:21    STOP   HRC-S,HETG-OUT,LETG-OUT,50259,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: MAN
+# Time of Event: 2017:066:04:58:50.82
+# Source: NLET
+# Description: 2017:066 NSM interrupt of the MAR0617A load
+#-------------------------------------------------------------------------------
+#       Time        Event   Pitch  Roll      Q1       Q2       Q3      Q4
+#-------------------------------------------------------------------------------
+2017:066:00:24:21.00    MAN     89.941    280.63   -0.2403737131130512 -0.62944697903205116 0.11035880701199301 0.73064212260273065
+#
+#*******************************************************************************
+# Type: GO
+# Source: history_files.pl
+# Description: Resumption of Science after 2017:066 NSUN MAR0817
+#-------------------------------------------------------------------------------
+#       Time       Event  
+#-------------------------------------------------------------------------------
+                     GO
+#*******************************************************************************
+# Type: STOP
+# Time of Event: 2017:068:17:00:42.000
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,50255,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: BRIGHT STAR HOLD during MAR0817B load
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2017:068:17:00:42.000    STOP   HRC-S,HETG-OUT,LETG-OUT,50255,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: MAN
+# Time of Event: 2017:068:13:45:51.395
+# Source: NLET
+# Description: OCC maneuver to tail Sun
+#-------------------------------------------------------------------------------
+#       Time        Event   Pitch  Roll      Q1       Q2       Q3      Q4
+#-------------------------------------------------------------------------------
+2017:069:15:54:12.257    MAN     150.75    145.73   -0.022927990415114868 -0.92469257061770427 -0.26864612715770581 0.26878842198378317
+#
+#*******************************************************************************
+# Type: LTCTI
+# Time of Event: 2017:069:15:39:00.00
+# Source: NLET
+# CAP Number: 1412
+# CLD File Path: /data/acis/CAPs/CTI-CLDs/4chip/1A_4_CTI_24H_135.cld
+# Description: Long Term CTI run during March 9, 2017 BSH
+#-------------------------------------------------------------------------------
+#       Time            Event   CAP #  RTS file  Duration
+#-------------------------------------------------------------------------------
+2017:069:15:39:00.00    LTCTI   1412  1_4_CTI 000:24:00:00
+#
+#*******************************************************************************
+# Type: GO
+# Source: history_files.pl
+# Description: MAR1117A Science Resumption after March 9 BSH MAR0817B RTS load
+#-------------------------------------------------------------------------------
+#       Time       Event  
+#-------------------------------------------------------------------------------
+                     GO
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2017:075:02:57:17.891
+# Status Array: ACIS-I,HETG-OUT,LETG-OUT,18271,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: MAR1517B TOO interrupt Replan of MAR1117
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2017:075:02:57:17.891    TOO   ACIS-I,HETG-OUT,LETG-OUT,18271,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: STOP
+# Time of Event: 2017:090:19:01:57.000
+# Status Array: HRC-S,HETG-OUT,LETG-OUT,19924,OORMPDS,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: BRIGHT STAR HOLD during MAR2717B load
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2017:090:19:01:57.000    STOP   HRC-S,HETG-OUT,LETG-OUT,19924,OORMPDS,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: LTCTI
+# Time of Event: 2017:091:01:07:00.00
+# Source: NLET
+# CAP Number: 1415
+# CLD File Path: /data/acis/CAPs/CTI-CLDs/4chip/1A_4_CTI_24H_135.cld
+# Description: Long TERM CTI measurement during March 31 BSH
+#-------------------------------------------------------------------------------
+#       Time            Event   CAP #   RTS file  Duration
+#-------------------------------------------------------------------------------
+2017:091:01:07:00.00    LTCTI   1415  1_4_CTI  000:24:00:00
+#
+#*******************************************************************************
+# Type: MAN
+# Time of Event: 2017:091:01:15:14.271
+# Source: NLET
+# Description: OCC CAP 1414 maneuver to tail sun after BSH
+#-------------------------------------------------------------------------------
+#       Time        Event   Pitch  Roll      Q1       Q2       Q3      Q4
+#-------------------------------------------------------------------------------
+2017:091:01:15:14.271    MAN     135.72    330.18   0.38910893630380294 0.20455291729777708 -0.8979650859903614 0.020274221460132157
+#
+#*******************************************************************************
+# Type: GO
+# Source: history_files.pl
+# Description: Resumption of science after march 31 BSH
+#-------------------------------------------------------------------------------
+#       Time       Event  
+#-------------------------------------------------------------------------------
+                     GO
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2017:208:08:01:09.758
+# Status Array: ACIS-I,HETG-OUT,LETG-OUT,19770,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: JUL2717A replan loads are approved
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2017:208:08:01:09.758    TOO   ACIS-I,HETG-OUT,LETG-OUT,19770,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2017:231:15:42:18.906
+# Status Array: ACIS-I,HETG-OUT,LETG-OUT,19586,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: Interrupt of load AUG11417; ObsID 18955,  New Load AUG1917A
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2017:231:15:42:18.906    TOO   ACIS-I,HETG-OUT,LETG-OUT,19586,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2017:237:03:30:01.28
+# Status Array: ACIS-I,HETG-OUT,LETG-OUT,19664,OORMPEN,CSELFMT2,ENAB
+# Source: history_files.pl
+# Description: Interrupt flying load AUG1917A; New Load AUG2517C
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2017:237:03:30:01.28    TOO   ACIS-I,HETG-OUT,LETG-OUT,19664,OORMPEN,CSELFMT2,ENAB
+#
+#*******************************************************************************
+# Type: TOO
+# Time of Event: 2017:242:23:35:01.285
+# Status Array: HRC-S,HETG-OUT,LETG-IN,20632,OORMPEN,CSELFMT1,ENAB
+# Source: history_files.pl
+# Description: DDT interrupt of AUG2817B for obsid 20728; New Load AUG3017A
+#-------------------------------------------------------------------------------
+#       Time           Event                 Status Line
+#-------------------------------------------------------------------------------
+2017:242:23:35:01.285    TOO   HRC-S,HETG-OUT,LETG-IN,20632,OORMPEN,CSELFMT1,ENAB
+#

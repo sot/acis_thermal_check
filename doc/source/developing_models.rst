@@ -417,7 +417,7 @@ tests the legacy "SQL" state builder, and another which checks for violations.
 All of these scripts make use of a ``RegressionTester`` class which handles all
 of the testing. 
 
-The "ACIS" state builder script generates a ``RegressionTester`` object
+The "ACIS" state builder test script generates a ``RegressionTester`` object
 appropriate to the model to be tested, runs the models using the ``run_models``
 method, called with the appropriate state builder, and then runs prediction
 and validation tests. The ``test_dpa_acis.py`` script for the 1DPAMZT model is
@@ -433,20 +433,25 @@ use of this argument is explained in :ref:`test_suite`.
         RegressionTester, all_loads
     import pytest
     
-    dpa_rt = RegressionTester(DPACheck, model_path, "dpa_test_spec.json")
     
-    # ACIS state builder tests
-    
-    dpa_rt.run_models(state_builder='acis')
+    @pytest.fixture(autouse=True, scope='module')
+    def dpa_rt(test_root):
+        # ACIS state builder tests
+        rt = RegressionTester(DPACheck, model_path, "dpa_test_spec.json",
+                              test_root=test_root, sub_dir='acis')
+        rt.run_models(state_builder='acis')
+        return rt
     
     # Prediction tests
+    
     @pytest.mark.parametrize('load', all_loads)
-    def test_prediction(answer_store, load):
+    def test_prediction(dpa_rt, answer_store, load):
         dpa_rt.run_test("prediction", load, answer_store=answer_store)
     
     # Validation tests
+    
     @pytest.mark.parametrize('load', all_loads)
-    def test_validation(answer_store, load):
+    def test_validation(dpa_rt, answer_store, load):
         dpa_rt.run_test("validation", load, answer_store=answer_store)
     
 The "SQL" state builder tests are nearly identical to the "ACIS" ones, but in
@@ -456,28 +461,28 @@ is a test of that. The example for the 1DPAMZT model is shown below:
 
 .. code-block:: python
 
-    from ..dpa_check import model_path, DPACheck
-    from acis_thermal_check.regression_testing import \
-        RegressionTester, all_loads
-    import pytest
-    
-    dpa_rt = RegressionTester(DPACheck, model_path, "dpa_test_spec.json")
-    
-    # SQL state builder tests
-    
-    dpa_rt.run_models(state_builder='sql')
+    @pytest.fixture(autouse=True, scope='module')
+    def dpa_rt(test_root):
+        # ACIS state builder tests
+        rt = RegressionTester(DPACheck, model_path, "dpa_test_spec.json",
+                              test_root=test_root, sub_dir='sql')
+        rt.run_models(state_builder='sql')
+        return rt
     
     # Prediction tests
+    
     @pytest.mark.parametrize('load', all_loads)
-    def test_prediction(answer_store, load):
+    def test_prediction(dpa_rt, answer_store, load):
         if not answer_store:
             dpa_rt.run_test("prediction", load)
         else:
             pass
     
     # Validation tests
+    
+    
     @pytest.mark.parametrize('load', all_loads)
-    def test_validation(answer_store, load):
+    def test_validation(dpa_rt, answer_store, load):
         if not answer_store:
             dpa_rt.run_test("validation", load)
         else:
@@ -513,13 +518,12 @@ like this:
     from acis_thermal_check.regression_testing import \
         RegressionTester
     import os
-    
-    dpa_rt = RegressionTester(DPACheck, model_path, "dpa_test_spec.json")
-    
-    
-    def test_JUL3018A_viols(answer_store):
+
+    def test_JUL3018A_viols(answer_store, test_root):
         answer_data = os.path.join(os.path.dirname(__file__), "answers",
                                    "JUL3018A_viol.json")
+        dpa_rt = RegressionTester(DPACheck, model_path, "dpa_test_spec.json",
+                                  test_root=test_root, sub_dir='viols')
         dpa_rt.check_violation_reporting("JUL3018A", answer_data,
                                          answer_store=answer_store)
 
