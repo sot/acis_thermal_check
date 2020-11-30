@@ -95,28 +95,6 @@ class TestArgs(object):
             self.fps_nopref = os.path.join(model_path, "FPS_NoPref.txt")
 
 
-# Large, multi-layer dictionary which encodes the datatypes for the
-# different quantities that are being checked against.
-data_dtype = {'temperatures': {'names': ('time', 'date', 'temperature'),
-                               'formats': ('f8', 'S21', 'f8')
-                              },
-              'earth_solid_angles': {'names': ('time', 'date', 'earth_solid_angle'),
-                                     'formats': ('f8', 'S21', 'f8')
-                                     },
-              'states': {'names': ('ccd_count', 'clocking', 'datestart',
-                                   'datestop', 'dec', 'dither', 'fep_count',
-                                   'hetg', 'letg', 'obsid', 'pcad_mode',
-                                   'pitch', 'power_cmd', 'q1', 'q2', 'q3',
-                                   'q4', 'ra', 'roll', 'si_mode', 'simfa_pos',
-                                   'simpos', 'trans_keys'),
-                         'formats': ('i4', 'i4', 'S21', 'S21', 'f8', 'S4',
-                                     'i4', 'S4', 'S4', 'i4', 'S4', 'f8',
-                                     'S9', 'f8', 'f8', 'f8', 'f8', 'f8',
-                                     'f8', 'S8', 'i4', 'i4', 'S80')
-                        }
-             }
-
-
 def exception_catcher(test, old, new, data_type, **kwargs):
     if new.dtype.kind == "S":
         new = new.astype("U")
@@ -316,12 +294,12 @@ class RegressionTester(object):
         filenames : list of strings
             The list of files which will be used in the comparison.
         """
+        from astropy.io import ascii
         for fn in filenames:
-            prefix = fn.split(".")[0]
             new_fn = os.path.join(out_dir, fn)
             old_fn = os.path.join(self.model_path, "tests/answers", load_week, fn)
-            new_data = np.loadtxt(new_fn, skiprows=1, dtype=data_dtype[prefix])
-            old_data = np.loadtxt(old_fn, skiprows=1, dtype=data_dtype[prefix])
+            new_data = ascii.read(new_fn).as_array()
+            old_data = ascii.read(old_fn).as_array()
             # Compare test run data to gold standard. Since we're loading from
             # ASCII text files here, floating-point comparisons will be different
             # at machine precision, others will be exact.
